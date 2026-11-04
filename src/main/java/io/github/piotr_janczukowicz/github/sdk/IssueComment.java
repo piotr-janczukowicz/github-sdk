@@ -1,0 +1,98 @@
+package io.github.piotr_janczukowicz.github.sdk;
+
+import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
+
+import io.github.piotr_janczukowicz.github.api.GitHub;
+import io.github.piotr_janczukowicz.github.api.issues.GitHubUpdateCommentPayload;
+import io.github.piotr_janczukowicz.github.api.search.GitHubIssueComment;
+import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
+import java.io.IOException;
+import java.util.Optional;
+
+/**
+ * A comment on an {@link Issue}, as GitHub returned it. The object is immutable, and {@link #record()} gives the
+ * complete response for every field the accessors here do not cover.
+ */
+public final class IssueComment {
+
+    private final Issue issue;
+    private final GitHubIssueComment record;
+
+    IssueComment(final Issue issue, final GitHubIssueComment record) {
+        this.issue = requireNonNull(issue, "issue");
+        this.record = requireNonNull(record, "record");
+    }
+
+    /**
+     * Returns the issue the comment belongs to.
+     *
+     * @return the issue
+     */
+    public Issue issue() {
+        return issue;
+    }
+
+    /**
+     * Returns the comment id.
+     *
+     * @return the id
+     */
+    public long id() {
+        return record.id();
+    }
+
+    /**
+     * Returns the comment text in Markdown.
+     *
+     * @return the body, or empty when GitHub does not return one
+     */
+    public Optional<String> body() {
+        return Optional.ofNullable(record.body());
+    }
+
+    /**
+     * Returns the user who wrote the comment.
+     *
+     * @return the author, or empty when GitHub does not return one
+     */
+    public Optional<GitHubSimpleUser> author() {
+        return Optional.ofNullable(record.user());
+    }
+
+    /**
+     * Changes the comment text ({@code PATCH /repos/{owner}/{repo}/issues/comments/{comment_id}}). This object is not
+     * changed.
+     *
+     * @param body the new comment text in Markdown
+     * @return the comment as GitHub returned it after the change
+     * @throws NullPointerException if {@code body} is {@code null}
+     * @throws IOException if the transport fails
+     */
+    public IssueComment edit(final String body) throws IOException {
+        final GitHubUpdateCommentPayload payload = new GitHubUpdateCommentPayload(requireNonNull(body, "body"));
+        final Repository repository = issue.repository();
+        final GitHub github = repository.sdk().github();
+        return new IssueComment(
+                issue, github.issues().comments().updateComment(repository.owner(), repository.name(), id(), payload));
+    }
+
+    /**
+     * Deletes the comment ({@code DELETE /repos/{owner}/{repo}/issues/comments/{comment_id}}).
+     *
+     * @throws IOException if the transport fails
+     */
+    public void delete() throws IOException {
+        final Repository repository = issue.repository();
+        final GitHub github = repository.sdk().github();
+        github.issues().comments().deleteComment(repository.owner(), repository.name(), id());
+    }
+
+    /**
+     * Returns the complete response this object was built from.
+     *
+     * @return the response record
+     */
+    public GitHubIssueComment record() {
+        return record;
+    }
+}
