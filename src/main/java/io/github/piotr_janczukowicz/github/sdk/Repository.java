@@ -10,11 +10,14 @@ import io.github.piotr_janczukowicz.github.api.issues.GitHubCreatePayload;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubCreatePayloadBuilder;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubCreatePullRequestPayload;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubListPullRequestsFilter;
+import io.github.piotr_janczukowicz.github.api.releases.GitHubCreateReleasePayload;
+import io.github.piotr_janczukowicz.github.api.releases.GitHubCreateReleasePayloadBuilder;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubContentFile;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateOrUpdateFileContentsPayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubFullRepository;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubGetContentFilter;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubPullRequestSimple;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryTag;
 import io.github.piotr_janczukowicz.github.pagination.GitHubPageRequest;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -338,6 +341,83 @@ public final class Repository {
     public RepositoryFile writeFile(final String path, final String message, final byte[] content, final String branch)
             throws IOException {
         return write(path, message, content, requireNotBlank(branch, "branch"));
+    }
+
+    /**
+     * Loads the release built on a tag ({@code GET /repos/{owner}/{repo}/releases/tags/{tag}}).
+     *
+     * @param tag the tag name
+     * @return the release, or empty when GitHub answers HTTP 404
+     * @throws IllegalArgumentException if {@code tag} is blank
+     * @throws IOException if the transport fails
+     */
+    public Optional<Release> release(final String tag) throws IOException {
+        return sdk.github()
+                .releases()
+                .release()
+                .getReleaseByTag(owner, name, requireNotBlank(tag, "tag"))
+                .map(loaded -> new Release(this, loaded));
+    }
+
+    /**
+     * Loads the latest published release ({@code GET /repos/{owner}/{repo}/releases/latest}).
+     *
+     * @return the release, or empty when the repository has none
+     * @throws IOException if the transport fails
+     */
+    public Optional<Release> latestRelease() throws IOException {
+        return sdk.github().releases().release().getLatestRelease(owner, name).map(loaded -> new Release(this, loaded));
+    }
+
+    /**
+     * Lists the releases ({@code GET /repos/{owner}/{repo}/releases}). Pages are fetched only as the stream is
+     * consumed; transport failures during iteration are {@link java.io.UncheckedIOException}.
+     *
+     * @return the releases, newest first
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<Release> releases() throws IOException {
+        return sdk.github().releases().release().listReleases(owner, name).stream()
+                .map(listed -> new Release(this, listed));
+    }
+
+    /**
+     * Creates a release on a tag ({@code POST /repos/{owner}/{repo}/releases}). GitHub creates the tag from the default
+     * branch when it does not exist.
+     *
+     * @param tagName the tag name
+     * @return the new release as GitHub returned it
+     * @throws IllegalArgumentException if {@code tagName} is blank
+     * @throws IOException if the transport fails
+     */
+    public Release createRelease(final String tagName) throws IOException {
+        return createRelease(GitHubCreateReleasePayloadBuilder.builder()
+                .tagName(requireNotBlank(tagName, "tagName"))
+                .build());
+    }
+
+    /**
+     * Creates a release ({@code POST /repos/{owner}/{repo}/releases}).
+     *
+     * @param payload the release to create
+     * @return the new release as GitHub returned it
+     * @throws NullPointerException if {@code payload} is {@code null}
+     * @throws IOException if the transport fails
+     */
+    public Release createRelease(final GitHubCreateReleasePayload payload) throws IOException {
+        return new Release(
+                this, sdk.github().releases().release().createRelease(owner, name, requireNonNull(payload, "payload")));
+    }
+
+    /**
+     * Lists the tags ({@code GET /repos/{owner}/{repo}/tags}). Pages are fetched only as the stream is consumed;
+     * transport failures during iteration are {@link java.io.UncheckedIOException}.
+     *
+     * @return the tags
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<GitHubRepositoryTag> tags() throws IOException {
+        return sdk.github().repositories().repository().listTags(owner, name).stream();
     }
 
     /**

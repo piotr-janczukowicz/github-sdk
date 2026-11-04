@@ -1,0 +1,70 @@
+package io.github.piotr_janczukowicz.github.sdk.smoke;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.github.piotr_janczukowicz.github.api.releases.GitHubCreateReleasePayloadBuilder;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryTag;
+import io.github.piotr_janczukowicz.github.sdk.Release;
+import io.github.piotr_janczukowicz.github.sdk.Repository;
+import java.io.IOException;
+import java.util.List;
+import java.util.Optional;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+
+@Tag("smoke")
+class ReleasesSmokeIT {
+
+    private static final SmokeEnvironment ENV = SmokeEnvironment.fromEnv();
+
+    @BeforeAll
+    static void requireToken() {
+        ENV.requireConfigured();
+    }
+
+    @Test
+    void release_shouldRoundTrip_whenADraftIsCreatedListedRefreshedAndDeleted() throws IOException {
+        final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
+        final String tag = ENV.name("release");
+        final Release created = repository.createRelease(GitHubCreateReleasePayloadBuilder.builder()
+                .tagName(tag)
+                .name("smoke release")
+                .draft(true)
+                .build());
+        boolean isDeleted = false;
+        try {
+            final Release refreshed = created.refresh();
+            final boolean isListed = repository
+                    .releases()
+                    .limit(50)
+                    .anyMatch(listed -> listed.tagName().equals(tag));
+            refreshed.delete();
+            isDeleted = true;
+            final boolean isStillListed = repository
+                    .releases()
+                    .limit(50)
+                    .anyMatch(listed -> listed.tagName().equals(tag));
+
+            assertThat(created.isDraft()).isTrue();
+            assertThat(refreshed.name()).contains("smoke release");
+            assertThat(isListed).isTrue();
+            assertThat(isStillListed).isFalse();
+        } finally {
+            if (!isDeleted) {
+                created.delete();
+            }
+        }
+    }
+
+    @Test
+    void latestRelease_shouldNeverBeADraftAndTagsShouldRespectLimit_whenTheyAreRead() throws IOException {
+        final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
+
+        final Optional<Release> latest = repository.latestRelease();
+        final List<GitHubRepositoryTag> tags = repository.tags().limit(3).toList();
+
+        assertThat(latest.map(Release::isDraft).orElse(false)).isFalse();
+        assertThat(tags).hasSizeLessThanOrEqualTo(3);
+    }
+}

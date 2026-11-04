@@ -7,6 +7,8 @@ import io.github.piotr_janczukowicz.github.api.branches.GitHubBranchProtection;
 import io.github.piotr_janczukowicz.github.api.branches.GitHubBranchWithProtection;
 import io.github.piotr_janczukowicz.github.api.branches.GitHubBranchWithProtectionBuilder;
 import io.github.piotr_janczukowicz.github.api.branches.GitHubBranchWithProtectionLinks;
+import io.github.piotr_janczukowicz.github.api.releases.GitHubRelease;
+import io.github.piotr_janczukowicz.github.api.releases.GitHubReleaseBuilder;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubCommit;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubCommitBuilder;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubCommitDetail;
@@ -14,6 +16,8 @@ import io.github.piotr_janczukowicz.github.api.repositories.GitHubContentFile;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubContentFileBuilder;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubContentFileType;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubContentLinks;
+import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
+import java.time.Instant;
 import java.util.List;
 
 final class RepositoryContentFixtures {
@@ -49,6 +53,24 @@ final class RepositoryContentFixtures {
                 .sha("blob123")
                 .url(API + "/contents/docs/README.md")
                 .links(mock(GitHubContentLinks.class))
+                .build();
+    }
+
+    static GitHubRelease release() {
+        return GitHubReleaseBuilder.builder()
+                .url(API + "/releases/9009")
+                .htmlUrl("https://github.com/octocat/hello-world/releases/tag/v1.0.0")
+                .assetsUrl(API + "/releases/9009/assets")
+                .uploadUrl(API + "/releases/9009/assets{?name,label}")
+                .id(9009L)
+                .nodeId("RE_kwDOA")
+                .tagName("v1.0.0")
+                .targetCommitish("main")
+                .draft(false)
+                .prerelease(false)
+                .createdAt(Instant.parse("2026-03-04T05:06:07Z"))
+                .author(mock(GitHubSimpleUser.class))
+                .assets(List.of())
                 .build();
     }
 
