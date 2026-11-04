@@ -19,10 +19,10 @@ class IssueStateTest {
     }
 
     @Test
-    void from_shouldReturnUnrecognized_whenTheValueIsUnknown() {
-        final IssueState state = IssueState.from("archived");
+    void from_shouldThrowIllegalArgumentException_whenTheValueIsUnknown() {
+        final Throwable thrown = catchThrowable(() -> IssueState.from("archived"));
 
-        assertThat(state).isEqualTo(IssueState.UNRECOGNIZED);
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("archived");
     }
 
     @Test

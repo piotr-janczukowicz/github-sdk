@@ -68,7 +68,8 @@ public final class Issue {
     /**
      * Returns the issue state.
      *
-     * @return the state, or {@link IssueState#UNRECOGNIZED} when GitHub returns a value this library does not know
+     * @return the state
+     * @throws IllegalArgumentException if GitHub returns a state other than {@code open} or {@code closed}
      */
     public IssueState state() {
         return IssueState.from(record.state());
