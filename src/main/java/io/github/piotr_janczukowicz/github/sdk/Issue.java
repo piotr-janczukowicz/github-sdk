@@ -1,15 +1,26 @@
 package io.github.piotr_janczukowicz.github.sdk;
 
+import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonEmpty;
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
+import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 
 import io.github.piotr_janczukowicz.github.api.GitHub;
+import io.github.piotr_janczukowicz.github.api.issues.GitHubAddAssigneesAssignee;
+import io.github.piotr_janczukowicz.github.api.issues.GitHubAddAssigneesPayload;
+import io.github.piotr_janczukowicz.github.api.issues.GitHubAddLabelsLabel;
+import io.github.piotr_janczukowicz.github.api.issues.GitHubAddLabelsPayload;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubCreateCommentPayload;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubIssue;
+import io.github.piotr_janczukowicz.github.api.issues.GitHubIssueLabel;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubIssueUpdateState;
+import io.github.piotr_janczukowicz.github.api.issues.GitHubRemoveAssigneesPayload;
+import io.github.piotr_janczukowicz.github.api.issues.GitHubSetLabelsLabel;
+import io.github.piotr_janczukowicz.github.api.issues.GitHubSetLabelsPayload;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubUpdatePayload;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubUpdatePayloadBuilder;
 import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
 import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -55,12 +66,168 @@ public final class Issue {
     }
 
     /**
-     * Returns the issue state as GitHub names it, such as {@code open} or {@code closed}.
+     * Returns the issue state.
      *
-     * @return the state
+     * @return the state, or {@link IssueState#UNRECOGNIZED} when GitHub returns a value this library does not know
      */
-    public String state() {
-        return record.state();
+    public IssueState state() {
+        return IssueState.from(record.state());
+    }
+
+    /**
+     * Returns the labels of the issue as GitHub returned them.
+     *
+     * @return the labels, empty when there are none
+     */
+    public List<GitHubIssueLabel> labels() {
+        return record.labels();
+    }
+
+    /**
+     * Returns the users the issue is assigned to.
+     *
+     * @return the assignees, empty when there are none
+     */
+    public List<GitHubSimpleUser> assignees() {
+        return Optional.ofNullable(record.assignees()).orElse(List.of());
+    }
+
+    /**
+     * Adds labels ({@code POST /repos/{owner}/{repo}/issues/{issue_number}/labels}) and loads the issue again. This
+     * object is not changed.
+     *
+     * @param names the label names
+     * @return the issue as GitHub holds it after the change
+     * @throws IllegalArgumentException if no name is given
+     * @throws IOException if the transport fails
+     */
+    public Issue addLabels(final String... names) throws IOException {
+        final List<GitHubAddLabelsLabel> labels = Stream.of(requireNonEmpty(names, "names"))
+                .map(GitHubAddLabelsLabel::ofName)
+                .toList();
+        repository
+                .sdk()
+                .github()
+                .issues()
+                .labels()
+                .addLabels(repository.owner(), repository.name(), number(), new GitHubAddLabelsPayload(labels));
+        return refresh();
+    }
+
+    /**
+     * Replaces the labels ({@code PUT /repos/{owner}/{repo}/issues/{issue_number}/labels}) and loads the issue again.
+     * This object is not changed.
+     *
+     * @param names the label names; an empty list removes all labels
+     * @return the issue as GitHub holds it after the change
+     * @throws NullPointerException if {@code names} is {@code null}
+     * @throws IOException if the transport fails
+     */
+    public Issue setLabels(final List<String> names) throws IOException {
+        final List<GitHubSetLabelsLabel> labels = requireNonNull(names, "names").stream()
+                .map(GitHubSetLabelsLabel::ofName)
+                .toList();
+        repository
+                .sdk()
+                .github()
+                .issues()
+                .labels()
+                .setLabels(repository.owner(), repository.name(), number(), new GitHubSetLabelsPayload(labels));
+        return refresh();
+    }
+
+    /**
+     * Removes a label ({@code DELETE /repos/{owner}/{repo}/issues/{issue_number}/labels/{name}}) and loads the issue
+     * again. This object is not changed.
+     *
+     * @param name the label name
+     * @return the issue as GitHub holds it after the change
+     * @throws IllegalArgumentException if {@code name} is blank
+     * @throws IOException if the transport fails
+     */
+    public Issue removeLabel(final String name) throws IOException {
+        repository
+                .sdk()
+                .github()
+                .issues()
+                .labels()
+                .removeLabel(repository.owner(), repository.name(), number(), requireNotBlank(name, "name"));
+        return refresh();
+    }
+
+    /**
+     * Assigns users ({@code POST /repos/{owner}/{repo}/issues/{issue_number}/assignees}). This object is not changed.
+     *
+     * @param logins the user logins
+     * @return the issue as GitHub returned it after the change
+     * @throws IllegalArgumentException if no login is given
+     * @throws IOException if the transport fails
+     */
+    public Issue assign(final String... logins) throws IOException {
+        final List<GitHubAddAssigneesAssignee> assignees = Stream.of(requireNonEmpty(logins, "logins"))
+                .map(GitHubAddAssigneesAssignee::ofLogin)
+                .toList();
+        return new Issue(
+                repository,
+                repository
+                        .sdk()
+                        .github()
+                        .issues()
+                        .assignees()
+                        .addAssignees(
+                                repository.owner(),
+                                repository.name(),
+                                number(),
+                                new GitHubAddAssigneesPayload(assignees)));
+    }
+
+    /**
+     * Removes assigned users ({@code DELETE /repos/{owner}/{repo}/issues/{issue_number}/assignees}). This object is not
+     * changed.
+     *
+     * @param logins the user logins
+     * @return the issue as GitHub returned it after the change
+     * @throws IllegalArgumentException if no login is given
+     * @throws IOException if the transport fails
+     */
+    public Issue unassign(final String... logins) throws IOException {
+        final List<String> removed = List.of(requireNonEmpty(logins, "logins"));
+        return new Issue(
+                repository,
+                repository
+                        .sdk()
+                        .github()
+                        .issues()
+                        .assignees()
+                        .removeAssignees(
+                                repository.owner(),
+                                repository.name(),
+                                number(),
+                                new GitHubRemoveAssigneesPayload(removed)));
+    }
+
+    /**
+     * Locks the conversation ({@code PUT /repos/{owner}/{repo}/issues/{issue_number}/lock}) and loads the issue again.
+     * This object is not changed.
+     *
+     * @return the issue as GitHub holds it after the change
+     * @throws IOException if the transport fails
+     */
+    public Issue lock() throws IOException {
+        repository.sdk().github().issues().issue().lock(repository.owner(), repository.name(), number());
+        return refresh();
+    }
+
+    /**
+     * Unlocks the conversation ({@code DELETE /repos/{owner}/{repo}/issues/{issue_number}/lock}) and loads the issue
+     * again. This object is not changed.
+     *
+     * @return the issue as GitHub holds it after the change
+     * @throws IOException if the transport fails
+     */
+    public Issue unlock() throws IOException {
+        repository.sdk().github().issues().issue().unlock(repository.owner(), repository.name(), number());
+        return refresh();
     }
 
     /**

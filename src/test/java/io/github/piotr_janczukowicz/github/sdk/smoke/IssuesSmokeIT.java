@@ -2,8 +2,11 @@ package io.github.piotr_janczukowicz.github.sdk.smoke;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.github.piotr_janczukowicz.github.api.issues.GitHubCreateLabelPayload;
+import io.github.piotr_janczukowicz.github.api.issues.GitHubIssueLabel;
 import io.github.piotr_janczukowicz.github.sdk.Issue;
 import io.github.piotr_janczukowicz.github.sdk.IssueComment;
+import io.github.piotr_janczukowicz.github.sdk.IssueState;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
 import java.io.IOException;
 import java.util.List;
@@ -43,8 +46,8 @@ class IssuesSmokeIT {
             final Issue closed = issue.close();
             issue = closed.reopen();
 
-            assertThat(closed.state()).isEqualTo("closed");
-            assertThat(issue.state()).isEqualTo("open");
+            assertThat(closed.state()).isEqualTo(IssueState.CLOSED);
+            assertThat(issue.state()).isEqualTo(IssueState.OPEN);
             assertThat(comments).extracting(IssueComment::id).contains(comment.id());
             assertThat(comment.body()).contains("smoke comment, edited");
             assertThat(repository.issue(issue.number())).map(Issue::title).contains(ENV.name("issue"));
@@ -70,6 +73,44 @@ class IssuesSmokeIT {
             assertThat(updated.title()).isEqualTo(ENV.name("updated"));
             assertThat(refreshed.record().body()).isEqualTo("changed by a smoke test");
             assertThat(created.title()).isEqualTo(ENV.name("update"));
+        } finally {
+            created.close();
+        }
+    }
+
+    @Test
+    void labels_shouldRoundTrip_whenAddedSetAndRemoved() throws IOException {
+        final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
+        final String labelName = ENV.name("label");
+        ENV.github()
+                .issues()
+                .labels()
+                .createLabel(ENV.owner(), ENV.repo(), new GitHubCreateLabelPayload(labelName, "ededed", null));
+        final Issue created = repository.createIssue(ENV.name("labels"));
+        try {
+            final Issue added = created.addLabels(labelName);
+            final Issue removed = added.removeLabel(labelName);
+            final Issue set = removed.setLabels(List.of(labelName));
+
+            assertThat(added.labels()).extracting(GitHubIssueLabel::name).contains(labelName);
+            assertThat(removed.labels()).isEmpty();
+            assertThat(set.labels()).extracting(GitHubIssueLabel::name).containsExactly(labelName);
+        } finally {
+            created.close();
+            ENV.github().issues().labels().deleteLabel(ENV.owner(), ENV.repo(), labelName);
+        }
+    }
+
+    @Test
+    void lock_shouldRoundTrip_whenLockedAndUnlocked() throws IOException {
+        final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
+        final Issue created = repository.createIssue(ENV.name("lock"));
+        try {
+            final Issue locked = created.lock();
+            final Issue unlocked = locked.unlock();
+
+            assertThat(locked.record().locked()).isTrue();
+            assertThat(unlocked.record().locked()).isFalse();
         } finally {
             created.close();
         }
