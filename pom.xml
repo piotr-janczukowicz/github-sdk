@@ -19,6 +19,7 @@
 
   <properties>
     <github-rest-client.version>2026.3.10.4</github-rest-client.version>
+    <common-test-support.version>6</common-test-support.version>
   </properties>
 
   <dependencies>
@@ -27,6 +28,12 @@
       <artifactId>github-rest-client</artifactId>
       <version>${github-rest-client.version}</version>
       <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.github.piotr-janczukowicz</groupId>
+      <artifactId>common-test-support</artifactId>
+      <version>${common-test-support.version}</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 
