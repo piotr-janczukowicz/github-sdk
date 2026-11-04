@@ -14,10 +14,19 @@ import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubCreatePayload;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubCreatePayloadBuilder;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubIssue;
+import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubCreatePullRequestPayload;
+import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubCreatePullRequestPayloadBuilder;
+import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubListPullRequestsFilter;
+import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubPullRequest;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubFullRepository;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubPullRequestSimple;
+import io.github.piotr_janczukowicz.github.pagination.GitHubPageRequest;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -125,6 +134,139 @@ class RepositoryTest {
     @Test
     void createIssue_shouldThrowNullPointerException_whenPayloadIsNull() {
         final Throwable thrown = catchThrowable(() -> sut.createIssue((GitHubCreatePayload) null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("payload");
+    }
+
+    @Test
+    void pullRequest_shouldReturnPullRequest_whenGitHubHasIt() throws IOException {
+        final GitHubPullRequest record = PullRequestsFixtures.pullRequest();
+        when(github.pullRequests().pullRequest().get(OWNER, NAME, 7)).thenReturn(Optional.of(record));
+
+        final Optional<PullRequest> pullRequest = sut.pullRequest(7);
+
+        assertThat(pullRequest).isPresent();
+        assertSoftly(softly -> {
+            softly.assertThat(pullRequest.orElseThrow().record()).isSameAs(record);
+            softly.assertThat(pullRequest.orElseThrow().repository()).isSameAs(sut);
+        });
+    }
+
+    @Test
+    void pullRequest_shouldReturnEmpty_whenGitHubAnswersNotFound() throws IOException {
+        when(github.pullRequests().pullRequest().get(OWNER, NAME, 7)).thenReturn(Optional.empty());
+
+        final Optional<PullRequest> pullRequest = sut.pullRequest(7);
+
+        assertThat(pullRequest).isEmpty();
+    }
+
+    @Test
+    void pullRequests_shouldLoadEachListedPullRequest_whenCalledWithAFilter() throws IOException {
+        final GitHubPullRequestSimple listed = mock(GitHubPullRequestSimple.class);
+        when(listed.number()).thenReturn(7);
+        final GitHubPullRequest record = PullRequestsFixtures.pullRequest();
+        when(github
+                        .pullRequests()
+                        .pullRequest()
+                        .list(
+                                eq(OWNER),
+                                eq(NAME),
+                                any(GitHubListPullRequestsFilter.class),
+                                any(GitHubPageRequest.class))
+                        .stream())
+                .thenReturn(Stream.of(listed));
+        when(github.pullRequests().pullRequest().get(OWNER, NAME, 7)).thenReturn(Optional.of(record));
+
+        final List<PullRequest> pullRequests =
+                sut.pullRequests(GitHubListPullRequestsFilter.empty()).toList();
+
+        assertThat(pullRequests).extracting(PullRequest::record).containsExactly(record);
+    }
+
+    @Test
+    void pullRequests_shouldListWithAnEmptyFilter_whenCalledWithoutOne() throws IOException {
+        when(github
+                        .pullRequests()
+                        .pullRequest()
+                        .list(
+                                eq(OWNER),
+                                eq(NAME),
+                                any(GitHubListPullRequestsFilter.class),
+                                any(GitHubPageRequest.class))
+                        .stream())
+                .thenReturn(Stream.empty());
+
+        final List<PullRequest> pullRequests = sut.pullRequests().toList();
+
+        assertThat(pullRequests).isEmpty();
+    }
+
+    @Test
+    void pullRequests_shouldThrowIllegalStateException_whenAListedPullRequestIsGone() throws IOException {
+        final GitHubPullRequestSimple listed = mock(GitHubPullRequestSimple.class);
+        when(listed.number()).thenReturn(7);
+        when(github
+                        .pullRequests()
+                        .pullRequest()
+                        .list(
+                                eq(OWNER),
+                                eq(NAME),
+                                any(GitHubListPullRequestsFilter.class),
+                                any(GitHubPageRequest.class))
+                        .stream())
+                .thenReturn(Stream.of(listed));
+        when(github.pullRequests().pullRequest().get(OWNER, NAME, 7)).thenReturn(Optional.empty());
+        final Stream<PullRequest> pullRequests = sut.pullRequests();
+
+        final Throwable thrown = catchThrowable(pullRequests::toList);
+
+        assertThat(thrown).isInstanceOf(IllegalStateException.class).hasMessageContaining("7");
+    }
+
+    @Test
+    void pullRequests_shouldThrowUncheckedIoException_whenLoadingAListedPullRequestFails() throws IOException {
+        final GitHubPullRequestSimple listed = mock(GitHubPullRequestSimple.class);
+        when(listed.number()).thenReturn(7);
+        when(github
+                        .pullRequests()
+                        .pullRequest()
+                        .list(
+                                eq(OWNER),
+                                eq(NAME),
+                                any(GitHubListPullRequestsFilter.class),
+                                any(GitHubPageRequest.class))
+                        .stream())
+                .thenReturn(Stream.of(listed));
+        when(github.pullRequests().pullRequest().get(OWNER, NAME, 7)).thenThrow(new IOException("transport failed"));
+        final Stream<PullRequest> pullRequests = sut.pullRequests();
+
+        final Throwable thrown = catchThrowable(pullRequests::toList);
+
+        assertThat(thrown).isInstanceOf(UncheckedIOException.class).hasCauseInstanceOf(IOException.class);
+    }
+
+    @Test
+    void createPullRequest_shouldSendThePayloadAndReturnThePullRequest_whenCalled() throws IOException {
+        final GitHubPullRequest record = PullRequestsFixtures.pullRequest();
+        final GitHubCreatePullRequestPayload payload = GitHubCreatePullRequestPayloadBuilder.builder()
+                .head("feature")
+                .base("main")
+                .title("Add feature")
+                .build();
+        when(github.pullRequests().pullRequest().create(OWNER, NAME, payload)).thenReturn(record);
+
+        final PullRequest pullRequest = sut.createPullRequest(payload);
+
+        assertSoftly(softly -> {
+            softly.assertThat(pullRequest.record()).isSameAs(record);
+            softly.assertThat(pullRequest.repository()).isSameAs(sut);
+        });
+    }
+
+    @Test
+    void createPullRequest_shouldThrowNullPointerException_whenPayloadIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.createPullRequest(null));
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("payload");
     }

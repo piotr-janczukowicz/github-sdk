@@ -4,9 +4,15 @@ import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
 
 import io.github.piotr_janczukowicz.github.api.issues.GitHubCreatePayload;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubCreatePayloadBuilder;
+import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubCreatePullRequestPayload;
+import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubListPullRequestsFilter;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubFullRepository;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubPullRequestSimple;
+import io.github.piotr_janczukowicz.github.pagination.GitHubPageRequest;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Optional;
+import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -111,11 +117,81 @@ public final class Repository {
     }
 
     /**
+     * Loads one pull request of this repository ({@code GET /repos/{owner}/{repo}/pulls/{pull_number}}).
+     *
+     * @param number the pull request number
+     * @return the pull request, or empty when GitHub answers HTTP 404
+     * @throws IOException if the transport fails
+     */
+    public Optional<PullRequest> pullRequest(final int number) throws IOException {
+        return sdk.github()
+                .pullRequests()
+                .pullRequest()
+                .get(owner, name, number)
+                .map(loaded -> new PullRequest(this, loaded));
+    }
+
+    /**
+     * Lists the open pull requests ({@code GET /repos/{owner}/{repo}/pulls}), the way GitHub lists them by default. See
+     * {@link #pullRequests(GitHubListPullRequestsFilter)}.
+     *
+     * @return the pull requests
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<PullRequest> pullRequests() throws IOException {
+        return pullRequests(GitHubListPullRequestsFilter.empty());
+    }
+
+    /**
+     * Lists pull requests ({@code GET /repos/{owner}/{repo}/pulls}). GitHub's list holds only a summary of each pull
+     * request, so every listed pull request is loaded with one more request as the stream reaches it; a {@code limit}
+     * on the stream bounds the cost. A transport failure during iteration is an {@link java.io.UncheckedIOException},
+     * and a listed pull request that is gone before it is loaded is an {@link IllegalStateException}.
+     *
+     * @param filter the list filter
+     * @return the pull requests
+     * @throws NullPointerException if {@code filter} is {@code null}
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<PullRequest> pullRequests(final GitHubListPullRequestsFilter filter) throws IOException {
+        return sdk
+                .github()
+                .pullRequests()
+                .pullRequest()
+                .list(owner, name, requireNonNull(filter, "filter"), GitHubPageRequest.byPage())
+                .stream()
+                .map(this::load);
+    }
+
+    /**
+     * Creates a pull request ({@code POST /repos/{owner}/{repo}/pulls}).
+     *
+     * @param payload the pull request to create
+     * @return the new pull request as GitHub returned it
+     * @throws NullPointerException if {@code payload} is {@code null}
+     * @throws IOException if the transport fails
+     */
+    public PullRequest createPullRequest(final GitHubCreatePullRequestPayload payload) throws IOException {
+        return new PullRequest(
+                this,
+                sdk.github().pullRequests().pullRequest().create(owner, name, requireNonNull(payload, "payload")));
+    }
+
+    /**
      * Returns the SDK this repository belongs to.
      *
      * @return the SDK
      */
     GitHubSdk sdk() {
         return sdk;
+    }
+
+    private PullRequest load(final GitHubPullRequestSimple listed) {
+        try {
+            return pullRequest(listed.number())
+                    .orElseThrow(() -> new IllegalStateException("Pull request " + listed.number() + " is gone"));
+        } catch (final IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 }
