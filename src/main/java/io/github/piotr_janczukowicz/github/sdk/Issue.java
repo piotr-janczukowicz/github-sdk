@@ -127,6 +127,28 @@ public final class Issue {
     }
 
     /**
+     * Starts a change of several fields at once; nothing is sent until {@link IssueUpdate#send()}.
+     *
+     * @return a new update for this issue
+     */
+    public IssueUpdate update() {
+        return new IssueUpdate(this);
+    }
+
+    /**
+     * Loads the issue again ({@code GET /repos/{owner}/{repo}/issues/{issue_number}}). This object is not changed.
+     *
+     * @return the issue as GitHub holds it now
+     * @throws IOException if the transport fails
+     * @throws IllegalStateException if the issue is gone
+     */
+    public Issue refresh() throws IOException {
+        return repository
+                .issue(number())
+                .orElseThrow(() -> new IllegalStateException("Issue " + number() + " is gone"));
+    }
+
+    /**
      * Returns the complete response this object was built from.
      *
      * @return the response record
@@ -135,13 +157,12 @@ public final class Issue {
         return record;
     }
 
+    Issue apply(final GitHubUpdatePayload payload) throws IOException {
+        repository.sdk().github().issues().issue().update(repository.owner(), repository.name(), number(), payload);
+        return refresh();
+    }
+
     private Issue changeState(final GitHubIssueUpdateState state) throws IOException {
-        final GitHub github = repository.sdk().github();
-        final GitHubUpdatePayload payload =
-                GitHubUpdatePayloadBuilder.builder().state(state).build();
-        github.issues().issue().update(repository.owner(), repository.name(), number(), payload);
-        return repository
-                .issue(number())
-                .orElseThrow(() -> new IllegalStateException("Issue " + number() + " is gone after the update"));
+        return apply(GitHubUpdatePayloadBuilder.builder().state(state).build());
     }
 }

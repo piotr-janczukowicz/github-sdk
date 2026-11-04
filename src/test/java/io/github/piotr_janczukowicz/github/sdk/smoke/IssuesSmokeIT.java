@@ -57,6 +57,25 @@ class IssuesSmokeIT {
     }
 
     @Test
+    void update_shouldChangeTitleAndBody_whenSentAndRefreshed() throws IOException {
+        final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
+        final Issue created = repository.createIssue(ENV.name("update"));
+        try {
+            final Issue updated = created.update()
+                    .title(ENV.name("updated"))
+                    .body("changed by a smoke test")
+                    .send();
+            final Issue refreshed = updated.refresh();
+
+            assertThat(updated.title()).isEqualTo(ENV.name("updated"));
+            assertThat(refreshed.record().body()).isEqualTo("changed by a smoke test");
+            assertThat(created.title()).isEqualTo(ENV.name("update"));
+        } finally {
+            created.close();
+        }
+    }
+
+    @Test
     void issue_shouldBeEmpty_whenTheNumberDoesNotExist() throws IOException {
         final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
 

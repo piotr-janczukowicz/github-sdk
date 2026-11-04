@@ -110,6 +110,29 @@ class IssueTest {
     }
 
     @Test
+    void refresh_shouldReturnTheReloadedIssue_whenGitHubHasIt() throws IOException {
+        final GitHubIssue reloaded =
+                GitHubIssueBuilder.builder(record).title("Renamed").build();
+        when(github.issues().issue().get(OWNER, NAME, NUMBER)).thenReturn(Optional.of(reloaded));
+
+        final Issue refreshed = sut.refresh();
+
+        assertSoftly(softly -> {
+            softly.assertThat(refreshed.record()).isSameAs(reloaded);
+            softly.assertThat(sut.title()).isEqualTo("Found a bug");
+        });
+    }
+
+    @Test
+    void refresh_shouldThrowIllegalStateException_whenTheIssueIsGone() throws IOException {
+        when(github.issues().issue().get(OWNER, NAME, NUMBER)).thenReturn(Optional.empty());
+
+        final Throwable thrown = catchThrowable(sut::refresh);
+
+        assertThat(thrown).isInstanceOf(IllegalStateException.class).hasMessageContaining("42");
+    }
+
+    @Test
     void comment_shouldSendTheBodyAndReturnTheComment_whenCalledWithABody() throws IOException {
         final GitHubIssueComment created = IssuesFixtures.issueComment();
         when(github.issues()
