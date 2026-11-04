@@ -1,7 +1,11 @@
 package io.github.piotr_janczukowicz.github.sdk;
 
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
+import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 
+import io.github.piotr_janczukowicz.github.api.branches.GitHubListBranchesFilter;
+import io.github.piotr_janczukowicz.github.api.branches.GitHubShortBranch;
+import io.github.piotr_janczukowicz.github.api.commits.GitHubListCommitsFilter;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubCreatePayload;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubCreatePayloadBuilder;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubCreatePullRequestPayload;
@@ -16,8 +20,9 @@ import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 
 /**
- * A repository, identified by its owner and name. The object holds no data from GitHub yet; it is the starting point
- * for the operations that belong to a repository.
+ * A repository, identified by its owner and name. A handle from {@link GitHubSdk#repository(String, String)} holds no
+ * data from GitHub; {@link #fetch()} returns a loaded repository. It is the starting point for the operations that
+ * belong to a repository.
  */
 public final class Repository {
 
@@ -160,7 +165,7 @@ public final class Repository {
                 .pullRequest()
                 .list(owner, name, requireNonNull(filter, "filter"), GitHubPageRequest.byPage())
                 .stream()
-                .map(this::load);
+                .map(this::loadPullRequest);
     }
 
     /**
@@ -178,6 +183,99 @@ public final class Repository {
     }
 
     /**
+     * Loads one branch ({@code GET /repos/{owner}/{repo}/branches/{branch}}).
+     *
+     * @param name the branch name
+     * @return the branch, or empty when GitHub answers HTTP 404
+     * @throws IllegalArgumentException if {@code name} is blank
+     * @throws IOException if the transport fails
+     */
+    public Optional<Branch> branch(final String name) throws IOException {
+        return sdk.github()
+                .branches()
+                .branch()
+                .getBranch(owner, this.name, requireNotBlank(name, "name"))
+                .map(loaded -> new Branch(this, loaded));
+    }
+
+    /**
+     * Lists the branches ({@code GET /repos/{owner}/{repo}/branches}). See {@link #branches(GitHubListBranchesFilter)}.
+     *
+     * @return the branches
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<Branch> branches() throws IOException {
+        return branches(GitHubListBranchesFilter.empty());
+    }
+
+    /**
+     * Lists branches ({@code GET /repos/{owner}/{repo}/branches}). GitHub's list holds only a summary of each branch,
+     * so every listed branch is loaded with one more request as the stream reaches it; a {@code limit} on the stream
+     * bounds the cost. A transport failure during iteration is an {@link java.io.UncheckedIOException}, and a listed
+     * branch that is gone before it is loaded is an {@link IllegalStateException}.
+     *
+     * @param filter the list filter
+     * @return the branches
+     * @throws NullPointerException if {@code filter} is {@code null}
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<Branch> branches(final GitHubListBranchesFilter filter) throws IOException {
+        return sdk
+                .github()
+                .branches()
+                .branch()
+                .listBranches(owner, name, requireNonNull(filter, "filter"), GitHubPageRequest.byPage())
+                .stream()
+                .map(this::loadBranch);
+    }
+
+    /**
+     * Loads one commit ({@code GET /repos/{owner}/{repo}/commits/{ref}}).
+     *
+     * @param sha the commit hash, a branch name or a tag name
+     * @return the commit, or empty when GitHub answers HTTP 404
+     * @throws IllegalArgumentException if {@code sha} is blank
+     * @throws IOException if the transport fails
+     */
+    public Optional<Commit> commit(final String sha) throws IOException {
+        return sdk.github()
+                .commits()
+                .commit()
+                .getCommit(owner, name, requireNotBlank(sha, "sha"))
+                .map(loaded -> new Commit(this, loaded));
+    }
+
+    /**
+     * Lists the commits of the default branch ({@code GET /repos/{owner}/{repo}/commits}). See
+     * {@link #commits(GitHubListCommitsFilter)}.
+     *
+     * @return the commits, newest first
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<Commit> commits() throws IOException {
+        return commits(GitHubListCommitsFilter.empty());
+    }
+
+    /**
+     * Lists commits ({@code GET /repos/{owner}/{repo}/commits}). Pages are fetched only as the stream is consumed;
+     * transport failures during iteration are {@link java.io.UncheckedIOException}.
+     *
+     * @param filter the list filter
+     * @return the commits, newest first
+     * @throws NullPointerException if {@code filter} is {@code null}
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<Commit> commits(final GitHubListCommitsFilter filter) throws IOException {
+        return sdk
+                .github()
+                .commits()
+                .commit()
+                .listCommits(owner, name, requireNonNull(filter, "filter"), GitHubPageRequest.byPage())
+                .stream()
+                .map(listed -> new Commit(this, listed));
+    }
+
+    /**
      * Returns the SDK this repository belongs to.
      *
      * @return the SDK
@@ -186,10 +284,19 @@ public final class Repository {
         return sdk;
     }
 
-    private PullRequest load(final GitHubPullRequestSimple listed) {
+    private PullRequest loadPullRequest(final GitHubPullRequestSimple listed) {
         try {
             return pullRequest(listed.number())
                     .orElseThrow(() -> new IllegalStateException("Pull request " + listed.number() + " is gone"));
+        } catch (final IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private Branch loadBranch(final GitHubShortBranch listed) {
+        try {
+            return branch(listed.name())
+                    .orElseThrow(() -> new IllegalStateException("Branch " + listed.name() + " is gone"));
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
         }
