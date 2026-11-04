@@ -2,10 +2,12 @@ package io.github.piotr_janczukowicz.github.sdk;
 
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
 
+import io.github.piotr_janczukowicz.github.api.organizations.GitHubOrganizationSimple;
 import io.github.piotr_janczukowicz.github.api.users.GitHubAuthenticatedUser;
 import io.github.piotr_janczukowicz.github.api.users.GitHubUser;
 import io.github.piotr_janczukowicz.github.api.users.GitHubUserView;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -13,7 +15,6 @@ import java.util.stream.Stream;
  * A GitHub user, as GitHub returned it. The object is immutable, and {@link #record()} gives the complete response for
  * every field the accessors here do not cover.
  */
-@SuppressWarnings("PMD.ShortClassName")
 public final class User {
 
     private final GitHubSdk sdk;
@@ -63,11 +64,35 @@ public final class User {
     }
 
     /**
+     * Lists the public organizations of the user ({@code GET /users/{username}/orgs}). GitHub's list holds only a
+     * summary of each organization, so every listed organization is loaded with one more request as the stream reaches
+     * it; a {@code limit} on the stream bounds the cost. A transport failure during iteration is an
+     * {@link java.io.UncheckedIOException}, and a listed organization that is gone before it is loaded is an
+     * {@link IllegalStateException}.
+     *
+     * @return the organizations
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<Organization> organizations() throws IOException {
+        return sdk.github().organizations().organization().listForUser(login()).stream()
+                .map(this::loadOrganization);
+    }
+
+    /**
      * Returns the complete response this object was built from.
      *
      * @return the response record, a plain user or the authenticated user
      */
     public GitHubUserView record() {
         return record;
+    }
+
+    private Organization loadOrganization(final GitHubOrganizationSimple listed) {
+        try {
+            return sdk.organization(listed.login())
+                    .orElseThrow(() -> new IllegalStateException("Organization " + listed.login() + " is gone"));
+        } catch (final IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 }

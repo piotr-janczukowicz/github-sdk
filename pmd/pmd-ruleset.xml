@@ -9,5 +9,6 @@
     <exclude name="CyclomaticComplexity"/>
     <exclude name="LoosePackageCoupling"/>
     <exclude name="NPathComplexity"/>
+    <exclude name="ShortClassName"/>
   </rule>
 </ruleset>

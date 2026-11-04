@@ -67,6 +67,21 @@ public final class GitHubSdk {
     }
 
     /**
+     * Loads an organization by login ({@code GET /orgs/{org}}).
+     *
+     * @param login the organization login name
+     * @return the organization, or empty when GitHub answers HTTP 404
+     * @throws IllegalArgumentException if {@code login} is blank
+     * @throws IOException if the transport fails
+     */
+    public Optional<Organization> organization(final String login) throws IOException {
+        return github.organizations()
+                .organization()
+                .get(requireNotBlank(login, "login"))
+                .map(loaded -> new Organization(this, loaded));
+    }
+
+    /**
      * Returns the wrapped client for the objects of this SDK.
      *
      * @return the client

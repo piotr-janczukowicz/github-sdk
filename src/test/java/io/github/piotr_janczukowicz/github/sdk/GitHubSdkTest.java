@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.github.piotr_janczukowicz.github.api.GitHub;
+import io.github.piotr_janczukowicz.github.api.organizations.GitHubOrganizationFull;
 import io.github.piotr_janczukowicz.github.api.users.GitHubUser;
 import io.github.piotr_janczukowicz.github.api.users.GitHubUserApi;
 import io.github.piotr_janczukowicz.github.api.users.GitHubUserView;
@@ -101,6 +102,38 @@ class GitHubSdkTest {
         final GitHubSdk sut = GitHubSdk.of(mock(GitHub.class, RETURNS_DEEP_STUBS));
 
         final Throwable thrown = catchThrowable(() -> sut.user(" "));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("login");
+    }
+
+    @Test
+    void organization_shouldReturnTheOrganization_whenGitHubHasTheLogin() throws IOException {
+        final GitHub github = mock(GitHub.class, RETURNS_DEEP_STUBS);
+        final GitHubOrganizationFull record = mock(GitHubOrganizationFull.class);
+        when(github.organizations().organization().get("octo-org")).thenReturn(Optional.of(record));
+        final GitHubSdk sut = GitHubSdk.of(github);
+
+        final Optional<Organization> organization = sut.organization("octo-org");
+
+        assertThat(organization).map(Organization::record).containsSame(record);
+    }
+
+    @Test
+    void organization_shouldReturnEmpty_whenGitHubAnswersNotFound() throws IOException {
+        final GitHub github = mock(GitHub.class, RETURNS_DEEP_STUBS);
+        when(github.organizations().organization().get("ghost-org")).thenReturn(Optional.empty());
+        final GitHubSdk sut = GitHubSdk.of(github);
+
+        final Optional<Organization> organization = sut.organization("ghost-org");
+
+        assertThat(organization).isEmpty();
+    }
+
+    @Test
+    void organization_shouldThrowIllegalArgumentException_whenLoginIsBlank() {
+        final GitHubSdk sut = GitHubSdk.of(mock(GitHub.class, RETURNS_DEEP_STUBS));
+
+        final Throwable thrown = catchThrowable(() -> sut.organization(" "));
 
         assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("login");
     }
