@@ -10,11 +10,15 @@ import io.github.piotr_janczukowicz.github.api.issues.GitHubCreatePayload;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubCreatePayloadBuilder;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubCreatePullRequestPayload;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubListPullRequestsFilter;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubContentFile;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateOrUpdateFileContentsPayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubFullRepository;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubGetContentFilter;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubPullRequestSimple;
 import io.github.piotr_janczukowicz.github.pagination.GitHubPageRequest;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.Base64;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
@@ -276,6 +280,67 @@ public final class Repository {
     }
 
     /**
+     * Loads one file on the default branch ({@code GET /repos/{owner}/{repo}/contents/{path}}).
+     *
+     * @param path the path within the repository
+     * @return the file, or empty when GitHub answers HTTP 404 or the path is a directory, symbolic link or submodule
+     * @throws IllegalArgumentException if {@code path} is blank
+     * @throws IOException if the transport fails
+     */
+    public Optional<RepositoryFile> file(final String path) throws IOException {
+        return read(requireNotBlank(path, "path"), null);
+    }
+
+    /**
+     * Loads one file at a ref ({@code GET /repos/{owner}/{repo}/contents/{path}}).
+     *
+     * @param path the path within the repository
+     * @param ref the branch, tag or commit
+     * @return the file, or empty when GitHub answers HTTP 404 or the path is a directory, symbolic link or submodule
+     * @throws IllegalArgumentException if {@code path} or {@code ref} is blank
+     * @throws IOException if the transport fails
+     */
+    public Optional<RepositoryFile> file(final String path, final String ref) throws IOException {
+        return read(requireNotBlank(path, "path"), requireNotBlank(ref, "ref"));
+    }
+
+    /**
+     * Creates or replaces a file on the default branch ({@code PUT /repos/{owner}/{repo}/contents/{path}}) and loads it
+     * again. An existing file is replaced using its current blob hash.
+     *
+     * @param path the path within the repository
+     * @param message the commit message
+     * @param content the new content
+     * @return the file as GitHub holds it after the write
+     * @throws NullPointerException if {@code content} is {@code null}
+     * @throws IllegalArgumentException if {@code path} or {@code message} is blank
+     * @throws IOException if the transport fails
+     * @throws IllegalStateException if the file is gone after the write
+     */
+    public RepositoryFile writeFile(final String path, final String message, final byte[] content) throws IOException {
+        return write(path, message, content, null);
+    }
+
+    /**
+     * Creates or replaces a file on a branch ({@code PUT /repos/{owner}/{repo}/contents/{path}}) and loads it again. An
+     * existing file is replaced using its current blob hash on that branch.
+     *
+     * @param path the path within the repository
+     * @param message the commit message
+     * @param content the new content
+     * @param branch the branch to commit to
+     * @return the file as GitHub holds it after the write
+     * @throws NullPointerException if {@code content} is {@code null}
+     * @throws IllegalArgumentException if {@code path}, {@code message} or {@code branch} is blank
+     * @throws IOException if the transport fails
+     * @throws IllegalStateException if the file is gone after the write
+     */
+    public RepositoryFile writeFile(final String path, final String message, final byte[] content, final String branch)
+            throws IOException {
+        return write(path, message, content, requireNotBlank(branch, "branch"));
+    }
+
+    /**
      * Returns the SDK this repository belongs to.
      *
      * @return the SDK
@@ -300,5 +365,35 @@ public final class Repository {
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    private Optional<RepositoryFile> read(final String path, final @Nullable String ref) throws IOException {
+        return sdk.github()
+                .repositories()
+                .contents()
+                .getContent(owner, name, path, new GitHubGetContentFilter(ref))
+                .flatMap(result -> result instanceof final GitHubContentFile file
+                        ? Optional.of(new RepositoryFile(this, file))
+                        : Optional.empty());
+    }
+
+    private RepositoryFile write(
+            final String path, final String message, final byte[] content, final @Nullable String branch)
+            throws IOException {
+        requireNotBlank(path, "path");
+        requireNotBlank(message, "message");
+        requireNonNull(content, "content");
+        final String sha = read(path, branch).map(RepositoryFile::sha).orElse(null);
+        sdk.github()
+                .repositories()
+                .contents()
+                .createOrUpdateFileContents(
+                        owner,
+                        name,
+                        path,
+                        new GitHubCreateOrUpdateFileContentsPayload(
+                                message, Base64.getEncoder().encodeToString(content), sha, branch, null, null));
+        return read(path, branch)
+                .orElseThrow(() -> new IllegalStateException("File " + path + " is gone after the write"));
     }
 }

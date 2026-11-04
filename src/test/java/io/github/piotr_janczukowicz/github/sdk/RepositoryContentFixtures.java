@@ -10,6 +10,10 @@ import io.github.piotr_janczukowicz.github.api.branches.GitHubBranchWithProtecti
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubCommit;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubCommitBuilder;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubCommitDetail;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubContentFile;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubContentFileBuilder;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubContentFileType;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubContentLinks;
 import java.util.List;
 
 final class RepositoryContentFixtures {
@@ -31,6 +35,20 @@ final class RepositoryContentFixtures {
                 .commentsUrl(API + "/commits/abc123/comments")
                 .commit(detail)
                 .parents(List.of())
+                .build();
+    }
+
+    static GitHubContentFile contentFile(final String encoding, final String content) {
+        return GitHubContentFileBuilder.builder()
+                .type(GitHubContentFileType.FILE)
+                .encoding(encoding)
+                .size(5)
+                .name("README.md")
+                .path("docs/README.md")
+                .content(content)
+                .sha("blob123")
+                .url(API + "/contents/docs/README.md")
+                .links(mock(GitHubContentLinks.class))
                 .build();
     }
 
