@@ -1,0 +1,55 @@
+package io.github.piotr_janczukowicz.github.sdk;
+
+import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
+
+import io.github.piotr_janczukowicz.github.api.ratelimit.GitHubRateLimitOverview;
+import java.time.Instant;
+
+/**
+ * The rate limit of the core REST API, as GitHub reported it at one moment. The object is immutable; {@link #record()}
+ * gives the complete overview, including the search and other resources.
+ */
+public final class RateLimit {
+
+    private final GitHubRateLimitOverview record;
+
+    RateLimit(final GitHubRateLimitOverview record) {
+        this.record = requireNonNull(record, "record");
+    }
+
+    /**
+     * Returns the number of requests allowed in the current window.
+     *
+     * @return the limit
+     */
+    public int limit() {
+        return record.resources().core().limit();
+    }
+
+    /**
+     * Returns the number of requests left in the current window.
+     *
+     * @return the remaining requests
+     */
+    public int remaining() {
+        return record.resources().core().remaining();
+    }
+
+    /**
+     * Returns the moment the current window resets.
+     *
+     * @return the reset time
+     */
+    public Instant resetAt() {
+        return Instant.ofEpochSecond(record.resources().core().reset());
+    }
+
+    /**
+     * Returns the complete overview this object was built from.
+     *
+     * @return the response record
+     */
+    public GitHubRateLimitOverview record() {
+        return record;
+    }
+}

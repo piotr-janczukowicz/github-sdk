@@ -82,6 +82,25 @@ public final class GitHubSdk {
     }
 
     /**
+     * Returns the search of this SDK.
+     *
+     * @return the search
+     */
+    public Search search() {
+        return new Search(this);
+    }
+
+    /**
+     * Reads the rate limit ({@code GET /rate_limit}).
+     *
+     * @return the rate limit, or empty when the server does not report one, as a GitHub Enterprise Server can
+     * @throws IOException if the transport fails
+     */
+    public Optional<RateLimit> rateLimit() throws IOException {
+        return github.rateLimit().get().map(RateLimit::new);
+    }
+
+    /**
      * Returns the wrapped client for the objects of this SDK.
      *
      * @return the client

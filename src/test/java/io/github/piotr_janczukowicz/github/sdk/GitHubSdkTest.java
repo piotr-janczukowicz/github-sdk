@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 
 import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.organizations.GitHubOrganizationFull;
+import io.github.piotr_janczukowicz.github.api.ratelimit.GitHubRateLimitOverview;
 import io.github.piotr_janczukowicz.github.api.users.GitHubUser;
 import io.github.piotr_janczukowicz.github.api.users.GitHubUserApi;
 import io.github.piotr_janczukowicz.github.api.users.GitHubUserView;
@@ -136,5 +137,37 @@ class GitHubSdkTest {
         final Throwable thrown = catchThrowable(() -> sut.organization(" "));
 
         assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("login");
+    }
+
+    @Test
+    void search_shouldReturnTheSearchOfTheSdk_whenCalled() {
+        final GitHubSdk sut = GitHubSdk.of(mock(GitHub.class));
+
+        final Search search = sut.search();
+
+        assertThat(search).isNotNull();
+    }
+
+    @Test
+    void rateLimit_shouldReturnTheRateLimit_whenGitHubReportsIt() throws IOException {
+        final GitHub github = mock(GitHub.class, RETURNS_DEEP_STUBS);
+        final GitHubRateLimitOverview record = mock(GitHubRateLimitOverview.class);
+        when(github.rateLimit().get()).thenReturn(Optional.of(record));
+        final GitHubSdk sut = GitHubSdk.of(github);
+
+        final Optional<RateLimit> rateLimit = sut.rateLimit();
+
+        assertThat(rateLimit).map(RateLimit::record).containsSame(record);
+    }
+
+    @Test
+    void rateLimit_shouldReturnEmpty_whenGitHubDoesNotReportIt() throws IOException {
+        final GitHub github = mock(GitHub.class, RETURNS_DEEP_STUBS);
+        when(github.rateLimit().get()).thenReturn(Optional.empty());
+        final GitHubSdk sut = GitHubSdk.of(github);
+
+        final Optional<RateLimit> rateLimit = sut.rateLimit();
+
+        assertThat(rateLimit).isEmpty();
     }
 }
