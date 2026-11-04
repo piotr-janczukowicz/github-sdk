@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.github.piotr-janczukowicz</groupId>
+    <artifactId>common-parent</artifactId>
+    <version>15</version>
+    <relativePath/>
+  </parent>
+
+  <artifactId>github-sdk</artifactId>
+  <version>2026.3.10.0-SNAPSHOT</version>
+  <packaging>jar</packaging>
+
+  <name>github-sdk</name>
+  <description>Object layer over github-rest-client: models that carry methods calling the GitHub REST API</description>
+  <url>https://github.com/piotr-janczukowicz/github-sdk</url>
+
+  <properties>
+    <github-rest-client.version>2026.3.10.4</github-rest-client.version>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>io.github.piotr-janczukowicz</groupId>
+      <artifactId>github-rest-client</artifactId>
+      <version>${github-rest-client.version}</version>
+      <scope>compile</scope>
+    </dependency>
+  </dependencies>
+</project>
