@@ -3,11 +3,19 @@ package io.github.piotr_janczukowicz.github.sdk;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 import io.github.piotr_janczukowicz.github.api.GitHub;
+import io.github.piotr_janczukowicz.github.api.users.GitHubUser;
+import io.github.piotr_janczukowicz.github.api.users.GitHubUserApi;
+import io.github.piotr_janczukowicz.github.api.users.GitHubUserView;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
+import java.io.IOException;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 @UnitTest
@@ -50,5 +58,50 @@ class GitHubSdkTest {
         final Throwable thrown = catchThrowable(() -> sut.repository("octocat", ""));
 
         assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("name");
+    }
+
+    @Test
+    void currentUser_shouldReturnTheAuthenticatedUser_whenCalled() throws IOException {
+        final GitHub github = mock(GitHub.class, RETURNS_DEEP_STUBS);
+        final GitHubUserView record = mock(GitHubUser.class);
+        final GitHubUserApi userApi = github.users().user();
+        doReturn(record).when(userApi).getAuthenticatedUser();
+        final GitHubSdk sut = GitHubSdk.of(github);
+
+        final User user = sut.currentUser();
+
+        assertThat(user.record()).isSameAs(record);
+    }
+
+    @Test
+    void user_shouldReturnTheUser_whenGitHubHasTheLogin() throws IOException {
+        final GitHub github = mock(GitHub.class, RETURNS_DEEP_STUBS);
+        final GitHubUserView record = mock(GitHubUser.class);
+        when(github.users().user().getByLogin("octocat")).thenReturn(Optional.of(record));
+        final GitHubSdk sut = GitHubSdk.of(github);
+
+        final Optional<User> user = sut.user("octocat");
+
+        assertThat(user).map(User::record).containsSame(record);
+    }
+
+    @Test
+    void user_shouldReturnEmpty_whenGitHubAnswersNotFound() throws IOException {
+        final GitHub github = mock(GitHub.class, RETURNS_DEEP_STUBS);
+        when(github.users().user().getByLogin("ghost")).thenReturn(Optional.empty());
+        final GitHubSdk sut = GitHubSdk.of(github);
+
+        final Optional<User> user = sut.user("ghost");
+
+        assertThat(user).isEmpty();
+    }
+
+    @Test
+    void user_shouldThrowIllegalArgumentException_whenLoginIsBlank() {
+        final GitHubSdk sut = GitHubSdk.of(mock(GitHub.class, RETURNS_DEEP_STUBS));
+
+        final Throwable thrown = catchThrowable(() -> sut.user(" "));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("login");
     }
 }

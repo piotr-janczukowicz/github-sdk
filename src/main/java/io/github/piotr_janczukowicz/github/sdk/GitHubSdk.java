@@ -4,6 +4,8 @@ import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 
 import io.github.piotr_janczukowicz.github.api.GitHub;
+import java.io.IOException;
+import java.util.Optional;
 
 /**
  * Entry point of the object layer. It wraps an existing {@link GitHub} client, so authentication, flavor, GHES version
@@ -40,6 +42,28 @@ public final class GitHubSdk {
      */
     public Repository repository(final String owner, final String name) {
         return new Repository(this, requireNotBlank(owner, "owner"), requireNotBlank(name, "name"), null);
+    }
+
+    /**
+     * Loads the authenticated user ({@code GET /user}).
+     *
+     * @return the user the client's credentials belong to
+     * @throws IOException if the transport fails
+     */
+    public User currentUser() throws IOException {
+        return new User(this, github.users().user().getAuthenticatedUser());
+    }
+
+    /**
+     * Loads a user by login ({@code GET /users/{username}}).
+     *
+     * @param login the login name
+     * @return the user, or empty when GitHub answers HTTP 404
+     * @throws IllegalArgumentException if {@code login} is blank
+     * @throws IOException if the transport fails
+     */
+    public Optional<User> user(final String login) throws IOException {
+        return github.users().user().getByLogin(requireNotBlank(login, "login")).map(view -> new User(this, view));
     }
 
     /**
