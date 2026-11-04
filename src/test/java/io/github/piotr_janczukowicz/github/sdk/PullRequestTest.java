@@ -3,13 +3,25 @@ package io.github.piotr_janczukowicz.github.sdk;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.github.piotr_janczukowicz.github.api.GitHub;
+import io.github.piotr_janczukowicz.github.api.issues.GitHubIssue;
+import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubCreateReviewPayload;
+import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubMergePullRequestPayload;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubPullRequest;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubPullRequestBuilder;
+import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubPullRequestMergeMethod;
+import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubPullRequestReview;
+import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubPullRequestUpdateState;
+import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubRemoveReviewersPayload;
+import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubRequestReviewersPayload;
+import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubUpdatePullRequestPayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubCommit;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubDiffEntry;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
@@ -18,6 +30,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 @UnitTest
 class PullRequestTest {
@@ -85,6 +98,178 @@ class PullRequestTest {
         when(github.pullRequests().pullRequest().get(OWNER, NAME, NUMBER)).thenReturn(Optional.empty());
 
         final Throwable thrown = catchThrowable(sut::refresh);
+
+        assertThat(thrown).isInstanceOf(IllegalStateException.class).hasMessageContaining("7");
+    }
+
+    @Test
+    void close_shouldSendClosedAndReturnTheResponse_whenCalled() throws IOException {
+        final GitHubPullRequest closed = GitHubPullRequestBuilder.builder(record)
+                .state(GitHubPullRequestUpdateState.CLOSED)
+                .build();
+        when(github.pullRequests()
+                        .pullRequest()
+                        .update(eq(OWNER), eq(NAME), eq(NUMBER), any(GitHubUpdatePullRequestPayload.class)))
+                .thenReturn(closed);
+        final ArgumentCaptor<GitHubUpdatePullRequestPayload> payload =
+                ArgumentCaptor.forClass(GitHubUpdatePullRequestPayload.class);
+
+        final PullRequest result = sut.close();
+
+        verify(github.pullRequests().pullRequest()).update(eq(OWNER), eq(NAME), eq(NUMBER), payload.capture());
+        assertSoftly(softly -> {
+            softly.assertThat(payload.getValue().state()).isEqualTo(GitHubPullRequestUpdateState.CLOSED);
+            softly.assertThat(result.state()).isEqualTo(PullRequestState.CLOSED);
+            softly.assertThat(sut.state()).isEqualTo(PullRequestState.OPEN);
+        });
+    }
+
+    @Test
+    void reopen_shouldSendOpenAndReturnTheResponse_whenCalled() throws IOException {
+        when(github.pullRequests()
+                        .pullRequest()
+                        .update(eq(OWNER), eq(NAME), eq(NUMBER), any(GitHubUpdatePullRequestPayload.class)))
+                .thenReturn(record);
+        final ArgumentCaptor<GitHubUpdatePullRequestPayload> payload =
+                ArgumentCaptor.forClass(GitHubUpdatePullRequestPayload.class);
+
+        final PullRequest result = sut.reopen();
+
+        verify(github.pullRequests().pullRequest()).update(eq(OWNER), eq(NAME), eq(NUMBER), payload.capture());
+        assertSoftly(softly -> {
+            softly.assertThat(payload.getValue().state()).isEqualTo(GitHubPullRequestUpdateState.OPEN);
+            softly.assertThat(result.record()).isSameAs(record);
+        });
+    }
+
+    @Test
+    void merge_shouldSendTheMethodAndReturnTheReloadedPullRequest_whenCalledWithAMethod() throws IOException {
+        final GitHubPullRequest merged =
+                GitHubPullRequestBuilder.builder(record).merged(true).build();
+        when(github.pullRequests().pullRequest().get(OWNER, NAME, NUMBER)).thenReturn(Optional.of(merged));
+        final ArgumentCaptor<GitHubMergePullRequestPayload> payload =
+                ArgumentCaptor.forClass(GitHubMergePullRequestPayload.class);
+
+        final PullRequest result = sut.merge(MergeMethod.SQUASH);
+
+        verify(github.pullRequests().pullRequest()).merge(eq(OWNER), eq(NAME), eq(NUMBER), payload.capture());
+        assertSoftly(softly -> {
+            softly.assertThat(payload.getValue().mergeMethod()).isEqualTo(GitHubPullRequestMergeMethod.SQUASH);
+            softly.assertThat(payload.getValue().commitMessage()).isNull();
+            softly.assertThat(result.isMerged()).isTrue();
+            softly.assertThat(sut.isMerged()).isFalse();
+        });
+    }
+
+    @Test
+    void merge_shouldSendTheCommitMessage_whenCalledWithAMessage() throws IOException {
+        when(github.pullRequests().pullRequest().get(OWNER, NAME, NUMBER)).thenReturn(Optional.of(record));
+        final ArgumentCaptor<GitHubMergePullRequestPayload> payload =
+                ArgumentCaptor.forClass(GitHubMergePullRequestPayload.class);
+
+        sut.merge(MergeMethod.MERGE, "Merge the feature");
+
+        verify(github.pullRequests().pullRequest()).merge(eq(OWNER), eq(NAME), eq(NUMBER), payload.capture());
+        assertSoftly(softly -> {
+            softly.assertThat(payload.getValue().mergeMethod()).isEqualTo(GitHubPullRequestMergeMethod.MERGE);
+            softly.assertThat(payload.getValue().commitMessage()).isEqualTo("Merge the feature");
+        });
+    }
+
+    @Test
+    void merge_shouldThrowNullPointerException_whenMethodIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.merge(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("method");
+    }
+
+    @Test
+    void reviews_shouldStreamTheReviews_whenTheyExist() throws IOException {
+        final GitHubPullRequestReview review = mock(GitHubPullRequestReview.class);
+        when(github.pullRequests().reviews().list(OWNER, NAME, NUMBER).stream()).thenReturn(Stream.of(review));
+
+        final List<GitHubPullRequestReview> reviews = sut.reviews().toList();
+
+        assertThat(reviews).containsExactly(review);
+    }
+
+    @Test
+    void review_shouldSendThePayloadAndReturnTheReview_whenCalled() throws IOException {
+        final GitHubPullRequestReview created = mock(GitHubPullRequestReview.class);
+        final GitHubCreateReviewPayload payload = mock(GitHubCreateReviewPayload.class);
+        when(github.pullRequests().reviews().create(OWNER, NAME, NUMBER, payload))
+                .thenReturn(created);
+
+        final GitHubPullRequestReview review = sut.review(payload);
+
+        assertThat(review).isSameAs(created);
+    }
+
+    @Test
+    void requestReviewers_shouldSendTheLoginsAndReturnTheReloadedPullRequest_whenCalled() throws IOException {
+        final GitHubPullRequest reloaded =
+                GitHubPullRequestBuilder.builder(record).title("Reviewed").build();
+        when(github.pullRequests().pullRequest().get(OWNER, NAME, NUMBER)).thenReturn(Optional.of(reloaded));
+        final ArgumentCaptor<GitHubRequestReviewersPayload> payload =
+                ArgumentCaptor.forClass(GitHubRequestReviewersPayload.class);
+
+        final PullRequest result = sut.requestReviewers("hubot", "octocat");
+
+        verify(github.pullRequests().reviewRequests()).request(eq(OWNER), eq(NAME), eq(NUMBER), payload.capture());
+        assertSoftly(softly -> {
+            softly.assertThat(payload.getValue().reviewers()).containsExactly("hubot", "octocat");
+            softly.assertThat(payload.getValue().teamReviewers()).isNullOrEmpty();
+            softly.assertThat(result.record()).isSameAs(reloaded);
+        });
+    }
+
+    @Test
+    void requestReviewers_shouldThrowIllegalArgumentException_whenNoLoginIsGiven() {
+        final Throwable thrown = catchThrowable(sut::requestReviewers);
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("logins");
+    }
+
+    @Test
+    void removeReviewers_shouldSendTheLoginsAndReturnTheReloadedPullRequest_whenCalled() throws IOException {
+        when(github.pullRequests().pullRequest().get(OWNER, NAME, NUMBER)).thenReturn(Optional.of(record));
+        final ArgumentCaptor<GitHubRemoveReviewersPayload> payload =
+                ArgumentCaptor.forClass(GitHubRemoveReviewersPayload.class);
+
+        final PullRequest result = sut.removeReviewers("hubot");
+
+        verify(github.pullRequests().reviewRequests()).remove(eq(OWNER), eq(NAME), eq(NUMBER), payload.capture());
+        assertSoftly(softly -> {
+            softly.assertThat(payload.getValue().reviewers()).containsExactly("hubot");
+            softly.assertThat(result.record()).isSameAs(record);
+        });
+    }
+
+    @Test
+    void removeReviewers_shouldThrowIllegalArgumentException_whenNoLoginIsGiven() {
+        final Throwable thrown = catchThrowable(sut::removeReviewers);
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("logins");
+    }
+
+    @Test
+    void issue_shouldLoadTheIssueWithTheSameNumber_whenItExists() throws IOException {
+        final GitHubIssue issueRecord = IssuesFixtures.issue();
+        when(github.issues().issue().get(OWNER, NAME, NUMBER)).thenReturn(Optional.of(issueRecord));
+
+        final Issue issue = sut.issue();
+
+        assertSoftly(softly -> {
+            softly.assertThat(issue.record()).isSameAs(issueRecord);
+            softly.assertThat(issue.repository()).isSameAs(repository);
+        });
+    }
+
+    @Test
+    void issue_shouldThrowIllegalStateException_whenTheIssueIsGone() throws IOException {
+        when(github.issues().issue().get(OWNER, NAME, NUMBER)).thenReturn(Optional.empty());
+
+        final Throwable thrown = catchThrowable(sut::issue);
 
         assertThat(thrown).isInstanceOf(IllegalStateException.class).hasMessageContaining("7");
     }
