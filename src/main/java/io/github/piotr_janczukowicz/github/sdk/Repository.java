@@ -15,6 +15,10 @@ import io.github.piotr_janczukowicz.github.api.collaborators.GitHubListCollabora
 import io.github.piotr_janczukowicz.github.api.collaborators.GitHubRepositoryCollaboratorPermission;
 import io.github.piotr_janczukowicz.github.api.commits.GitHubListCommitsFilter;
 import io.github.piotr_janczukowicz.github.api.deploykeys.GitHubCreateDeployKeyPayload;
+import io.github.piotr_janczukowicz.github.api.deployments.GitHubCreateDeploymentPayload;
+import io.github.piotr_janczukowicz.github.api.deployments.GitHubCreateDeploymentResult;
+import io.github.piotr_janczukowicz.github.api.deployments.GitHubCreateOrUpdateEnvironmentPayload;
+import io.github.piotr_janczukowicz.github.api.deployments.GitHubListDeploymentsFilter;
 import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubBlob;
 import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubCreateRefPayload;
 import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubGetTreeFilter;
@@ -24,6 +28,9 @@ import io.github.piotr_janczukowicz.github.api.issues.GitHubCreateMilestonePaylo
 import io.github.piotr_janczukowicz.github.api.issues.GitHubCreatePayload;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubCreatePayloadBuilder;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubListForRepoFilter;
+import io.github.piotr_janczukowicz.github.api.pages.GitHubCreatePagesSitePayload;
+import io.github.piotr_janczukowicz.github.api.pages.GitHubCreatePagesSiteSource;
+import io.github.piotr_janczukowicz.github.api.pages.GitHubPagesSourcePath;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubCreatePullRequestPayload;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubListPullRequestsFilter;
 import io.github.piotr_janczukowicz.github.api.releases.GitHubCreateReleasePayload;
@@ -62,6 +69,8 @@ import io.github.piotr_janczukowicz.github.sdk.content.Commit;
 import io.github.piotr_janczukowicz.github.sdk.content.Release;
 import io.github.piotr_janczukowicz.github.sdk.content.RepositoryFile;
 import io.github.piotr_janczukowicz.github.sdk.deploykeys.DeployKey;
+import io.github.piotr_janczukowicz.github.sdk.deployments.Deployment;
+import io.github.piotr_janczukowicz.github.sdk.deployments.Environment;
 import io.github.piotr_janczukowicz.github.sdk.git.Comparison;
 import io.github.piotr_janczukowicz.github.sdk.git.FileChanges;
 import io.github.piotr_janczukowicz.github.sdk.git.Ref;
@@ -72,6 +81,7 @@ import io.github.piotr_janczukowicz.github.sdk.issues.Issue;
 import io.github.piotr_janczukowicz.github.sdk.issues.Label;
 import io.github.piotr_janczukowicz.github.sdk.issues.Milestone;
 import io.github.piotr_janczukowicz.github.sdk.notifications.Notification;
+import io.github.piotr_janczukowicz.github.sdk.pages.PagesSite;
 import io.github.piotr_janczukowicz.github.sdk.pulls.PullRequest;
 import io.github.piotr_janczukowicz.github.sdk.webhooks.Webhook;
 import java.io.IOException;
@@ -94,6 +104,8 @@ public final class Repository {
     private static final String LOGIN = "login";
     private static final String VARIABLE_NAME = "variableName";
     private static final String SHA = "sha";
+    private static final String REF = "ref";
+    private static final String ENVIRONMENT_NAME = "environmentName";
     private static final String IS_GONE = " is gone";
 
     static {
@@ -589,7 +601,7 @@ public final class Repository {
      * @throws IOException if the transport fails
      */
     public Optional<RepositoryFile> file(final String path, final String ref) throws IOException {
-        return read(requireNotBlank(path, "path"), requireNotBlank(ref, "ref"));
+        return read(requireNotBlank(path, "path"), requireNotBlank(ref, REF));
     }
 
     /**
@@ -1385,7 +1397,7 @@ public final class Repository {
         return sdk.github()
                 .gitDatabase()
                 .refs()
-                .getRef(owner, name, requireNotBlank(ref, "ref"))
+                .getRef(owner, name, requireNotBlank(ref, REF))
                 .map(loaded -> new Ref(this, loaded));
     }
 
@@ -1408,7 +1420,7 @@ public final class Repository {
                         .createRef(
                                 owner,
                                 name,
-                                new GitHubCreateRefPayload(requireNotBlank(ref, "ref"), requireNotBlank(sha, SHA))));
+                                new GitHubCreateRefPayload(requireNotBlank(ref, REF), requireNotBlank(sha, SHA))));
     }
 
     /**
@@ -1579,6 +1591,209 @@ public final class Repository {
                                 name,
                                 new GitHubCreateDeployKeyPayload(
                                         requireNotBlank(title, "title"), requireNotBlank(key, "key"), isReadOnly)));
+    }
+
+    /**
+     * Lists the deployments ({@code GET /repos/{owner}/{repo}/deployments}). See
+     * {@link #deployments(GitHubListDeploymentsFilter)}.
+     *
+     * @return the deployments, newest first
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<Deployment> deployments() throws IOException {
+        return deployments(GitHubListDeploymentsFilter.empty());
+    }
+
+    /**
+     * Lists the deployments ({@code GET /repos/{owner}/{repo}/deployments}). Pages are fetched only as the stream is
+     * consumed; transport failures during iteration are {@link java.io.UncheckedIOException}.
+     *
+     * @param filter the filter for sha, ref, task and environment
+     * @return the deployments, newest first
+     * @throws NullPointerException if {@code filter} is {@code null}
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<Deployment> deployments(final GitHubListDeploymentsFilter filter) throws IOException {
+        return sdk
+                .github()
+                .deployments()
+                .deployment()
+                .listDeployments(owner, name, requireNonNull(filter, FILTER), GitHubPageRequest.byPage())
+                .stream()
+                .map(listed -> new Deployment(this, listed));
+    }
+
+    /**
+     * Loads one deployment ({@code GET /repos/{owner}/{repo}/deployments/{deployment_id}}).
+     *
+     * @param id the deployment id
+     * @return the deployment, or empty when GitHub answers HTTP 404
+     * @throws IOException if the transport fails
+     */
+    public Optional<Deployment> deployment(final long id) throws IOException {
+        return sdk.github()
+                .deployments()
+                .deployment()
+                .getDeployment(owner, name, id)
+                .map(loaded -> new Deployment(this, loaded));
+    }
+
+    /**
+     * Creates a deployment of a ref to an environment. GitHub's {@code auto_merge} is switched off, so GitHub never
+     * merges the default branch into the ref; the required status checks stay at GitHub's default, which is that all of
+     * them must pass. See {@link #deploy(GitHubCreateDeploymentPayload)} for every option.
+     *
+     * @param ref the branch, tag or sha to deploy
+     * @param environment the name of the target environment
+     * @return the new deployment
+     * @throws NullPointerException if {@code ref} or {@code environment} is {@code null}
+     * @throws IllegalArgumentException if {@code ref} or {@code environment} is blank
+     * @throws IllegalStateException if GitHub answers with a merge instead of a deployment
+     * @throws IOException if the transport fails
+     */
+    public Deployment deploy(final String ref, final String environment) throws IOException {
+        return deploy(new GitHubCreateDeploymentPayload(
+                requireNotBlank(ref, REF),
+                null,
+                false,
+                null,
+                null,
+                requireNotBlank(environment, "environment"),
+                null,
+                null,
+                null));
+    }
+
+    /**
+     * Creates a deployment with every option the client offers ({@code POST /repos/{owner}/{repo}/deployments}).
+     *
+     * @param payload the ref, environment and options
+     * @return the new deployment
+     * @throws NullPointerException if {@code payload} is {@code null}
+     * @throws IllegalStateException if GitHub answers with a merge of the default branch into the ref instead of a
+     *     deployment, which happens only when {@code auto_merge} is on; the message is GitHub's
+     * @throws IOException if the transport fails
+     */
+    public Deployment deploy(final GitHubCreateDeploymentPayload payload) throws IOException {
+        final GitHubCreateDeploymentResult result =
+                sdk.github().deployments().deployment().createDeployment(owner, name, requireNonNull(payload, PAYLOAD));
+        if (result instanceof final GitHubCreateDeploymentResult.Created created) {
+            return new Deployment(this, created.deployment());
+        }
+        throw new IllegalStateException(((GitHubCreateDeploymentResult.MergedBranch) result)
+                .mergedBranch()
+                .message());
+    }
+
+    /**
+     * Lists the environments ({@code GET /repos/{owner}/{repo}/environments}). Pages are fetched only as the stream is
+     * consumed; transport failures during iteration are {@link java.io.UncheckedIOException}.
+     *
+     * @return the environments
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<Environment> environments() throws IOException {
+        return sdk
+                .github()
+                .deployments()
+                .environments()
+                .getAllEnvironments(owner, name, GitHubPageRequest.byPage())
+                .stream()
+                .map(listed -> new Environment(this, listed));
+    }
+
+    /**
+     * Loads one environment ({@code GET /repos/{owner}/{repo}/environments/{environment_name}}).
+     *
+     * @param environmentName the environment name
+     * @return the environment, or empty when GitHub answers HTTP 404
+     * @throws NullPointerException if {@code environmentName} is {@code null}
+     * @throws IllegalArgumentException if {@code environmentName} is blank
+     * @throws IOException if the transport fails
+     */
+    public Optional<Environment> environment(final String environmentName) throws IOException {
+        return sdk.github()
+                .deployments()
+                .environments()
+                .getEnvironment(owner, name, requireNotBlank(environmentName, ENVIRONMENT_NAME))
+                .map(loaded -> new Environment(this, loaded));
+    }
+
+    /**
+     * Creates an environment without protection rules, or leaves an existing one unchanged. See
+     * {@link #saveEnvironment(String, GitHubCreateOrUpdateEnvironmentPayload)}.
+     *
+     * @param environmentName the environment name
+     * @return the environment as GitHub holds it afterwards
+     * @throws NullPointerException if {@code environmentName} is {@code null}
+     * @throws IllegalArgumentException if {@code environmentName} is blank
+     * @throws IOException if the transport fails
+     */
+    public Environment saveEnvironment(final String environmentName) throws IOException {
+        return saveEnvironment(environmentName, new GitHubCreateOrUpdateEnvironmentPayload(null, null, null, null));
+    }
+
+    /**
+     * Creates or updates an environment ({@code PUT /repos/{owner}/{repo}/environments/{environment_name}}). GitHub
+     * replaces the settings that the payload carries.
+     *
+     * @param environmentName the environment name
+     * @param payload the wait timer, reviewers and branch policy
+     * @return the environment as GitHub holds it afterwards
+     * @throws NullPointerException if {@code environmentName} or {@code payload} is {@code null}
+     * @throws IllegalArgumentException if {@code environmentName} is blank
+     * @throws IOException if the transport fails
+     */
+    public Environment saveEnvironment(
+            final String environmentName, final GitHubCreateOrUpdateEnvironmentPayload payload) throws IOException {
+        return new Environment(
+                this,
+                sdk.github()
+                        .deployments()
+                        .environments()
+                        .createOrUpdateEnvironment(
+                                owner,
+                                name,
+                                requireNotBlank(environmentName, ENVIRONMENT_NAME),
+                                requireNonNull(payload, PAYLOAD)));
+    }
+
+    /**
+     * Loads the GitHub Pages site ({@code GET /repos/{owner}/{repo}/pages}).
+     *
+     * @return the site, or empty when the repository has no Pages site or GitHub answers HTTP 404
+     * @throws IOException if the transport fails
+     */
+    public Optional<PagesSite> pages() throws IOException {
+        return sdk.github().pages().getPages(owner, name).map(loaded -> new PagesSite(this, loaded));
+    }
+
+    /**
+     * Turns on GitHub Pages, built from the root of a branch. See {@link #enablePages(GitHubCreatePagesSitePayload)}
+     * for other sources.
+     *
+     * @param branch the branch to build from
+     * @return the new site
+     * @throws NullPointerException if {@code branch} is {@code null}
+     * @throws IllegalArgumentException if {@code branch} is blank
+     * @throws IOException if the transport fails
+     */
+    public PagesSite enablePages(final String branch) throws IOException {
+        return enablePages(new GitHubCreatePagesSitePayload(
+                null, new GitHubCreatePagesSiteSource(requireNotBlank(branch, "branch"), GitHubPagesSourcePath.ROOT)));
+    }
+
+    /**
+     * Turns on GitHub Pages ({@code POST /repos/{owner}/{repo}/pages}). A private repository needs a plan that includes
+     * Pages for private repositories, otherwise GitHub answers HTTP 403.
+     *
+     * @param payload the build type and source
+     * @return the new site
+     * @throws NullPointerException if {@code payload} is {@code null}
+     * @throws IOException if the transport fails
+     */
+    public PagesSite enablePages(final GitHubCreatePagesSitePayload payload) throws IOException {
+        return new PagesSite(this, sdk.github().pages().createPagesSite(owner, name, requireNonNull(payload, PAYLOAD)));
     }
 
     Repository apply(final GitHubUpdatePayload payload) throws IOException {

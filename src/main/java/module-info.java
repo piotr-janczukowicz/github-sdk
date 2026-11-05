@@ -10,9 +10,11 @@ module io.github.piotr_janczukowicz.githubsdk {
     exports io.github.piotr_janczukowicz.github.sdk.content;
     exports io.github.piotr_janczukowicz.github.sdk.gists;
     exports io.github.piotr_janczukowicz.github.sdk.deploykeys;
+    exports io.github.piotr_janczukowicz.github.sdk.deployments;
     exports io.github.piotr_janczukowicz.github.sdk.git;
     exports io.github.piotr_janczukowicz.github.sdk.issues;
     exports io.github.piotr_janczukowicz.github.sdk.notifications;
+    exports io.github.piotr_janczukowicz.github.sdk.pages;
     exports io.github.piotr_janczukowicz.github.sdk.pulls;
     exports io.github.piotr_janczukowicz.github.sdk.reactions;
     exports io.github.piotr_janczukowicz.github.sdk.webhooks;
