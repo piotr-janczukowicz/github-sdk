@@ -2,9 +2,12 @@ package io.github.piotr_janczukowicz.github.sdk.content;
 
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
 
+import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.branches.GitHubBranchWithProtection;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
+import io.github.piotr_janczukowicz.github.sdk.internal.Internals;
 import java.io.IOException;
+import java.util.Optional;
 
 /**
  * A branch of a {@link Repository}, as GitHub returned it. The object is immutable, and {@link #response()} gives the
@@ -54,6 +57,30 @@ public final class Branch {
      */
     public Commit commit() {
         return new Commit(repository, response.commit());
+    }
+
+    /**
+     * Loads the protection rule of the branch ({@code GET /repos/{owner}/{repo}/branches/{branch}/protection}).
+     *
+     * @return the rule, or empty when the branch has none or GitHub answers HTTP 404
+     * @throws IOException if the transport fails
+     */
+    public Optional<BranchProtection> protection() throws IOException {
+        final GitHub github = Internals.github(repository);
+        return github.branches()
+                .branchProtection()
+                .getBranchProtection(repository.owner(), repository.name(), name())
+                .map(loaded -> new BranchProtection(this, loaded));
+    }
+
+    /**
+     * Starts a protection rule for the branch; nothing is sent until {@link BranchProtectionUpdate#send()}. GitHub
+     * replaces the whole rule, so a setting that is not chosen is switched off.
+     *
+     * @return a new update for this branch
+     */
+    public BranchProtectionUpdate protect() {
+        return new BranchProtectionUpdate(this);
     }
 
     /**

@@ -76,6 +76,7 @@ package is not exported by the module and is not part of the API.
 | `PullRequest` | `update()`, `refresh()`, `close()`, `reopen()`, `merge(...)`, `reviews()`, `review(...)`, `draftReview(...)`, `reviewComments()`, `commentOnLine(...)`, reviewers, files, commits, `issue()` |
 | `PullRequestReview` | `edit(...)`, `submit(...)`, `dismiss(...)`, `deletePending()`, `comments()`, `refresh()` |
 | `PullRequestReviewComment` | `edit(...)`, `reply(...)`, `delete()`, `refresh()` |
+| `Branch` (protection) | `protection()` reads the rule (`BranchProtection`: `refresh()`, `remove()`); `protect()` collects status checks, review requirements, admin enforcement, push restrictions and the other options, and `send()` sets the rule. GitHub replaces the whole rule, so anything not chosen is switched off |
 | `Branch`, `Commit`, `RepositoryFile` | read; a file gives `text()` and `bytes()`, and writes with `writeFile(...)` and `delete(...)` |
 | `Commit` (CI) | `checkRuns()`, `checkRuns(name)`, `statuses()`, `combinedStatus()`, `createStatus(...)` |
 | `CheckRun`, `CommitStatus`, `CombinedStatus` | read-only views of CI results; `CheckRun` also has `annotations()` and `refresh()` |

@@ -4,14 +4,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.github.piotr_janczukowicz.github.api.GitHub;
+import io.github.piotr_janczukowicz.github.api.branches.GitHubBranchProtection;
 import io.github.piotr_janczukowicz.github.api.branches.GitHubBranchWithProtection;
 import io.github.piotr_janczukowicz.github.api.branches.GitHubBranchWithProtectionBuilder;
+import io.github.piotr_janczukowicz.github.api.branches.GitHubBranchesBranchProtectionApi;
 import io.github.piotr_janczukowicz.github.sdk.GitHubSdk;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
+import io.github.piotr_janczukowicz.github.sdk.fixtures.ProtectionFixtures;
 import io.github.piotr_janczukowicz.github.sdk.fixtures.RepositoryContentFixtures;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.io.IOException;
@@ -75,5 +79,37 @@ class BranchTest {
         final boolean isProtected = protectedBranch.isProtected();
 
         assertThat(isProtected).isTrue();
+    }
+
+    @Test
+    void protection_shouldReturnTheRule_whenTheBranchHasOne() throws IOException {
+        final GitHubBranchProtection held = ProtectionFixtures.protection();
+        final GitHubBranchesBranchProtectionApi api = github.branches().branchProtection();
+        doReturn(Optional.of(held)).when(api).getBranchProtection("octocat", "hello-world", "main");
+
+        final Optional<BranchProtection> protection = sut.protection();
+
+        assertThat(protection).isPresent();
+        assertSoftly(softly -> {
+            softly.assertThat(protection.orElseThrow().response()).isSameAs(held);
+            softly.assertThat(protection.orElseThrow().branch()).isSameAs(sut);
+        });
+    }
+
+    @Test
+    void protection_shouldBeEmpty_whenTheBranchHasNoRule() throws IOException {
+        final GitHubBranchesBranchProtectionApi api = github.branches().branchProtection();
+        doReturn(Optional.empty()).when(api).getBranchProtection("octocat", "hello-world", "main");
+
+        final Optional<BranchProtection> protection = sut.protection();
+
+        assertThat(protection).isEmpty();
+    }
+
+    @Test
+    void protect_shouldStartAnUpdate_whenCalled() {
+        final BranchProtectionUpdate update = sut.protect();
+
+        assertThat(update).isNotNull();
     }
 }
