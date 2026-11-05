@@ -97,6 +97,31 @@ try (GitHubClient client = GitHubClients.create(
 The SDK adds no layer of its own, so a call made through an object behaves exactly like the same call made on the
 client. `ConfiguredClientTest` builds this configuration, so a change in the client's API shows up in the build.
 
+## Receive a webhook and act on it
+
+Receiving webhooks is the job of a separate library,
+[github-webhook](https://github.com/piotr-janczukowicz/github-webhook): a typed record for every event GitHub
+documents, and a receiver that checks the signature before it parses anything. It has no dependency on the REST client
+or on this SDK, so a service that only receives webhooks does not pull either in. The two fit together without a bridge,
+because an event carries the owner, the repository name and the number of the issue or pull request:
+
+```java
+GitHubWebhookReceiver receiver = GitHubWebhookReceiver.of(webhookSecret);
+GitHubSdk sdk = GitHubSdk.of(new GitHub(GitHubCaller.of(client)));
+
+GitHubWebhookEvent event = receiver.receive(
+        request.header("X-GitHub-Event"), request.header("X-Hub-Signature-256"), request.readBody());
+
+if (event instanceof GitHubWebhookIssuesOpenedEvent opened) {
+    Repository repository = sdk.repository(opened.repository().owner().login(), opened.repository().name());
+    repository.issue(opened.issue().number()).orElseThrow().comment("Thanks, we will look at it");
+}
+```
+
+The event comes from `github-webhook` and the `Issue` from this SDK, so add both dependencies. This example is not built
+by the tests of this repository; the record and accessor names are those of `github-webhook` and change when that library
+is synced with GitHub's descriptions.
+
 ## Packages
 
 The entry points (`GitHubSdk`, `Repository`, `User`, `Organization`, `Team`, `Search`, `RateLimit`) are in
