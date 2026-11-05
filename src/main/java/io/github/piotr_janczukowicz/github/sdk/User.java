@@ -2,6 +2,7 @@ package io.github.piotr_janczukowicz.github.sdk;
 
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
 
+import io.github.piotr_janczukowicz.github.api.activity.GitHubEvent;
 import io.github.piotr_janczukowicz.github.api.organizations.GitHubOrganizationSimple;
 import io.github.piotr_janczukowicz.github.api.users.GitHubAuthenticatedUser;
 import io.github.piotr_janczukowicz.github.api.users.GitHubGpgKey;
@@ -197,6 +198,30 @@ public final class User {
     public Stream<Organization> organizations() throws IOException {
         return sdk.github().organizations().organization().listForUser(login()).stream()
                 .map(this::loadOrganization);
+    }
+
+    /**
+     * Lists the public events the user performed, newest first ({@code GET /users/{username}/events/public}). GitHub
+     * keeps only the last 90 days of events, at most 300, and caches the feed for a few seconds, so a new event can
+     * take a moment to show. The stream is lazy and can be used once.
+     *
+     * @return the events as GitHub returns them
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<GitHubEvent> events() throws IOException {
+        return sdk.github().activity().events().listPublicEventsForUser(login()).stream();
+    }
+
+    /**
+     * Lists the public events the user received, from what the user watches and follows ({@code GET
+     * /users/{username}/received_events/public}). GitHub keeps only the last 90 days of events, at most 300, and caches
+     * the feed for a few seconds, so a new event can take a moment to show. The stream is lazy and can be used once.
+     *
+     * @return the events as GitHub returns them
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<GitHubEvent> receivedEvents() throws IOException {
+        return sdk.github().activity().events().listReceivedPublicEventsForUser(login()).stream();
     }
 
     /**

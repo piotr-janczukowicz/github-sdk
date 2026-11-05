@@ -4,6 +4,8 @@ import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 
 import io.github.piotr_janczukowicz.github.api.GitHub;
+import io.github.piotr_janczukowicz.github.api.activity.GitHubEvent;
+import io.github.piotr_janczukowicz.github.api.apps.GitHubUserMarketplacePurchase;
 import io.github.piotr_janczukowicz.github.api.users.GitHubCreateGpgKeyPayload;
 import io.github.piotr_janczukowicz.github.api.users.GitHubCreatePublicSshKeyPayload;
 import io.github.piotr_janczukowicz.github.api.users.GitHubCreateSshSigningKeyPayload;
@@ -394,6 +396,45 @@ public final class Me {
         github().users()
                 .socialAccounts()
                 .deleteSocialAccounts(new GitHubUpdateSocialAccountsPayload(List.copyOf(requireNonNull(urls, "urls"))));
+    }
+
+    /**
+     * Lists the events the account performed, including private ones, newest first ({@code GET
+     * /users/{username}/events}). GitHub keeps only the last 90 days of events, at most 300, and caches the feed for a
+     * few seconds, so a new event can take a moment to show. The stream is lazy and can be used once.
+     *
+     * @return the events as GitHub returns them
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<GitHubEvent> events() throws IOException {
+        return github()
+                .activity()
+                .events()
+                .listEventsForAuthenticatedUser(profile().login())
+                .stream();
+    }
+
+    /**
+     * Lists the events the account received, including private ones, from what it watches and follows ({@code GET
+     * /users/{username}/received_events}). GitHub keeps only the last 90 days of events, at most 300, and caches the
+     * feed for a few seconds, so a new event can take a moment to show. The stream is lazy and can be used once.
+     *
+     * @return the events as GitHub returns them
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<GitHubEvent> receivedEvents() throws IOException {
+        return github().activity().events().listReceivedEventsForUser(profile().login()).stream();
+    }
+
+    /**
+     * Lists the Marketplace subscriptions of the account ({@code GET /user/marketplace_purchases}) as GitHub returns
+     * them. The stream is lazy and can be used once.
+     *
+     * @return the subscriptions
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<GitHubUserMarketplacePurchase> marketplaceSubscriptions() throws IOException {
+        return github().apps().marketplace().listSubscriptionsForAuthenticatedUser(GitHubPageRequest.byPage()).stream();
     }
 
     void apply(final GitHubUpdateAuthenticatedUserPayload payload) throws IOException {

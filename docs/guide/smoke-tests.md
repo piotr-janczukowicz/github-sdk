@@ -51,6 +51,7 @@ Without `SMOKE_GITHUB_TOKEN` every smoke class is skipped.
 | `ActivitySmokeIT` | star, check, list stargazers and starred repositories, unstar; watch, ignore and unwatch; list watchers and forks. The tests restore your original star and subscription. Forking is not run live, because a user cannot fork their own repository |
 | `ActionsSmokeIT` | create, list, update, delete an Actions variable; list workflows and runs, reload runs, list their jobs and log links; 404 on a missing run. Dispatching a workflow and cancelling the run runs only when `SMOKE_GITHUB_WORKFLOW` names the file of a `workflow_dispatch` workflow already on the sandbox default branch, so the tests never commit workflow files |
 | `RepositoryManagementSmokeIT` | change and restore the description and homepage, replace and restore the topics, list languages and contributors. Create, rename, transfer, archive and delete are not run live: fine-grained tokens cannot create repositories, and GitHub's API cannot unarchive one |
+| `EventsSmokeIT` | read the repository, repository network, public and user event feeds. The feeds may be empty for a quiet sandbox, so only the public feed is required to hold events |
 | `RulesetsSmokeIT` | create an active ruleset for a ref pattern that no branch matches, rename and disable it, add and remove rules, reload it, list it, read its history, delete it, read the rule suites. It never touches an existing branch. The evaluate (dry run) enforcement is not covered, because GitHub offers it only on the Enterprise plan. Skipped when GitHub answers 403 |
 | `ProjectsSmokeIT` | add a draft item to a project of the sandbox owner, list the fields and items, set a text field when the project has one, reload the item and remove it. REST cannot create a project, so create one by hand and set `SMOKE_GITHUB_PROJECT` to its number; the token needs the account permission Projects, read and write. Skipped without the variable or on 403 |
 | `BranchProtectionSmokeIT` | protect a throwaway branch, replace the rule, read and refresh it, remove it. The default branch is never touched. Skipped when GitHub answers 403, which a private repository on a plan without branch protection does |
@@ -96,6 +97,7 @@ sandbox repository. Their behavior against the real GitHub API has not been chec
 | Check runs | fine-grained tokens have no Checks permission |
 | Stars and watching | the token form does not offer the permissions |
 | Workflow dispatch | `SMOKE_GITHUB_WORKFLOW` is not set |
+| Apps, installations and Marketplace | they need an App JWT from a registered GitHub App and its private key, so they are covered by unit tests only |
 | Projects v2 | the token has no Projects permission and `SMOKE_GITHUB_PROJECT` is not set; adding fields and views is not smoke tested, because REST cannot delete them again |
 | Organizations and teams, including membership, invitations, team management, organization webhooks and variables | the account has no organization, so these are covered by unit tests only |
 

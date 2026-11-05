@@ -6,6 +6,7 @@ module io.github.piotr_janczukowicz.githubsdk {
     exports io.github.piotr_janczukowicz.github.sdk;
     exports io.github.piotr_janczukowicz.github.sdk.accounts;
     exports io.github.piotr_janczukowicz.github.sdk.actions;
+    exports io.github.piotr_janczukowicz.github.sdk.apps;
     exports io.github.piotr_janczukowicz.github.sdk.checks;
     exports io.github.piotr_janczukowicz.github.sdk.collaborators;
     exports io.github.piotr_janczukowicz.github.sdk.content;

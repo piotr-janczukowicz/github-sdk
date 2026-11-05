@@ -5,6 +5,7 @@ import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 
 import io.github.piotr_janczukowicz.github.api.actions.GitHubCreateRepoVariablePayload;
 import io.github.piotr_janczukowicz.github.api.actions.GitHubListWorkflowRunsForRepoFilter;
+import io.github.piotr_janczukowicz.github.api.activity.GitHubEvent;
 import io.github.piotr_janczukowicz.github.api.activity.GitHubListRepoNotificationsForAuthenticatedUserFilter;
 import io.github.piotr_janczukowicz.github.api.activity.GitHubSetRepoSubscriptionPayload;
 import io.github.piotr_janczukowicz.github.api.agents.GitHubActionsSecret;
@@ -2133,6 +2134,30 @@ public final class Repository {
      */
     public Optional<GitHubRuleSuite> ruleSuite(final long id) throws IOException {
         return sdk.github().repositories().ruleSuites().getRepoRuleSuite(owner, name, id);
+    }
+
+    /**
+     * Lists the events of the repository, newest first ({@code GET /repos/{owner}/{repo}/events}). GitHub keeps only
+     * the last 90 days of events, at most 300, and caches the feed for a few seconds, so a new event can take a moment
+     * to show. The stream is lazy and can be used once.
+     *
+     * @return the events as GitHub returns them
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<GitHubEvent> events() throws IOException {
+        return sdk.github().activity().events().listRepoEvents(owner, name).stream();
+    }
+
+    /**
+     * Lists the public events of the repository network, which is the repository and its forks ({@code GET
+     * /networks/{owner}/{repo}/events}). GitHub keeps only the last 90 days of events, at most 300, and caches the feed
+     * for a few seconds, so a new event can take a moment to show. The stream is lazy and can be used once.
+     *
+     * @return the events as GitHub returns them
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<GitHubEvent> networkEvents() throws IOException {
+        return sdk.github().activity().events().listPublicEventsForRepoNetwork(owner, name).stream();
     }
 
     /**

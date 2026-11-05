@@ -4,6 +4,7 @@ import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 
 import io.github.piotr_janczukowicz.github.api.actions.GitHubCreateOrgVariablePayload;
+import io.github.piotr_janczukowicz.github.api.activity.GitHubEvent;
 import io.github.piotr_janczukowicz.github.api.organizations.GitHubCreateOrgWebhookPayload;
 import io.github.piotr_janczukowicz.github.api.organizations.GitHubCreateOrganizationInvitationPayload;
 import io.github.piotr_janczukowicz.github.api.organizations.GitHubOrgMembership;
@@ -405,6 +406,18 @@ public final class Organization {
      */
     public void deleteSecret(final String secretName) throws IOException {
         sdk.github().actions().secrets().deleteOrgSecret(login(), requireNotBlank(secretName, "secretName"));
+    }
+
+    /**
+     * Lists the public events of the organization, newest first ({@code GET /orgs/{org}/events}). GitHub keeps only the
+     * last 90 days of events, at most 300, and caches the feed for a few seconds, so a new event can take a moment to
+     * show. The stream is lazy and can be used once.
+     *
+     * @return the events as GitHub returns them
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<GitHubEvent> events() throws IOException {
+        return sdk.github().activity().events().listPublicOrgEvents(login()).stream();
     }
 
     /**

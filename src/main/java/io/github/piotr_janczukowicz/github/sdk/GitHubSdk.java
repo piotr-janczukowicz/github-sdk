@@ -4,6 +4,7 @@ import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 
 import io.github.piotr_janczukowicz.github.api.GitHub;
+import io.github.piotr_janczukowicz.github.api.activity.GitHubEvent;
 import io.github.piotr_janczukowicz.github.api.activity.GitHubListNotificationsForAuthenticatedUserFilter;
 import io.github.piotr_janczukowicz.github.api.gists.GitHubBaseGist;
 import io.github.piotr_janczukowicz.github.api.licenses.GitHubLicense;
@@ -13,6 +14,8 @@ import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateInOrgPay
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubFullRepository;
 import io.github.piotr_janczukowicz.github.pagination.GitHubPageRequest;
 import io.github.piotr_janczukowicz.github.sdk.accounts.Me;
+import io.github.piotr_janczukowicz.github.sdk.apps.App;
+import io.github.piotr_janczukowicz.github.sdk.apps.Marketplace;
 import io.github.piotr_janczukowicz.github.sdk.gists.Gist;
 import io.github.piotr_janczukowicz.github.sdk.gists.GistDraft;
 import io.github.piotr_janczukowicz.github.sdk.internal.Internals;
@@ -263,6 +266,51 @@ public final class GitHubSdk {
      */
     public Optional<GitHubLicense> license(final String key) throws IOException {
         return github.licenses().get(requireNotBlank(key, "key"));
+    }
+
+    /**
+     * Lists the public events on GitHub, newest first ({@code GET /events}). GitHub keeps only the last 90 days of
+     * events, at most 300, and caches the feed for a few seconds, so a new event can take a moment to show. The stream
+     * is lazy and can be used once.
+     *
+     * @return the events as GitHub returns them
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<GitHubEvent> publicEvents() throws IOException {
+        return github.activity().events().listPublicEvents().stream();
+    }
+
+    /**
+     * Loads the GitHub App the SDK is authenticated as ({@code GET /app}). It needs an App JWT, which the client builds
+     * from the private key of the app; with any other token GitHub answers HTTP 401.
+     *
+     * @return the app
+     * @throws IOException if the transport fails
+     */
+    public App app() throws IOException {
+        return new App(this, github.apps().app().getAuthenticated());
+    }
+
+    /**
+     * Loads a public GitHub App by its slug ({@code GET /apps/{app_slug}}).
+     *
+     * @param slug the app slug, as in the URL of the app
+     * @return the app, or empty when GitHub answers HTTP 404
+     * @throws IllegalArgumentException if {@code slug} is blank
+     * @throws IOException if the transport fails
+     */
+    public Optional<App> app(final String slug) throws IOException {
+        return github.apps().app().getBySlug(requireNotBlank(slug, "slug")).map(loaded -> new App(this, loaded));
+    }
+
+    /**
+     * Returns the Marketplace listing of the app the SDK is authenticated as. Nothing is requested until a method of
+     * the result is called.
+     *
+     * @return the Marketplace listing
+     */
+    public Marketplace marketplace() {
+        return new Marketplace(this);
     }
 
     /**
