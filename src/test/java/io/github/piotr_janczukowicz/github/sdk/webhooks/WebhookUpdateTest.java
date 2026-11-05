@@ -116,4 +116,18 @@ class WebhookUpdateTest {
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("events");
     }
+
+    @Test
+    void events_shouldThrowIllegalArgumentException_whenAnEventNameIsBlank() {
+        final Throwable thrown = catchThrowable(() -> webhook.update().events(List.of("push", " ")));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("events");
+    }
+
+    @Test
+    void constructor_shouldThrowNullPointerException_whenWebhookIsNull() {
+        final Throwable thrown = catchThrowable(() -> new WebhookUpdate(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("webhook");
+    }
 }

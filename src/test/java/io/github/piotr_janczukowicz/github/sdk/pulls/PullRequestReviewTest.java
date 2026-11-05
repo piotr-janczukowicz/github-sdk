@@ -246,4 +246,18 @@ class PullRequestReviewTest {
     private PullRequestReview review(final String state) {
         return new PullRequestReview(pullRequest, ReviewsFixtures.reviewInState(state));
     }
+
+    @Test
+    void edit_shouldThrowIllegalArgumentException_whenBodyIsBlank() {
+        final Throwable thrown = catchThrowable(() -> sut.edit(" "));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("body");
+    }
+
+    @Test
+    void dismiss_shouldThrowIllegalArgumentException_whenMessageIsBlank() {
+        final Throwable thrown = catchThrowable(() -> sut.dismiss(" "));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("message");
+    }
 }

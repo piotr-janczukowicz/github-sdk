@@ -468,4 +468,18 @@ class MeTest {
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("sdk");
     }
+
+    @Test
+    void addSocialAccounts_shouldThrowIllegalArgumentException_whenTheListIsEmptyOrBlank() {
+        final Throwable thrown = catchThrowable(() -> sut.addSocialAccounts(List.of()));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("urls");
+    }
+
+    @Test
+    void removeSocialAccounts_shouldThrowIllegalArgumentException_whenAUrlIsBlank() {
+        final Throwable thrown = catchThrowable(() -> sut.removeSocialAccounts(List.of(" ")));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("urls");
+    }
 }

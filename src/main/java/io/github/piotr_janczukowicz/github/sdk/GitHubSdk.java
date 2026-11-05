@@ -110,6 +110,7 @@ public final class GitHubSdk {
      * @param login the login name
      * @return the user, or empty when GitHub answers HTTP 404
      * @throws IllegalArgumentException if {@code login} is blank
+     * @throws NullPointerException if {@code login} is {@code null}
      * @throws IOException if the transport fails
      */
     public Optional<User> user(final String login) throws IOException {
@@ -122,6 +123,7 @@ public final class GitHubSdk {
      * @param login the organization login name
      * @return the organization, or empty when GitHub answers HTTP 404
      * @throws IllegalArgumentException if {@code login} is blank
+     * @throws NullPointerException if {@code login} is {@code null}
      * @throws IOException if the transport fails
      */
     public Optional<Organization> organization(final String login) throws IOException {
@@ -316,6 +318,7 @@ public final class GitHubSdk {
      * @param ghsaId the GitHub Security Advisory id, for example {@code GHSA-xxxx-xxxx-xxxx}
      * @return the advisory, or empty when GitHub answers HTTP 404
      * @throws IllegalArgumentException if {@code ghsaId} is blank
+     * @throws NullPointerException if {@code ghsaId} is {@code null}
      * @throws IOException if the transport fails
      */
     public Optional<GitHubGlobalAdvisory> globalAdvisory(final String ghsaId) throws IOException {
@@ -339,6 +342,7 @@ public final class GitHubSdk {
      * @param slug the app slug, as in the URL of the app
      * @return the app, or empty when GitHub answers HTTP 404
      * @throws IllegalArgumentException if {@code slug} is blank
+     * @throws NullPointerException if {@code slug} is {@code null}
      * @throws IOException if the transport fails
      */
     public Optional<App> app(final String slug) throws IOException {

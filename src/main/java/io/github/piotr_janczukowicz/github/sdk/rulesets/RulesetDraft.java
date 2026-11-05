@@ -10,9 +10,11 @@ import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRule
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRulesetConditions;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRulesetConditionsRefName;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
+import io.github.piotr_janczukowicz.github.sdk.internal.Arguments;
 import io.github.piotr_janczukowicz.github.sdk.internal.Internals;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 
@@ -22,6 +24,8 @@ import org.jspecify.annotations.Nullable;
  * {@link #create()} fails before sending anything.
  */
 public final class RulesetDraft {
+
+    private static final String PATTERNS = "patterns";
 
     private final Repository repository;
     private final String name;
@@ -33,8 +37,8 @@ public final class RulesetDraft {
     private final List<GitHubRepositoryRulesetBypassActor> bypassActors = new ArrayList<>();
 
     /**
-     * Wraps a response. Applications normally get this object from the object that owns it; call the constructor only
-     * to wrap a response that was loaded some other way.
+     * Starts a new ruleset. Applications normally get it from {@code Repository.newRuleset(...)}. Nothing is sent until
+     * {@link #create()}.
      *
      * @param repository the repository the object belongs to
      * @param name the name
@@ -60,10 +64,12 @@ public final class RulesetDraft {
      *
      * @param patterns the patterns to include
      * @return this draft
-     * @throws NullPointerException if {@code patterns} is {@code null}
+     * @throws NullPointerException if {@code patterns} or a pattern is {@code null}
+     * @throws IllegalArgumentException if a pattern is blank
      */
     public RulesetDraft includeRefs(final String... patterns) {
-        includedRefs.addAll(List.of(requireNonNull(patterns, "patterns")));
+        includedRefs.addAll(
+                Arguments.requireNotBlankElements(Arrays.asList(requireNonNull(patterns, PATTERNS)), PATTERNS));
         return this;
     }
 
@@ -72,10 +78,12 @@ public final class RulesetDraft {
      *
      * @param patterns the patterns to exclude
      * @return this draft
-     * @throws NullPointerException if {@code patterns} is {@code null}
+     * @throws NullPointerException if {@code patterns} or a pattern is {@code null}
+     * @throws IllegalArgumentException if a pattern is blank
      */
     public RulesetDraft excludeRefs(final String... patterns) {
-        excludedRefs.addAll(List.of(requireNonNull(patterns, "patterns")));
+        excludedRefs.addAll(
+                Arguments.requireNotBlankElements(Arrays.asList(requireNonNull(patterns, PATTERNS)), PATTERNS));
         return this;
     }
 
@@ -99,8 +107,13 @@ public final class RulesetDraft {
      * @param mode how the actor may bypass
      * @return this draft
      * @throws NullPointerException if {@code type} or {@code mode} is {@code null}
+     * @throws IllegalArgumentException if {@code type} is {@link BypassActorType#DEPLOY_KEY}, which has no actor id;
+     *     use {@link #bypassDeployKeys(BypassMode)}
      */
     public RulesetDraft bypass(final BypassActorType type, final long actorId, final BypassMode mode) {
+        if (requireNonNull(type, "type") == BypassActorType.DEPLOY_KEY) {
+            throw new IllegalArgumentException("A deploy key has no actor id; use bypassDeployKeys(mode)");
+        }
         bypassActors.add(new GitHubRepositoryRulesetBypassActor(
                 actorId,
                 requireNonNull(type, "type").toClient(),
@@ -134,10 +147,9 @@ public final class RulesetDraft {
         if (target != RulesetTarget.PUSH && includedRefs.isEmpty()) {
             throw new IllegalStateException("A " + target + " ruleset needs at least one included ref pattern");
         }
-        final GitHub github = Internals.github(repository);
         return new Ruleset(
                 repository,
-                github.repositories().rules().createRepoRuleset(repository.owner(), repository.name(), payload()));
+                github().repositories().rules().createRepoRuleset(repository.owner(), repository.name(), payload()));
     }
 
     private GitHubCreateRepoRulesetPayload payload() {
@@ -156,5 +168,9 @@ public final class RulesetDraft {
         }
         return new GitHubRepositoryRulesetConditions(
                 new GitHubRepositoryRulesetConditionsRefName(List.copyOf(includedRefs), List.copyOf(excludedRefs)));
+    }
+
+    private GitHub github() {
+        return Internals.github(repository);
     }
 }

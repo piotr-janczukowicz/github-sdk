@@ -123,6 +123,7 @@ public final class RepositoryFile {
      *
      * @param message the commit message
      * @throws IllegalArgumentException if {@code message} is blank
+     * @throws NullPointerException if {@code message} is {@code null}
      * @throws IOException if the transport fails
      */
     public void delete(final String message) throws IOException {
@@ -136,6 +137,7 @@ public final class RepositoryFile {
      * @param message the commit message
      * @param branch the branch to commit to
      * @throws IllegalArgumentException if {@code message} or {@code branch} is blank
+     * @throws NullPointerException if {@code message} or {@code branch} is {@code null}
      * @throws IOException if the transport fails
      */
     public void delete(final String message, final String branch) throws IOException {

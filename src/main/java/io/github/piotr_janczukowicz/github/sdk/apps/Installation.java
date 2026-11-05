@@ -7,6 +7,7 @@ import io.github.piotr_janczukowicz.github.api.apps.GitHubCreateInstallationAcce
 import io.github.piotr_janczukowicz.github.api.apps.GitHubInstallationToken;
 import io.github.piotr_janczukowicz.github.api.organizations.GitHubInstallation;
 import io.github.piotr_janczukowicz.github.sdk.GitHubSdk;
+import io.github.piotr_janczukowicz.github.sdk.internal.Arguments;
 import io.github.piotr_janczukowicz.github.sdk.internal.Internals;
 import java.io.IOException;
 import java.util.List;
@@ -140,11 +141,14 @@ public final class Installation {
     }
 
     /**
-     * Creates an installation access token limited to some repositories of the installation.
+     * Creates an installation access token limited to some repositories of the installation ({@code POST
+     * /app/installations/{installation_id}/access_tokens}). The token expires after one hour; it is a secret and should
+     * not be logged.
      *
-     * @param repositoryNames the names of the repositories, without the owner
+     * @param repositoryNames the names of the repositories, without the owner, at least one
      * @return the token as GitHub returns it
-     * @throws NullPointerException if {@code repositoryNames} is {@code null}
+     * @throws NullPointerException if {@code repositoryNames} or a name is {@code null}
+     * @throws IllegalArgumentException if {@code repositoryNames} is empty or a name is blank
      * @throws IOException if the transport fails
      */
     public GitHubInstallationToken accessToken(final List<String> repositoryNames) throws IOException {
@@ -153,7 +157,7 @@ public final class Installation {
                 .createInstallationAccessToken(
                         id(),
                         new GitHubCreateInstallationAccessTokenPayload(
-                                List.copyOf(requireNonNull(repositoryNames, "repositoryNames")), null, null));
+                                Arguments.requireNotBlankValues(repositoryNames, "repositoryNames"), null, null));
     }
 
     /**

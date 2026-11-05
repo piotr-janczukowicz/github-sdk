@@ -147,4 +147,18 @@ class InstallationTest {
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("repositoryNames");
     }
+
+    @Test
+    void accessToken_shouldThrowIllegalArgumentException_whenNamesAreEmpty() {
+        final Throwable thrown = catchThrowable(() -> sut.accessToken(List.of()));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("repositoryNames");
+    }
+
+    @Test
+    void accessToken_shouldThrowIllegalArgumentException_whenANameIsBlank() {
+        final Throwable thrown = catchThrowable(() -> sut.accessToken(List.of(" ")));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("repositoryNames");
+    }
 }

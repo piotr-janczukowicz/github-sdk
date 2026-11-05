@@ -22,13 +22,14 @@ public final class ReleaseUpdate {
     private final UpdateState state = new UpdateState();
 
     /**
-     * Wraps a response. Applications normally get this object from the object that owns it; call the constructor only
-     * to wrap a response that was loaded some other way.
+     * Starts a change of one object. Applications normally get it from the {@code update()} method of that object.
+     * Nothing is sent until {@code send()}.
      *
      * @param release the release
+     * @throws NullPointerException if {@code release} is {@code null}
      */
     public ReleaseUpdate(final Release release) {
-        this.release = release;
+        this.release = requireNonNull(release, "release");
     }
 
     /**

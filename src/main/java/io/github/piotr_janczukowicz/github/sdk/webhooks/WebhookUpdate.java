@@ -3,6 +3,7 @@ package io.github.piotr_janczukowicz.github.sdk.webhooks;
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
 
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubUpdateWebhookPayload;
+import io.github.piotr_janczukowicz.github.sdk.internal.Arguments;
 import io.github.piotr_janczukowicz.github.sdk.internal.UpdateState;
 import java.io.IOException;
 import java.util.List;
@@ -25,13 +26,14 @@ public final class WebhookUpdate {
     private final UpdateState state = new UpdateState();
 
     /**
-     * Wraps a response. Applications normally get this object from the object that owns it; call the constructor only
-     * to wrap a response that was loaded some other way.
+     * Starts a change of one object. Applications normally get it from the {@code update()} method of that object.
+     * Nothing is sent until {@code send()}.
      *
      * @param webhook the webhook
+     * @throws NullPointerException if {@code webhook} is {@code null}
      */
     public WebhookUpdate(final Webhook webhook) {
-        this.webhook = webhook;
+        this.webhook = requireNonNull(webhook, "webhook");
     }
 
     /**
@@ -42,7 +44,7 @@ public final class WebhookUpdate {
      * @throws NullPointerException if {@code events} is {@code null}
      */
     public WebhookUpdate events(final List<String> events) {
-        this.events = List.copyOf(requireNonNull(events, EVENTS));
+        this.events = Arguments.requireNotBlankElements(events, EVENTS);
         return changed();
     }
 
@@ -54,7 +56,7 @@ public final class WebhookUpdate {
      * @throws NullPointerException if {@code events} is {@code null}
      */
     public WebhookUpdate addEvents(final List<String> events) {
-        this.addEvents = List.copyOf(requireNonNull(events, EVENTS));
+        this.addEvents = Arguments.requireNotBlankElements(events, EVENTS);
         return changed();
     }
 
@@ -66,7 +68,7 @@ public final class WebhookUpdate {
      * @throws NullPointerException if {@code events} is {@code null}
      */
     public WebhookUpdate removeEvents(final List<String> events) {
-        this.removeEvents = List.copyOf(requireNonNull(events, EVENTS));
+        this.removeEvents = Arguments.requireNotBlankElements(events, EVENTS);
         return changed();
     }
 

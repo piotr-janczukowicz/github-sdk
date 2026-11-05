@@ -107,6 +107,7 @@ public final class App {
      * @param login the organization login
      * @return the installation, or empty when the app is not installed there
      * @throws IllegalArgumentException if {@code login} is blank
+     * @throws NullPointerException if {@code login} is {@code null}
      * @throws IOException if the transport fails
      */
     public Optional<Installation> organizationInstallation(final String login) throws IOException {
@@ -133,6 +134,7 @@ public final class App {
      * @param login the user login
      * @return the installation, or empty when the app is not installed there
      * @throws IllegalArgumentException if {@code login} is blank
+     * @throws NullPointerException if {@code login} is {@code null}
      * @throws IOException if the transport fails
      */
     public Optional<Installation> userInstallation(final String login) throws IOException {

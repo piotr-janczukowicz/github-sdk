@@ -1,13 +1,12 @@
 package io.github.piotr_janczukowicz.github.sdk.content;
 
-import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
-
 import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.branches.GitHubUpdateBranchProtectionPayload;
 import io.github.piotr_janczukowicz.github.api.branches.GitHubUpdateBranchProtectionRequiredPullRequestReviews;
 import io.github.piotr_janczukowicz.github.api.branches.GitHubUpdateBranchProtectionRequiredStatusChecks;
 import io.github.piotr_janczukowicz.github.api.branches.GitHubUpdateBranchProtectionRestrictions;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
+import io.github.piotr_janczukowicz.github.sdk.internal.Arguments;
 import io.github.piotr_janczukowicz.github.sdk.internal.Internals;
 import io.github.piotr_janczukowicz.json.OptionalNull;
 import java.io.IOException;
@@ -20,6 +19,9 @@ import org.jspecify.annotations.Nullable;
  * Nothing is sent until {@link #send()}, and sending without any setting protects the branch with every option off.
  */
 public final class BranchProtectionUpdate {
+
+    private static final int MIN_APPROVALS = 1;
+    private static final int MAX_APPROVALS = 6;
 
     private final Branch branch;
     private @Nullable GitHubUpdateBranchProtectionRequiredStatusChecks statusChecks;
@@ -48,7 +50,7 @@ public final class BranchProtectionUpdate {
      */
     public BranchProtectionUpdate requireStatusChecks(final boolean isStrict, final List<String> contexts) {
         this.statusChecks = new GitHubUpdateBranchProtectionRequiredStatusChecks(
-                isStrict, List.copyOf(requireNonNull(contexts, "contexts")), null);
+                isStrict, Arguments.requireNotBlankElements(contexts, "contexts"), null);
         return this;
     }
 
@@ -57,6 +59,7 @@ public final class BranchProtectionUpdate {
      *
      * @param approvals the number of approving reviews, from 1 to 6
      * @return this update
+     * @throws IllegalArgumentException if {@code approvals} is not from 1 to 6
      */
     public BranchProtectionUpdate requirePullRequestReviews(final int approvals) {
         return requirePullRequestReviews(approvals, false, false, false);
@@ -70,12 +73,17 @@ public final class BranchProtectionUpdate {
      * @param isCodeOwnerRequired {@code true} to require a review from the code owners
      * @param isLastPushApprovalRequired {@code true} to require that someone other than the last pusher approves
      * @return this update
+     * @throws IllegalArgumentException if {@code approvals} is not from 1 to 6
      */
     public BranchProtectionUpdate requirePullRequestReviews(
             final int approvals,
             final boolean isStaleDismissed,
             final boolean isCodeOwnerRequired,
             final boolean isLastPushApprovalRequired) {
+        if (approvals < MIN_APPROVALS || approvals > MAX_APPROVALS) {
+            throw new IllegalArgumentException(
+                    "approvals must be from " + MIN_APPROVALS + " to " + MAX_APPROVALS + ": " + approvals);
+        }
         this.pullRequestReviews = new GitHubUpdateBranchProtectionRequiredPullRequestReviews(
                 null, isStaleDismissed, isCodeOwnerRequired, approvals, isLastPushApprovalRequired, null);
         return this;
@@ -173,9 +181,9 @@ public final class BranchProtectionUpdate {
     public BranchProtectionUpdate restrictPushesTo(
             final List<String> users, final List<String> teams, final List<String> apps) {
         this.restrictions = new GitHubUpdateBranchProtectionRestrictions(
-                List.copyOf(requireNonNull(users, "users")),
-                List.copyOf(requireNonNull(teams, "teams")),
-                List.copyOf(requireNonNull(apps, "apps")));
+                Arguments.requireNotBlankElements(users, "users"),
+                Arguments.requireNotBlankElements(teams, "teams"),
+                Arguments.requireNotBlankElements(apps, "apps"));
         return this;
     }
 

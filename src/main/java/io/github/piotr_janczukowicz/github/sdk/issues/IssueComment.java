@@ -1,6 +1,7 @@
 package io.github.piotr_janczukowicz.github.sdk.issues;
 
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
+import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 
 import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubUpdateCommentPayload;
@@ -82,10 +83,11 @@ public final class IssueComment {
      * @param body the new comment text in Markdown
      * @return the comment as GitHub returned it after the change
      * @throws NullPointerException if {@code body} is {@code null}
+     * @throws IllegalArgumentException if {@code body} is blank
      * @throws IOException if the transport fails
      */
     public IssueComment edit(final String body) throws IOException {
-        final GitHubUpdateCommentPayload payload = new GitHubUpdateCommentPayload(requireNonNull(body, "body"));
+        final GitHubUpdateCommentPayload payload = new GitHubUpdateCommentPayload(requireNotBlank(body, "body"));
         final Repository repository = issue.repository();
         final GitHub github = Internals.github(repository);
         return new IssueComment(

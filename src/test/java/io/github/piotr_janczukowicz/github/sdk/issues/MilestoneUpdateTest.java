@@ -110,4 +110,11 @@ class MilestoneUpdateTest {
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("dueOn");
     }
+
+    @Test
+    void constructor_shouldThrowNullPointerException_whenMilestoneIsNull() {
+        final Throwable thrown = catchThrowable(() -> new MilestoneUpdate(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("milestone");
+    }
 }

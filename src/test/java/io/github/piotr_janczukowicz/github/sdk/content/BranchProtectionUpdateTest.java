@@ -161,4 +161,33 @@ class BranchProtectionUpdateTest {
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("teams");
     }
+
+    @Test
+    void requirePullRequestReviews_shouldThrowIllegalArgumentException_whenApprovalsAreOutOfRange() {
+        final Throwable thrown = catchThrowable(() -> branch.protect().requirePullRequestReviews(7));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("approvals");
+    }
+
+    @Test
+    void requirePullRequestReviews_shouldThrowIllegalArgumentException_whenApprovalsAreBelowOne() {
+        final Throwable thrown = catchThrowable(() -> branch.protect().requirePullRequestReviews(0));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("approvals");
+    }
+
+    @Test
+    void requireStatusChecks_shouldThrowIllegalArgumentException_whenAContextIsBlank() {
+        final Throwable thrown = catchThrowable(() -> branch.protect().requireStatusChecks(false, List.of(" ")));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("contexts");
+    }
+
+    @Test
+    void restrictPushesTo_shouldThrowIllegalArgumentException_whenALoginIsBlank() {
+        final Throwable thrown =
+                catchThrowable(() -> branch.protect().restrictPushesTo(List.of(" "), List.of(), List.of()));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("users");
+    }
 }

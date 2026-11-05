@@ -20,13 +20,14 @@ public final class LabelUpdate {
     private final UpdateState state = new UpdateState();
 
     /**
-     * Wraps a response. Applications normally get this object from the object that owns it; call the constructor only
-     * to wrap a response that was loaded some other way.
+     * Starts a change of one object. Applications normally get it from the {@code update()} method of that object.
+     * Nothing is sent until {@code send()}.
      *
      * @param label the label
+     * @throws NullPointerException if {@code label} is {@code null}
      */
     public LabelUpdate(final Label label) {
-        this.label = label;
+        this.label = requireNonNull(label, "label");
     }
 
     /**

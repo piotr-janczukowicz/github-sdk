@@ -33,7 +33,15 @@ public final class User {
     private final GitHubSdk sdk;
     private final GitHubUserView response;
 
-    User(final GitHubSdk sdk, final GitHubUserView response) {
+    /**
+     * Wraps a response. Applications normally get this object from {@code GitHubSdk.user(String)}; the constructor is
+     * public so that the account objects of other packages can wrap the profile they update.
+     *
+     * @param sdk the SDK that makes the calls
+     * @param response the response record the object is built from
+     * @throws NullPointerException if an argument is {@code null}
+     */
+    public User(final GitHubSdk sdk, final GitHubUserView response) {
         this.sdk = requireNonNull(sdk, "sdk");
         this.response = requireNonNull(response, "response");
     }

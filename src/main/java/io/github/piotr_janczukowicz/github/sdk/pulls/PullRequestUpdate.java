@@ -21,13 +21,14 @@ public final class PullRequestUpdate {
     private final UpdateState state = new UpdateState();
 
     /**
-     * Wraps a response. Applications normally get this object from the object that owns it; call the constructor only
-     * to wrap a response that was loaded some other way.
+     * Starts a change of one object. Applications normally get it from the {@code update()} method of that object.
+     * Nothing is sent until {@code send()}.
      *
      * @param pullRequest the pull request the object belongs to
+     * @throws NullPointerException if {@code pullRequest} is {@code null}
      */
     public PullRequestUpdate(final PullRequest pullRequest) {
-        this.pullRequest = pullRequest;
+        this.pullRequest = requireNonNull(pullRequest, "pullRequest");
     }
 
     /**

@@ -8,10 +8,12 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.github.piotr_janczukowicz.github.api.GitHub;
+import io.github.piotr_janczukowicz.github.api.deployments.GitHubEnvironment;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubContributor;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateDispatchEventPayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateUsingTemplatePayload;
@@ -24,10 +26,12 @@ import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryTopi
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubTransferPayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubUpdatePayload;
 import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
+import io.github.piotr_janczukowicz.github.sdk.deployments.Environment;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -213,8 +217,11 @@ class RepositoryManagementTest {
 
     @Test
     void generate_shouldCreateFromTheTemplate_whenOwnerAndNameAreGiven() throws IOException {
+        final GitHubSimpleUser creator = mock(GitHubSimpleUser.class);
+        when(creator.login()).thenReturn("hubot");
         final GitHubFullRepository created = mock(GitHubFullRepository.class);
         when(created.name()).thenReturn("from-template");
+        when(created.owner()).thenReturn(creator);
         final GitHubRepositoryApi api = github.repositories().repository();
         doReturn(created)
                 .when(api)
@@ -263,5 +270,43 @@ class RepositoryManagementTest {
         when(moved.owner()).thenReturn(owner);
         when(moved.name()).thenReturn(newName);
         doReturn(moved).when(api).transfer(eq(OWNER), eq(NAME), any(GitHubTransferPayload.class));
+    }
+
+    @Test
+    void createWebhook_shouldThrowIllegalArgumentException_whenAnEventNameIsBlank() {
+        final Throwable thrown =
+                catchThrowable(() -> sut.createWebhook("https://example.com/hook", List.of("push", " ")));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("events");
+    }
+
+    @Test
+    void replaceTopics_shouldThrowIllegalArgumentException_whenATopicIsBlank() {
+        final Throwable thrown = catchThrowable(() -> sut.replaceTopics(List.of(" ")));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("topics");
+    }
+
+    @Test
+    void dispatchEvent_shouldAcceptNullValues_whenThePayloadHasThem() throws IOException {
+        final java.util.Map<String, Object> payload = new java.util.HashMap<>();
+        payload.put("ref", null);
+
+        sut.dispatchEvent("deploy", payload);
+
+        verify(github.repositories().repository())
+                .createDispatchEvent(eq(OWNER), eq(NAME), any(GitHubCreateDispatchEventPayload.class));
+    }
+
+    @Test
+    void saveEnvironment_shouldReturnTheExistingEnvironmentWithoutAPut_whenItExists() throws IOException {
+        final GitHubEnvironment existing = mock(GitHubEnvironment.class);
+        when(github.deployments().environments().getEnvironment(OWNER, NAME, "prod"))
+                .thenReturn(Optional.of(existing));
+
+        final Environment result = sut.saveEnvironment("prod");
+
+        assertThat(result.response()).isSameAs(existing);
+        verify(github.deployments().environments(), never()).createOrUpdateEnvironment(any(), any(), any(), any());
     }
 }

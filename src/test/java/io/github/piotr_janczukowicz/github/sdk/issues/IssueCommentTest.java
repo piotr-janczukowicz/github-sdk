@@ -132,4 +132,11 @@ class IssueCommentTest {
 
         verify(github.issues().comments()).deleteComment(OWNER, NAME, ID);
     }
+
+    @Test
+    void edit_shouldThrowIllegalArgumentException_whenBodyIsBlank() {
+        final Throwable thrown = catchThrowable(() -> sut.edit(" "));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("body");
+    }
 }

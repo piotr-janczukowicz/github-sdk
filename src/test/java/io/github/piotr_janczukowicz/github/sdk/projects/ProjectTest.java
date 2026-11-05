@@ -340,4 +340,18 @@ class ProjectTest {
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("layout");
     }
+
+    @Test
+    void addSingleSelectField_shouldThrowIllegalArgumentException_whenOptionsAreEmptyOrBlank() {
+        final Throwable thrown = catchThrowable(() -> sut.addSingleSelectField("Status", List.of()));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("options");
+    }
+
+    @Test
+    void addSingleSelectField_shouldThrowIllegalArgumentException_whenAnOptionIsBlank() {
+        final Throwable thrown = catchThrowable(() -> sut.addSingleSelectField("Status", List.of("Todo", " ")));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("options");
+    }
 }

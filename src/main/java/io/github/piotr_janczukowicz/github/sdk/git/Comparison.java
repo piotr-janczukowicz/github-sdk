@@ -1,6 +1,7 @@
 package io.github.piotr_janczukowicz.github.sdk.git;
 
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
+import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 
 import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.commits.GitHubCommitComparison;
@@ -33,10 +34,11 @@ public final class Comparison {
      * @param baseHead the base head
      * @param response the response record the object is built from
      * @throws NullPointerException if an argument is {@code null}
+     * @throws IllegalArgumentException if {@code baseHead} is blank
      */
     public Comparison(final Repository repository, final String baseHead, final GitHubCommitComparison response) {
         this.repository = requireNonNull(repository, "repository");
-        this.baseHead = requireNonNull(baseHead, "baseHead");
+        this.baseHead = requireNotBlank(baseHead, "baseHead");
         this.response = requireNonNull(response, "response");
     }
 
@@ -87,7 +89,8 @@ public final class Comparison {
     }
 
     /**
-     * Returns the commits that GitHub embedded in the comparison, at most 250.
+     * Returns the commits that GitHub embedded in the comparison, at most 250. Each call builds a new list, so keep the
+     * result in a local variable when you read it more than once.
      *
      * @return the commits, oldest first
      */

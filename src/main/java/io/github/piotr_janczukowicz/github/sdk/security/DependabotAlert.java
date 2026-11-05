@@ -182,10 +182,9 @@ public final class DependabotAlert {
             final @Nullable DependabotDismissal reason,
             final @Nullable String comment)
             throws IOException {
-        final GitHub github = Internals.github(repository);
         return new DependabotAlert(
                 repository,
-                github.dependabot()
+                github().dependabot()
                         .alerts()
                         .updateAlert(
                                 repository.owner(),
@@ -193,5 +192,9 @@ public final class DependabotAlert {
                                 number(),
                                 new GitHubUpdateAlertPayload(
                                         state, reason == null ? null : reason.toClient(), comment, null, null)));
+    }
+
+    private GitHub github() {
+        return Internals.github(repository);
     }
 }

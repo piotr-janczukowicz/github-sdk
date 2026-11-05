@@ -35,6 +35,7 @@ public final class Search {
      * @param query the search query, in GitHub's search syntax
      * @return the issues
      * @throws IllegalArgumentException if {@code query} is blank
+     * @throws NullPointerException if {@code query} is {@code null}
      * @throws IOException if the first page cannot be loaded
      */
     public Stream<Issue> issues(final String query) throws IOException {
@@ -49,6 +50,7 @@ public final class Search {
      * @param query the search query, in GitHub's search syntax
      * @return the repository handles
      * @throws IllegalArgumentException if {@code query} is blank
+     * @throws NullPointerException if {@code query} is {@code null}
      * @throws IOException if the first page cannot be loaded
      */
     public Stream<Repository> repositories(final String query) throws IOException {
@@ -71,6 +73,7 @@ public final class Search {
      * @param query the search query, in GitHub's search syntax
      * @return the users
      * @throws IllegalArgumentException if {@code query} is blank
+     * @throws NullPointerException if {@code query} is {@code null}
      * @throws IOException if the first page cannot be loaded
      */
     public Stream<User> users(final String query) throws IOException {
@@ -84,6 +87,7 @@ public final class Search {
      * @param query the search query, in GitHub's search syntax
      * @return the hits
      * @throws IllegalArgumentException if {@code query} is blank
+     * @throws NullPointerException if {@code query} is {@code null}
      * @throws IOException if the first page cannot be loaded
      */
     public Stream<GitHubCodeSearchResultItem> code(final String query) throws IOException {
@@ -96,6 +100,7 @@ public final class Search {
      * @param query the search query, in GitHub's search syntax
      * @return the hits
      * @throws IllegalArgumentException if {@code query} is blank
+     * @throws NullPointerException if {@code query} is {@code null}
      * @throws IOException if the first page cannot be loaded
      */
     public Stream<GitHubCommitSearchResultItem> commits(final String query) throws IOException {

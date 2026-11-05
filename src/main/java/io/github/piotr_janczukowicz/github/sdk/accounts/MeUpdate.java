@@ -112,7 +112,7 @@ public final class MeUpdate {
     }
 
     /**
-     * Sends the changes ({@code PATCH /user}) and loads the profile again.
+     * Sends the changes ({@code PATCH /user}) and returns the profile GitHub answers with.
      *
      * @return the profile as GitHub holds it afterwards
      * @throws IllegalStateException if nothing was set
@@ -120,8 +120,8 @@ public final class MeUpdate {
      */
     public User send() throws IOException {
         state.requireChange();
-        me.apply(new GitHubUpdateAuthenticatedUserPayload(name, email, blog, null, company, location, hireable, bio));
-        return me.profile();
+        return me.apply(
+                new GitHubUpdateAuthenticatedUserPayload(name, email, blog, null, company, location, hireable, bio));
     }
 
     private MeUpdate changed() {

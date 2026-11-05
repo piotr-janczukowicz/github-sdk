@@ -3,6 +3,7 @@ package io.github.piotr_janczukowicz.github.sdk.accounts;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -10,8 +11,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import io.github.piotr_janczukowicz.github.api.GitHub;
+import io.github.piotr_janczukowicz.github.api.users.GitHubAuthenticatedUser;
 import io.github.piotr_janczukowicz.github.api.users.GitHubUpdateAuthenticatedUserPayload;
-import io.github.piotr_janczukowicz.github.api.users.GitHubUser;
 import io.github.piotr_janczukowicz.github.api.users.GitHubUserApi;
 import io.github.piotr_janczukowicz.github.sdk.GitHubSdk;
 import io.github.piotr_janczukowicz.github.sdk.User;
@@ -27,10 +28,10 @@ class MeUpdateTest {
     private final Me me = GitHubSdk.of(github).me();
 
     @Test
-    void send_shouldSendOnlyTheSetFieldsAndReloadTheProfile_whenSomeFieldsAreSet() throws IOException {
-        final GitHubUser reloaded = mock(GitHubUser.class);
+    void send_shouldSendOnlyTheSetFieldsAndReturnTheAnsweredProfile_whenSomeFieldsAreSet() throws IOException {
+        final GitHubAuthenticatedUser reloaded = mock(GitHubAuthenticatedUser.class);
         final GitHubUserApi api = github.users().user();
-        doReturn(reloaded).when(api).getAuthenticatedUser();
+        doReturn(reloaded).when(api).updateAuthenticatedUser(any(GitHubUpdateAuthenticatedUserPayload.class));
         final ArgumentCaptor<GitHubUpdateAuthenticatedUserPayload> payload =
                 ArgumentCaptor.forClass(GitHubUpdateAuthenticatedUserPayload.class);
 
@@ -48,7 +49,8 @@ class MeUpdateTest {
     @Test
     void send_shouldSendEveryField_whenAllAreSet() throws IOException {
         final GitHubUserApi api = github.users().user();
-        doReturn(mock(GitHubUser.class)).when(api).getAuthenticatedUser();
+        final GitHubAuthenticatedUser updated = mock(GitHubAuthenticatedUser.class);
+        doReturn(updated).when(api).updateAuthenticatedUser(any(GitHubUpdateAuthenticatedUserPayload.class));
         final ArgumentCaptor<GitHubUpdateAuthenticatedUserPayload> payload =
                 ArgumentCaptor.forClass(GitHubUpdateAuthenticatedUserPayload.class);
 

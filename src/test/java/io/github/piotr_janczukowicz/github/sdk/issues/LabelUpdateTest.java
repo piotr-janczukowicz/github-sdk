@@ -102,4 +102,11 @@ class LabelUpdateTest {
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("description");
     }
+
+    @Test
+    void constructor_shouldThrowNullPointerException_whenLabelIsNull() {
+        final Throwable thrown = catchThrowable(() -> new LabelUpdate(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("label");
+    }
 }

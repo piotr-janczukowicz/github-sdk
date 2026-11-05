@@ -23,8 +23,8 @@ public final class Marketplace {
     private final GitHubSdk sdk;
 
     /**
-     * Wraps a response. Applications normally get this object from the object that owns it; call the constructor only
-     * to wrap a response that was loaded some other way.
+     * Creates the handle. Applications normally get it from the object it belongs to. Nothing is requested until a
+     * method is called.
      *
      * @param sdk the SDK that makes the calls
      * @throws NullPointerException if an argument is {@code null}

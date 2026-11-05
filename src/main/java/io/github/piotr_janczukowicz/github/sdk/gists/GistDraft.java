@@ -24,8 +24,8 @@ public final class GistDraft {
     private boolean isListed;
 
     /**
-     * Wraps a response. Applications normally get this object from the object that owns it; call the constructor only
-     * to wrap a response that was loaded some other way.
+     * Starts a new gist. Applications normally get it from {@code GitHubSdk.newGist()}. Nothing is sent until the draft
+     * is created.
      *
      * @param sdk the SDK that makes the calls
      * @throws NullPointerException if an argument is {@code null}

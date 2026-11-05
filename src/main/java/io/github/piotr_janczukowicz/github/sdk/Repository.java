@@ -117,6 +117,8 @@ import io.github.piotr_janczukowicz.github.sdk.security.SecretScanningAlert;
 import io.github.piotr_janczukowicz.github.sdk.webhooks.Webhook;
 import java.io.IOException;
 import java.util.Base64;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -336,6 +338,7 @@ public final class Repository {
      * @param name the branch name
      * @return the branch, or empty when GitHub answers HTTP 404
      * @throws IllegalArgumentException if {@code name} is blank
+     * @throws NullPointerException if {@code name} is {@code null}
      * @throws IOException if the transport fails
      */
     public Optional<Branch> branch(final String name) throws IOException {
@@ -383,6 +386,7 @@ public final class Repository {
      * @param sha the commit hash, a branch name or a tag name
      * @return the commit, or empty when GitHub answers HTTP 404
      * @throws IllegalArgumentException if {@code sha} is blank
+     * @throws NullPointerException if {@code sha} is {@code null}
      * @throws IOException if the transport fails
      */
     public Optional<Commit> commit(final String sha) throws IOException {
@@ -617,6 +621,7 @@ public final class Repository {
      * @param path the path within the repository
      * @return the file, or empty when GitHub answers HTTP 404 or the path is a directory, symbolic link or submodule
      * @throws IllegalArgumentException if {@code path} is blank
+     * @throws NullPointerException if {@code path} is {@code null}
      * @throws IOException if the transport fails
      */
     public Optional<RepositoryFile> file(final String path) throws IOException {
@@ -630,6 +635,7 @@ public final class Repository {
      * @param ref the branch, tag or commit
      * @return the file, or empty when GitHub answers HTTP 404 or the path is a directory, symbolic link or submodule
      * @throws IllegalArgumentException if {@code path} or {@code ref} is blank
+     * @throws NullPointerException if {@code path} or {@code ref} is {@code null}
      * @throws IOException if the transport fails
      */
     public Optional<RepositoryFile> file(final String path, final String ref) throws IOException {
@@ -678,6 +684,7 @@ public final class Repository {
      * @param tag the tag name
      * @return the release, or empty when GitHub answers HTTP 404
      * @throws IllegalArgumentException if {@code tag} is blank
+     * @throws NullPointerException if {@code tag} is {@code null}
      * @throws IOException if the transport fails
      */
     public Optional<Release> release(final String tag) throws IOException {
@@ -717,6 +724,7 @@ public final class Repository {
      * @param tagName the tag name
      * @return the new release as GitHub returned it
      * @throws IllegalArgumentException if {@code tagName} is blank
+     * @throws NullPointerException if {@code tagName} is {@code null}
      * @throws IOException if the transport fails
      */
     public Release createRelease(final String tagName) throws IOException {
@@ -755,6 +763,7 @@ public final class Repository {
      * @param labelName the label name
      * @return the label, or empty when GitHub answers HTTP 404
      * @throws IllegalArgumentException if {@code labelName} is blank
+     * @throws NullPointerException if {@code labelName} is {@code null}
      * @throws IOException if the transport fails
      */
     public Optional<Label> label(final String labelName) throws IOException {
@@ -784,6 +793,7 @@ public final class Repository {
      * @param color the color as a hexadecimal value without the leading {@code #}
      * @return the new label as GitHub returned it
      * @throws IllegalArgumentException if {@code labelName} or {@code color} is blank
+     * @throws NullPointerException if {@code labelName} or {@code color} is {@code null}
      * @throws IOException if the transport fails
      */
     public Label createLabel(final String labelName, final String color) throws IOException {
@@ -837,6 +847,7 @@ public final class Repository {
      * @param title the milestone title
      * @return the new milestone as GitHub returned it
      * @throws IllegalArgumentException if {@code title} is blank
+     * @throws NullPointerException if {@code title} is {@code null}
      * @throws IOException if the transport fails
      */
     public Milestone createMilestone(final String title) throws IOException {
@@ -890,15 +901,15 @@ public final class Repository {
      * @param payloadUrl the URL GitHub delivers the events to
      * @param events the event names to subscribe to
      * @return the new webhook as GitHub returned it
-     * @throws IllegalArgumentException if {@code payloadUrl} is blank
-     * @throws NullPointerException if {@code events} is {@code null}
+     * @throws IllegalArgumentException if {@code payloadUrl} or an event name is blank
+     * @throws NullPointerException if {@code payloadUrl}, {@code events} or an event name is {@code null}
      * @throws IOException if the transport fails
      */
     public Webhook createWebhook(final String payloadUrl, final List<String> events) throws IOException {
         return createWebhook(new GitHubCreateWebhookPayload(
                 "web",
                 new GitHubWebhookConfig(requireNotBlank(payloadUrl, "payloadUrl"), "json", null, null),
-                List.copyOf(requireNonNull(events, "events")),
+                Arguments.requireNotBlankElements(events, "events"),
                 null));
     }
 
@@ -952,6 +963,7 @@ public final class Repository {
      * @param login the user's login
      * @return {@code true} when the user is a collaborator
      * @throws IllegalArgumentException if {@code login} is blank
+     * @throws NullPointerException if {@code login} is {@code null}
      * @throws IOException if the transport fails
      */
     public boolean isCollaborator(final String login) throws IOException {
@@ -968,6 +980,7 @@ public final class Repository {
      * @param login the user's login
      * @return the permission level, or empty when GitHub answers HTTP 404
      * @throws IllegalArgumentException if {@code login} is blank
+     * @throws NullPointerException if {@code login} is {@code null}
      * @throws IOException if the transport fails
      */
     public Optional<GitHubRepositoryCollaboratorPermission> collaboratorPermission(final String login)
@@ -985,6 +998,7 @@ public final class Repository {
      * @param login the user's login
      * @return the invitation, or empty when GitHub added the user without one
      * @throws IllegalArgumentException if {@code login} is blank
+     * @throws NullPointerException if {@code login} is {@code null}
      * @throws IOException if the transport fails
      */
     public Optional<Invitation> addCollaborator(final String login) throws IOException {
@@ -1263,7 +1277,8 @@ public final class Repository {
      *
      * @param topics the topic names
      * @return the topics as GitHub holds them afterwards
-     * @throws NullPointerException if {@code topics} is {@code null}
+     * @throws NullPointerException if {@code topics} or a topic is {@code null}
+     * @throws IllegalArgumentException if a topic is blank
      * @throws IOException if the transport fails
      */
     public List<String> replaceTopics(final List<String> topics) throws IOException {
@@ -1271,7 +1286,9 @@ public final class Repository {
                 .repositories()
                 .repository()
                 .replaceAllTopics(
-                        owner, name, new GitHubReplaceAllTopicsPayload(List.copyOf(requireNonNull(topics, "topics"))))
+                        owner,
+                        name,
+                        new GitHubReplaceAllTopicsPayload(Arguments.requireNotBlankElements(topics, "topics")))
                 .names();
     }
 
@@ -1322,13 +1339,16 @@ public final class Repository {
      * /repos/{owner}/{repo}/dispatches}). GitHub answers with no body, so no run is returned.
      *
      * @param eventType the custom event type
-     * @param clientPayload the data the workflows read from {@code github.event.client_payload}
+     * @param clientPayload the data the workflows read from {@code github.event.client_payload}; values may be
+     *     {@code null}, which is sent as JSON null
      * @throws NullPointerException if {@code eventType} or {@code clientPayload} is {@code null}
      * @throws IllegalArgumentException if {@code eventType} is blank
      * @throws IOException if the transport fails
      */
     public void dispatchEvent(final String eventType, final Map<String, Object> clientPayload) throws IOException {
-        dispatch(eventType, Map.copyOf(requireNonNull(clientPayload, "clientPayload")));
+        dispatch(
+                eventType,
+                Collections.unmodifiableMap(new LinkedHashMap<>(requireNonNull(clientPayload, "clientPayload"))));
     }
 
     /**
@@ -1361,7 +1381,7 @@ public final class Repository {
                 .repositories()
                 .repository()
                 .createUsingTemplate(owner, name, requireNonNull(payload, PAYLOAD));
-        return new Repository(sdk, payload.owner(), created.name(), created);
+        return new Repository(sdk, created.owner().login(), created.name(), created);
     }
 
     /**
@@ -1752,8 +1772,9 @@ public final class Repository {
     }
 
     /**
-     * Creates an environment without protection rules, or leaves an existing one unchanged. See
-     * {@link #saveEnvironment(String, GitHubCreateOrUpdateEnvironmentPayload)}.
+     * Creates an environment without protection rules, or returns the existing one unchanged: it loads the environment
+     * first and sends nothing when it exists, because the PUT of the endpoint can reset the settings it does not carry.
+     * See {@link #saveEnvironment(String, GitHubCreateOrUpdateEnvironmentPayload)}.
      *
      * @param environmentName the environment name
      * @return the environment as GitHub holds it afterwards
@@ -1762,6 +1783,10 @@ public final class Repository {
      * @throws IOException if the transport fails
      */
     public Environment saveEnvironment(final String environmentName) throws IOException {
+        final Optional<Environment> existing = environment(environmentName);
+        if (existing.isPresent()) {
+            return existing.get();
+        }
         return saveEnvironment(environmentName, new GitHubCreateOrUpdateEnvironmentPayload(null, null, null, null));
     }
 

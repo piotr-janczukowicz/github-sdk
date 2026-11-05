@@ -15,6 +15,7 @@ import io.github.piotr_janczukowicz.github.api.projects.GitHubProjectFieldSingle
 import io.github.piotr_janczukowicz.github.api.projects.GitHubProjectItemContentType;
 import io.github.piotr_janczukowicz.github.api.projects.GitHubProjectState;
 import io.github.piotr_janczukowicz.github.api.projects.GitHubProjectViewLayout;
+import io.github.piotr_janczukowicz.github.sdk.internal.Arguments;
 import io.github.piotr_janczukowicz.github.sdk.issues.Issue;
 import io.github.piotr_janczukowicz.github.sdk.pulls.PullRequest;
 import java.io.IOException;
@@ -262,17 +263,18 @@ public final class Project {
      * Adds a single select field whose options are gray and have no description; GitHub's UI can change that later.
      *
      * @param name the field name
-     * @param options the option names
+     * @param options the option names, at least one
      * @return the new field
-     * @throws NullPointerException if {@code name} or {@code options} is {@code null}
-     * @throws IllegalArgumentException if {@code name} is blank
+     * @throws NullPointerException if {@code name}, {@code options} or an option is {@code null}
+     * @throws IllegalArgumentException if {@code name} or an option is blank, or {@code options} is empty
      * @throws IOException if the transport fails
      */
     public ProjectField addSingleSelectField(final String name, final List<String> options) throws IOException {
-        final List<GitHubProjectFieldSingleSelectOption> choices = requireNonNull(options, "options").stream()
-                .map(option ->
-                        new GitHubProjectFieldSingleSelectOption(option, GitHubProjectFieldSingleSelectColor.GRAY, ""))
-                .toList();
+        final List<GitHubProjectFieldSingleSelectOption> choices =
+                Arguments.requireNotBlankValues(options, "options").stream()
+                        .map(option -> new GitHubProjectFieldSingleSelectOption(
+                                option, GitHubProjectFieldSingleSelectColor.GRAY, ""))
+                        .toList();
         return new ProjectField(
                 this,
                 gateway.addSingleSelectField(

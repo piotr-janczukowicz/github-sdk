@@ -131,8 +131,7 @@ public final class Ruleset {
      * @throws IOException if the transport fails
      */
     public Stream<GitHubRulesetVersion> history() throws IOException {
-        final GitHub github = Internals.github(repository);
-        return github
+        return github()
                 .repositories()
                 .rules()
                 .getRepoRulesetHistory(repository.owner(), repository.name(), id())
@@ -145,8 +144,7 @@ public final class Ruleset {
      * @throws IOException if the transport fails
      */
     public void delete() throws IOException {
-        final GitHub github = Internals.github(repository);
-        github.repositories().rules().deleteRepoRuleset(repository.owner(), repository.name(), id());
+        github().repositories().rules().deleteRepoRuleset(repository.owner(), repository.name(), id());
     }
 
     /**
@@ -156,5 +154,9 @@ public final class Ruleset {
      */
     public GitHubRepositoryRuleset response() {
         return response;
+    }
+
+    private GitHub github() {
+        return Internals.github(repository);
     }
 }

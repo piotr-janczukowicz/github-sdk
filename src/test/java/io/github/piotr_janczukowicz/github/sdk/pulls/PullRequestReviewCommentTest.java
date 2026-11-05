@@ -174,4 +174,18 @@ class PullRequestReviewCommentTest {
 
         assertThat(thrown).isInstanceOf(IllegalStateException.class).hasMessageContaining("is gone");
     }
+
+    @Test
+    void edit_shouldThrowIllegalArgumentException_whenBodyIsBlank() {
+        final Throwable thrown = catchThrowable(() -> sut.edit(" "));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("body");
+    }
+
+    @Test
+    void reply_shouldThrowIllegalArgumentException_whenBodyIsBlank() {
+        final Throwable thrown = catchThrowable(() -> sut.reply(" "));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("body");
+    }
 }

@@ -406,4 +406,11 @@ class IssueTest {
 
         assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("names");
     }
+
+    @Test
+    void comment_shouldThrowIllegalArgumentException_whenBodyIsBlank() {
+        final Throwable thrown = catchThrowable(() -> sut.comment(" "));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("body");
+    }
 }

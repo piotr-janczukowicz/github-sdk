@@ -128,6 +128,7 @@ public final class Issue {
      * @throws IllegalArgumentException if no name is given or a name is blank
      * @throws NullPointerException if a name is {@code null}
      * @throws IOException if the transport fails
+     * @throws IllegalStateException if the issue is gone after the change
      */
     public Issue addLabels(final String... names) throws IOException {
         final List<GitHubAddLabelsLabel> labels = Arguments.requireNotBlankValues(names, "names").stream()
@@ -148,6 +149,7 @@ public final class Issue {
      * @throws NullPointerException if {@code names} or a name is {@code null}
      * @throws IllegalArgumentException if a name is blank
      * @throws IOException if the transport fails
+     * @throws IllegalStateException if the issue is gone after the change
      */
     public Issue setLabels(final List<String> names) throws IOException {
         final List<GitHubSetLabelsLabel> labels = Arguments.requireNotBlankElements(names, "names").stream()
@@ -166,7 +168,9 @@ public final class Issue {
      * @param name the label name
      * @return the issue as GitHub holds it after the change
      * @throws IllegalArgumentException if {@code name} is blank
+     * @throws NullPointerException if {@code name} is {@code null}
      * @throws IOException if the transport fails
+     * @throws IllegalStateException if the issue is gone after the change
      */
     public Issue removeLabel(final String name) throws IOException {
         github().issues()
@@ -228,6 +232,7 @@ public final class Issue {
      *
      * @return the issue as GitHub holds it after the change
      * @throws IOException if the transport fails
+     * @throws IllegalStateException if the issue is gone after the change
      */
     public Issue lock() throws IOException {
         github().issues().issue().lock(repository.owner(), repository.name(), number());
@@ -240,6 +245,7 @@ public final class Issue {
      *
      * @return the issue as GitHub holds it after the change
      * @throws IOException if the transport fails
+     * @throws IllegalStateException if the issue is gone after the change
      */
     public Issue unlock() throws IOException {
         github().issues().issue().unlock(repository.owner(), repository.name(), number());
@@ -285,10 +291,11 @@ public final class Issue {
      * @param body the comment text in Markdown
      * @return the new comment as GitHub returned it
      * @throws NullPointerException if {@code body} is {@code null}
+     * @throws IllegalArgumentException if {@code body} is blank
      * @throws IOException if the transport fails
      */
     public IssueComment comment(final String body) throws IOException {
-        final GitHubCreateCommentPayload payload = new GitHubCreateCommentPayload(requireNonNull(body, "body"));
+        final GitHubCreateCommentPayload payload = new GitHubCreateCommentPayload(requireNotBlank(body, "body"));
         return new IssueComment(
                 this,
                 github().issues().comments().createComment(repository.owner(), repository.name(), number(), payload));
@@ -296,15 +303,15 @@ public final class Issue {
 
     /**
      * Lists the comments of the issue ({@code GET /repos/{owner}/{repo}/issues/{issue_number}/comments}). Pages are
-     * fetched only as the stream is consumed, so {@code limit} stops further requests. Transport failures surface as
-     * {@link java.io.UncheckedIOException}.
+     * fetched only as the stream is consumed, so {@code Stream.limit} on the result stops further requests. Transport
+     * failures surface as {@link java.io.UncheckedIOException}.
      *
      * @return the comments, oldest first
      * @throws IOException if the first page cannot be loaded
      */
     public Stream<IssueComment> comments() throws IOException {
         return github().issues().comments().listComments(repository.owner(), repository.name(), number()).stream()
-                .map(response -> new IssueComment(this, response));
+                .map(comment -> new IssueComment(this, comment));
     }
 
     /**

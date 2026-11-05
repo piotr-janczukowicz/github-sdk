@@ -21,13 +21,14 @@ public final class MilestoneUpdate {
     private final UpdateState state = new UpdateState();
 
     /**
-     * Wraps a response. Applications normally get this object from the object that owns it; call the constructor only
-     * to wrap a response that was loaded some other way.
+     * Starts a change of one object. Applications normally get it from the {@code update()} method of that object.
+     * Nothing is sent until {@code send()}.
      *
      * @param milestone the milestone
+     * @throws NullPointerException if {@code milestone} is {@code null}
      */
     public MilestoneUpdate(final Milestone milestone) {
-        this.milestone = milestone;
+        this.milestone = requireNonNull(milestone, "milestone");
     }
 
     /**

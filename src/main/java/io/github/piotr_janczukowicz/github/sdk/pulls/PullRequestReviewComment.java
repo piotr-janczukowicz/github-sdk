@@ -1,6 +1,7 @@
 package io.github.piotr_janczukowicz.github.sdk.pulls;
 
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
+import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 
 import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubCreateReviewCommentReplyPayload;
@@ -109,7 +110,7 @@ public final class PullRequestReviewComment {
      */
     public PullRequestReviewComment edit(final String body) throws IOException {
         final GitHubUpdateReviewCommentPayload payload =
-                new GitHubUpdateReviewCommentPayload(requireNonNull(body, "body"));
+                new GitHubUpdateReviewCommentPayload(requireNotBlank(body, "body"));
         final Repository repository = pullRequest.repository();
         final GitHub github = Internals.github(repository);
         return new PullRequestReviewComment(
@@ -129,7 +130,7 @@ public final class PullRequestReviewComment {
      */
     public PullRequestReviewComment reply(final String body) throws IOException {
         final GitHubCreateReviewCommentReplyPayload payload =
-                new GitHubCreateReviewCommentReplyPayload(requireNonNull(body, "body"));
+                new GitHubCreateReviewCommentReplyPayload(requireNotBlank(body, "body"));
         final Repository repository = pullRequest.repository();
         final GitHub github = Internals.github(repository);
         return new PullRequestReviewComment(

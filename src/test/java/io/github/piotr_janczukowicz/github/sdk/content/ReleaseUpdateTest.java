@@ -113,4 +113,11 @@ class ReleaseUpdateTest {
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("body");
     }
+
+    @Test
+    void constructor_shouldThrowNullPointerException_whenReleaseIsNull() {
+        final Throwable thrown = catchThrowable(() -> new ReleaseUpdate(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("release");
+    }
 }

@@ -164,4 +164,11 @@ class CommitChecksTest {
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("state");
     }
+
+    @Test
+    void createStatus_shouldThrowIllegalArgumentException_whenContextIsBlank() {
+        final Throwable thrown = catchThrowable(() -> sut.createStatus(CommitStatusState.SUCCESS, " "));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("context");
+    }
 }

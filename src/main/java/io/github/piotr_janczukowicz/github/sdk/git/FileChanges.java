@@ -47,8 +47,8 @@ public final class FileChanges {
     private final Map<String, byte @Nullable []> changes = new LinkedHashMap<>();
 
     /**
-     * Wraps a response. Applications normally get this object from the object that owns it; call the constructor only
-     * to wrap a response that was loaded some other way.
+     * Starts an empty collection of changes for one branch of a repository. Applications normally get it from
+     * {@code Repository.commitTo(String)}. Nothing is sent until {@link #send(String)}.
      *
      * @param repository the repository the object belongs to
      * @param branch the branch the object belongs to

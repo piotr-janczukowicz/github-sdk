@@ -1,6 +1,7 @@
 package io.github.piotr_janczukowicz.github.sdk.pulls;
 
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
+import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 
 import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubDismissReviewPayload;
@@ -128,7 +129,7 @@ public final class PullRequestReview {
      * @throws IOException if the transport fails
      */
     public PullRequestReview edit(final String body) throws IOException {
-        final GitHubUpdateReviewPayload payload = new GitHubUpdateReviewPayload(requireNonNull(body, "body"));
+        final GitHubUpdateReviewPayload payload = new GitHubUpdateReviewPayload(requireNotBlank(body, "body"));
         final Repository repository = pullRequest.repository();
         final GitHub github = Internals.github(repository);
         return new PullRequestReview(
@@ -185,7 +186,7 @@ public final class PullRequestReview {
      */
     public PullRequestReview dismiss(final String message) throws IOException {
         final GitHubDismissReviewPayload payload =
-                new GitHubDismissReviewPayload(requireNonNull(message, "message"), null);
+                new GitHubDismissReviewPayload(requireNotBlank(message, "message"), null);
         final Repository repository = pullRequest.repository();
         final GitHub github = Internals.github(repository);
         return new PullRequestReview(

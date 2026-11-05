@@ -1,7 +1,5 @@
 package io.github.piotr_janczukowicz.github.sdk.rulesets;
 
-import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
-
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRule;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRuleCreation;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRuleCreationType;
@@ -22,6 +20,7 @@ import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRule
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRuleRequiredStatusChecksType;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRuleUpdate;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRuleUpdateType;
+import io.github.piotr_janczukowicz.github.sdk.internal.Arguments;
 import java.util.List;
 
 /**
@@ -144,11 +143,12 @@ public final class Rules {
      * @param isStrict {@code true} to also require the branch to be up to date with the base branch
      * @param contexts the names of the checks that must pass
      * @return the rule
-     * @throws NullPointerException if {@code contexts} is {@code null}
+     * @throws NullPointerException if {@code contexts} or a context is {@code null}
+     * @throws IllegalArgumentException if a context is blank
      */
     public static GitHubRepositoryRule requireStatusChecks(final boolean isStrict, final List<String> contexts) {
         final List<GitHubRepositoryRuleParamsStatusCheckConfiguration> checks =
-                requireNonNull(contexts, "contexts").stream()
+                Arguments.requireNotBlankElements(contexts, "contexts").stream()
                         .map(context -> new GitHubRepositoryRuleParamsStatusCheckConfiguration(context, null))
                         .toList();
         return new GitHubRepositoryRuleRequiredStatusChecks(

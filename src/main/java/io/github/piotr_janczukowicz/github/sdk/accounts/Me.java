@@ -20,6 +20,7 @@ import io.github.piotr_janczukowicz.github.api.users.GitHubUpdateSocialAccountsP
 import io.github.piotr_janczukowicz.github.pagination.GitHubPageRequest;
 import io.github.piotr_janczukowicz.github.sdk.GitHubSdk;
 import io.github.piotr_janczukowicz.github.sdk.User;
+import io.github.piotr_janczukowicz.github.sdk.internal.Arguments;
 import io.github.piotr_janczukowicz.github.sdk.internal.Internals;
 import io.github.piotr_janczukowicz.github.sdk.packages.RegistryPackage;
 import io.github.piotr_janczukowicz.github.sdk.packages.RegistryPackages;
@@ -43,8 +44,8 @@ public final class Me {
     private final GitHubSdk sdk;
 
     /**
-     * Wraps a response. Applications normally get this object from the object that owns it; call the constructor only
-     * to wrap a response that was loaded some other way.
+     * Creates the handle. Applications normally get it from the object it belongs to. Nothing is requested until a
+     * method is called.
      *
      * @param sdk the SDK that makes the calls
      * @throws NullPointerException if an argument is {@code null}
@@ -384,28 +385,32 @@ public final class Me {
     /**
      * Adds social accounts to the profile ({@code POST /user/social_accounts}).
      *
-     * @param urls the URLs of the accounts
+     * @param urls the URLs of the accounts, at least one
      * @return the social accounts of the profile afterwards
-     * @throws NullPointerException if {@code urls} is {@code null}
+     * @throws NullPointerException if {@code urls} or a URL is {@code null}
+     * @throws IllegalArgumentException if {@code urls} is empty or a URL is blank
      * @throws IOException if the transport fails
      */
     public List<GitHubSocialAccount> addSocialAccounts(final List<String> urls) throws IOException {
         return github().users()
                 .socialAccounts()
-                .addSocialAccounts(new GitHubUpdateSocialAccountsPayload(List.copyOf(requireNonNull(urls, "urls"))));
+                .addSocialAccounts(
+                        new GitHubUpdateSocialAccountsPayload(Arguments.requireNotBlankValues(urls, "urls")));
     }
 
     /**
      * Removes social accounts from the profile ({@code DELETE /user/social_accounts}).
      *
-     * @param urls the URLs of the accounts
-     * @throws NullPointerException if {@code urls} is {@code null}
+     * @param urls the URLs of the accounts, at least one
+     * @throws NullPointerException if {@code urls} or a URL is {@code null}
+     * @throws IllegalArgumentException if {@code urls} is empty or a URL is blank
      * @throws IOException if the transport fails
      */
     public void removeSocialAccounts(final List<String> urls) throws IOException {
         github().users()
                 .socialAccounts()
-                .deleteSocialAccounts(new GitHubUpdateSocialAccountsPayload(List.copyOf(requireNonNull(urls, "urls"))));
+                .deleteSocialAccounts(
+                        new GitHubUpdateSocialAccountsPayload(Arguments.requireNotBlankValues(urls, "urls")));
     }
 
     /**
@@ -441,8 +446,10 @@ public final class Me {
      * /users/{username}/events}). GitHub keeps only the last 90 days of events, at most 300, and caches the feed for a
      * few seconds, so a new event can take a moment to show. The stream is lazy and can be used once.
      *
+     * <p>Loads the profile first ({@code GET /user}) to read the login.
+     *
      * @return the events as GitHub returns them
-     * @throws IOException if the first page cannot be loaded
+     * @throws IOException if the profile or the first page cannot be loaded
      */
     public Stream<GitHubEvent> events() throws IOException {
         return github()
@@ -457,8 +464,10 @@ public final class Me {
      * /users/{username}/received_events}). GitHub keeps only the last 90 days of events, at most 300, and caches the
      * feed for a few seconds, so a new event can take a moment to show. The stream is lazy and can be used once.
      *
+     * <p>Loads the profile first ({@code GET /user}) to read the login.
+     *
      * @return the events as GitHub returns them
-     * @throws IOException if the first page cannot be loaded
+     * @throws IOException if the profile or the first page cannot be loaded
      */
     public Stream<GitHubEvent> receivedEvents() throws IOException {
         return github().activity().events().listReceivedEventsForUser(profile().login()).stream();
@@ -475,8 +484,8 @@ public final class Me {
         return github().apps().marketplace().listSubscriptionsForAuthenticatedUser(GitHubPageRequest.byPage()).stream();
     }
 
-    void apply(final GitHubUpdateAuthenticatedUserPayload payload) throws IOException {
-        github().users().user().updateAuthenticatedUser(payload);
+    User apply(final GitHubUpdateAuthenticatedUserPayload payload) throws IOException {
+        return new User(sdk, github().users().user().updateAuthenticatedUser(payload));
     }
 
     private GpgKey createGpgKey(final @Nullable String name, final String armoredPublicKey) throws IOException {

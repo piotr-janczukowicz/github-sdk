@@ -112,4 +112,11 @@ class RulesTest {
 
         assertThat(thrown).hasCauseInstanceOf(UnsupportedOperationException.class);
     }
+
+    @Test
+    void requireStatusChecks_shouldThrowIllegalArgumentException_whenAContextIsBlank() {
+        final Throwable thrown = catchThrowable(() -> Rules.requireStatusChecks(false, List.of(" ")));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("contexts");
+    }
 }

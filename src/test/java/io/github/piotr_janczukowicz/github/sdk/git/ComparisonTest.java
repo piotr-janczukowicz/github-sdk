@@ -1,6 +1,7 @@
 package io.github.piotr_janczukowicz.github.sdk.git;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.doReturn;
@@ -72,5 +73,12 @@ class ComparisonTest {
         final Optional<String> patch = sut.patch();
 
         assertThat(patch).hasValue("From abc Mon Sep 17");
+    }
+
+    @Test
+    void constructor_shouldThrowIllegalArgumentException_whenBaseHeadIsBlank() {
+        final Throwable thrown = catchThrowable(() -> new Comparison(repository, " ", response));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("baseHead");
     }
 }

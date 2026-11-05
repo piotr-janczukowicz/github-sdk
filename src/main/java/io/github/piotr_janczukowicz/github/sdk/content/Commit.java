@@ -103,6 +103,7 @@ public final class Commit {
      * @param name the name of the check, for example {@code build}
      * @return the check runs with this name
      * @throws IllegalArgumentException if {@code name} is blank
+     * @throws NullPointerException if {@code name} is {@code null}
      * @throws IOException if the first page cannot be loaded
      */
     public Stream<CheckRun> checkRuns(final String name) throws IOException {
@@ -170,6 +171,7 @@ public final class Commit {
      * @param targetUrl a link to the service's page about the status, or {@code null} for none
      * @return the new status
      * @throws NullPointerException if {@code state} is {@code null}
+     * @throws IllegalArgumentException if {@code context} is blank
      * @throws IOException if the transport fails
      */
     public CommitStatus createStatus(
@@ -179,7 +181,10 @@ public final class Commit {
             final @Nullable String targetUrl)
             throws IOException {
         final GitHubCreateCommitStatusPayload payload = new GitHubCreateCommitStatusPayload(
-                ClientValues.statusStateToClient(requireNonNull(state, "state")), targetUrl, description, context);
+                ClientValues.statusStateToClient(requireNonNull(state, "state")),
+                targetUrl,
+                description,
+                requireNotBlank(context, "context"));
         return new CommitStatus(
                 this,
                 github().commits()

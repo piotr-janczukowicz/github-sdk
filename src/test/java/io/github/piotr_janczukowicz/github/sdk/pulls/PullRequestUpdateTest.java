@@ -113,4 +113,11 @@ class PullRequestUpdateTest {
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("base");
     }
+
+    @Test
+    void constructor_shouldThrowNullPointerException_whenPullRequestIsNull() {
+        final Throwable thrown = catchThrowable(() -> new PullRequestUpdate(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("pullRequest");
+    }
 }

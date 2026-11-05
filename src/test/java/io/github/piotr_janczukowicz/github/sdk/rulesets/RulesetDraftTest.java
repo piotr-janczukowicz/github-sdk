@@ -221,4 +221,31 @@ class RulesetDraftTest {
                         GitHubRepositoryRulesetBypassActorType.REPOSITORY_ROLE,
                         GitHubRepositoryRulesetBypassActorType.ORGANIZATION_ADMIN);
     }
+
+    @Test
+    void includeRefs_shouldThrowIllegalArgumentException_whenAPatternIsBlank() {
+        final Throwable thrown = catchThrowable(
+                () -> new RulesetDraft(repository, RULESET, RulesetTarget.BRANCH, RulesetEnforcement.ACTIVE)
+                        .includeRefs(" "));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("patterns");
+    }
+
+    @Test
+    void excludeRefs_shouldThrowIllegalArgumentException_whenAPatternIsBlank() {
+        final Throwable thrown = catchThrowable(
+                () -> new RulesetDraft(repository, RULESET, RulesetTarget.BRANCH, RulesetEnforcement.ACTIVE)
+                        .excludeRefs(" "));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("patterns");
+    }
+
+    @Test
+    void bypass_shouldThrowIllegalArgumentException_whenTheTypeIsADeployKey() {
+        final Throwable thrown = catchThrowable(
+                () -> new RulesetDraft(repository, RULESET, RulesetTarget.BRANCH, RulesetEnforcement.ACTIVE)
+                        .bypass(BypassActorType.DEPLOY_KEY, 5L, BypassMode.ALWAYS));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("deploy key");
+    }
 }
