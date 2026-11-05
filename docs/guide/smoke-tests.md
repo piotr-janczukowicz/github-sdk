@@ -43,6 +43,7 @@ Without `SMOKE_GITHUB_TOKEN` every smoke class is skipped.
 | `PullRequestReviewsSmokeIT` | comment review, draft review (edit, submit, delete), inline comment (reply, edit, list, delete), review comments. Approve, request changes and dismiss need a second user, because GitHub refuses them on one's own pull request |
 | `ChecksSmokeIT` | commit status: create, list, combined state; check runs of the head commit when there are any; 404 on a missing check run. Check runs cannot be created, because GitHub accepts that only from GitHub Apps |
 | `ReactionsSmokeIT` | react, list and delete a reaction on an issue, an issue comment and a pull request review comment; issue events and timeline |
+| `CollaboratorsSmokeIT` | list collaborators, check membership, the owner's permission level, list invitations. Adding, removing and changing collaborators are not run live, because an invitation goes to a real account |
 | `ContentSmokeIT` | default branch, its head commit, branch and commit lists, 404 on a missing branch |
 | `FilesSmokeIT` | write, update, read, delete a file on a throwaway branch (binary and UTF-8 text), directory and missing paths |
 | `ReleasesSmokeIT` | draft release: create, update, list, refresh, delete; latest release; tags |

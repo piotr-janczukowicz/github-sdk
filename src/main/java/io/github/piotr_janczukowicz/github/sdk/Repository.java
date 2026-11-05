@@ -5,6 +5,9 @@ import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 
 import io.github.piotr_janczukowicz.github.api.branches.GitHubListBranchesFilter;
 import io.github.piotr_janczukowicz.github.api.branches.GitHubShortBranch;
+import io.github.piotr_janczukowicz.github.api.collaborators.GitHubAddCollaboratorPayload;
+import io.github.piotr_janczukowicz.github.api.collaborators.GitHubListCollaboratorsFilter;
+import io.github.piotr_janczukowicz.github.api.collaborators.GitHubRepositoryCollaboratorPermission;
 import io.github.piotr_janczukowicz.github.api.commits.GitHubListCommitsFilter;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubCreateLabelPayload;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubCreateMilestonePayload;
@@ -40,6 +43,7 @@ public final class Repository {
 
     private static final String PAYLOAD = "payload";
     private static final String FILTER = "filter";
+    private static final String LOGIN = "login";
 
     private final GitHubSdk sdk;
     private final String owner;
@@ -634,6 +638,118 @@ public final class Repository {
         return new Webhook(
                 this,
                 sdk.github().repositories().webhooks().createWebhook(owner, name, requireNonNull(payload, PAYLOAD)));
+    }
+
+    /**
+     * Lists the collaborators with their default affiliation ({@code GET /repos/{owner}/{repo}/collaborators}). See
+     * {@link #collaborators(GitHubListCollaboratorsFilter)}.
+     *
+     * @return the collaborators
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<Collaborator> collaborators() throws IOException {
+        return collaborators(GitHubListCollaboratorsFilter.empty());
+    }
+
+    /**
+     * Lists the collaborators ({@code GET /repos/{owner}/{repo}/collaborators}). Pages are fetched only as the stream
+     * is consumed; transport failures during iteration are {@link java.io.UncheckedIOException}.
+     *
+     * @param filter the affiliation and permission to list
+     * @return the collaborators
+     * @throws NullPointerException if {@code filter} is {@code null}
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<Collaborator> collaborators(final GitHubListCollaboratorsFilter filter) throws IOException {
+        return sdk
+                .github()
+                .collaborators()
+                .collaborator()
+                .listCollaborators(owner, name, requireNonNull(filter, FILTER), GitHubPageRequest.byPage())
+                .stream()
+                .map(listed -> new Collaborator(this, listed));
+    }
+
+    /**
+     * Tells whether a user is a collaborator ({@code GET /repos/{owner}/{repo}/collaborators/{username}}).
+     *
+     * @param login the user's login
+     * @return {@code true} when the user is a collaborator
+     * @throws IllegalArgumentException if {@code login} is blank
+     * @throws IOException if the transport fails
+     */
+    public boolean isCollaborator(final String login) throws IOException {
+        return sdk.github()
+                .collaborators()
+                .collaborator()
+                .checkCollaborator(owner, name, requireNotBlank(login, LOGIN));
+    }
+
+    /**
+     * Loads a user's permission level ({@code GET /repos/{owner}/{repo}/collaborators/{username}/permission}). The
+     * client's record is passed through.
+     *
+     * @param login the user's login
+     * @return the permission level, or empty when GitHub answers HTTP 404
+     * @throws IllegalArgumentException if {@code login} is blank
+     * @throws IOException if the transport fails
+     */
+    public Optional<GitHubRepositoryCollaboratorPermission> collaboratorPermission(final String login)
+            throws IOException {
+        return sdk.github()
+                .collaborators()
+                .collaborator()
+                .getCollaboratorPermissionLevel(owner, name, requireNotBlank(login, LOGIN));
+    }
+
+    /**
+     * Invites a user with the permission the repository's organization gives by default ({@code PUT
+     * /repos/{owner}/{repo}/collaborators/{username}}). GitHub emails the user.
+     *
+     * @param login the user's login
+     * @return the invitation, or empty when GitHub added the user without one
+     * @throws IllegalArgumentException if {@code login} is blank
+     * @throws IOException if the transport fails
+     */
+    public Optional<Invitation> addCollaborator(final String login) throws IOException {
+        return sdk.github()
+                .collaborators()
+                .collaborator()
+                .addCollaborator(owner, name, requireNotBlank(login, LOGIN))
+                .map(invited -> new Invitation(this, invited));
+    }
+
+    /**
+     * Invites a user ({@code PUT /repos/{owner}/{repo}/collaborators/{username}}). GitHub emails the user.
+     *
+     * @param login the user's login
+     * @param permission the access to grant
+     * @return the invitation, or empty when GitHub added the user without one
+     * @throws IllegalArgumentException if {@code login} is blank
+     * @throws NullPointerException if {@code permission} is {@code null}
+     * @throws IOException if the transport fails
+     */
+    public Optional<Invitation> addCollaborator(final String login, final RepositoryPermission permission)
+            throws IOException {
+        final GitHubAddCollaboratorPayload payload = new GitHubAddCollaboratorPayload(
+                requireNonNull(permission, "permission").toClient().wireValue());
+        return sdk.github()
+                .collaborators()
+                .collaborator()
+                .addCollaborator(owner, name, requireNotBlank(login, LOGIN), payload)
+                .map(invited -> new Invitation(this, invited));
+    }
+
+    /**
+     * Lists the pending invitations ({@code GET /repos/{owner}/{repo}/invitations}). Pages are fetched only as the
+     * stream is consumed; transport failures during iteration are {@link java.io.UncheckedIOException}.
+     *
+     * @return the invitations
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<Invitation> invitations() throws IOException {
+        return sdk.github().collaborators().invitations().listInvitations(owner, name).stream()
+                .map(listed -> new Invitation(this, listed));
     }
 
     /**
