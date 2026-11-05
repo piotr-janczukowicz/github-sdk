@@ -51,6 +51,7 @@ Without `SMOKE_GITHUB_TOKEN` every smoke class is skipped.
 | `ActivitySmokeIT` | star, check, list stargazers and starred repositories, unstar; watch, ignore and unwatch; list watchers and forks. The tests restore your original star and subscription. Forking is not run live, because a user cannot fork their own repository |
 | `ActionsSmokeIT` | create, list, update, delete an Actions variable; list workflows and runs, reload runs, list their jobs and log links; 404 on a missing run. Dispatching a workflow and cancelling the run runs only when `SMOKE_GITHUB_WORKFLOW` names the file of a `workflow_dispatch` workflow already on the sandbox default branch, so the tests never commit workflow files |
 | `RepositoryManagementSmokeIT` | change and restore the description and homepage, replace and restore the topics, list languages and contributors. Create, rename, transfer, archive and delete are not run live: fine-grained tokens cannot create repositories, and GitHub's API cannot unarchive one |
+| `PackagesSmokeIT` | list the container packages of the sandbox owner. Skipped when GitHub refuses the token, which it does for every fine-grained token, because the REST API for packages needs a classic token with `read:packages` |
 | `InteractionsAndCodeQualitySmokeIT` | set, read and remove a one-day interaction limit on the sandbox, and read the code quality findings and setup. The limit test needs the Administration permission; code quality is skipped on 403. Right after a removal, GitHub once answered the next set with an empty body, which the client refuses to decode; running the test again passed |
 | `EventsSmokeIT` | read the repository, repository network, public and user event feeds. The feeds may be empty for a quiet sandbox, so only the public feed is required to hold events |
 | `RulesetsSmokeIT` | create an active ruleset for a ref pattern that no branch matches, rename and disable it, add and remove rules, reload it, list it, read its history, delete it, read the rule suites. It never touches an existing branch. The evaluate (dry run) enforcement is not covered, because GitHub offers it only on the Enterprise plan. Skipped when GitHub answers 403 |
@@ -99,6 +100,7 @@ sandbox repository. Their behavior against the real GitHub API has not been chec
 | Stars and watching | the token form does not offer the permissions |
 | Workflow dispatch | `SMOKE_GITHUB_WORKFLOW` is not set |
 | Apps, installations and Marketplace | they need an App JWT from a registered GitHub App and its private key, so they are covered by unit tests only |
+| Packages | the REST API for packages does not support fine-grained tokens; deleting and restoring packages is not smoke tested even with a classic token, because the sandbox has no packages to lose |
 | Projects v2 | the token has no Projects permission and `SMOKE_GITHUB_PROJECT` is not set; adding fields and views is not smoke tested, because REST cannot delete them again |
 | Organizations and teams, including membership, invitations, team management, organization webhooks and variables | the account has no organization, so these are covered by unit tests only |
 

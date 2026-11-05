@@ -4,6 +4,7 @@ import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
 
 import io.github.piotr_janczukowicz.github.api.activity.GitHubEvent;
 import io.github.piotr_janczukowicz.github.api.organizations.GitHubOrganizationSimple;
+import io.github.piotr_janczukowicz.github.api.packages.GitHubPackageType;
 import io.github.piotr_janczukowicz.github.api.users.GitHubAuthenticatedUser;
 import io.github.piotr_janczukowicz.github.api.users.GitHubGpgKey;
 import io.github.piotr_janczukowicz.github.api.users.GitHubKeySimple;
@@ -15,6 +16,8 @@ import io.github.piotr_janczukowicz.github.api.users.GitHubUserView;
 import io.github.piotr_janczukowicz.github.pagination.GitHubPageRequest;
 import io.github.piotr_janczukowicz.github.sdk.gists.Gist;
 import io.github.piotr_janczukowicz.github.sdk.internal.Lookups;
+import io.github.piotr_janczukowicz.github.sdk.packages.RegistryPackage;
+import io.github.piotr_janczukowicz.github.sdk.packages.RegistryPackages;
 import io.github.piotr_janczukowicz.github.sdk.projects.Project;
 import io.github.piotr_janczukowicz.github.sdk.projects.Projects;
 import java.io.IOException;
@@ -222,6 +225,34 @@ public final class User {
      */
     public Stream<GitHubEvent> receivedEvents() throws IOException {
         return sdk.github().activity().events().listReceivedPublicEventsForUser(login()).stream();
+    }
+
+    /**
+     * Lists the packages of the user of one type ({@code GET /users/{username}/packages}). GitHub requires the type,
+     * and its REST API for packages needs a classic token. The stream is lazy and can be used once.
+     *
+     * @param type the package type
+     * @return the packages
+     * @throws NullPointerException if {@code type} is {@code null}
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<RegistryPackage> registryPackages(final GitHubPackageType type) throws IOException {
+        return RegistryPackages.forUser(sdk, login()).all(type);
+    }
+
+    /**
+     * Loads one package of the user ({@code GET /users/{username}/packages/{package_type}/{package_name}}).
+     *
+     * @param type the package type
+     * @param name the package name
+     * @return the package, or empty when GitHub answers HTTP 404
+     * @throws NullPointerException if {@code type} or {@code name} is {@code null}
+     * @throws IllegalArgumentException if {@code name} is blank
+     * @throws IOException if the transport fails
+     */
+    public Optional<RegistryPackage> registryPackage(final GitHubPackageType type, final String name)
+            throws IOException {
+        return RegistryPackages.forUser(sdk, login()).find(type, name);
     }
 
     /**
