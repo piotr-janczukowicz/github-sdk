@@ -142,7 +142,7 @@ public final class Rules {
      *
      * @param isStrict {@code true} to also require the branch to be up to date with the base branch
      * @param contexts the names of the checks that must pass; GitHub accepts an empty list and then names no check
-     *     (checked on a rule with disabled enforcement)
+     *     (verified against the GitHub API with a rule whose enforcement is disabled)
      * @return the rule
      * @throws NullPointerException if {@code contexts} or a context is {@code null}
      * @throws IllegalArgumentException if a context is blank

@@ -117,8 +117,8 @@ public final class FileChanges {
      * @return the new commit
      * @throws NullPointerException if {@code message} is {@code null}
      * @throws IllegalArgumentException if {@code message} is blank
-     * @throws IllegalStateException if no change was chosen, the branch is gone, or GitHub does not have the commit it
-     *     just created
+     * @throws IllegalStateException if no change was chosen, the branch is gone, GitHub does not have the commit it
+     *     just created, a tree is too large to read the modes of its files, or a submodule is rewritten as a file
      * @throws IOException if the transport fails
      */
     public Commit send(final String message) throws IOException {
@@ -158,7 +158,7 @@ public final class FileChanges {
 
     private List<GitHubCreateTreeEntry> entries(final GitHub github, final String baseTree) throws IOException {
         final List<GitHubCreateTreeEntry> entries = new ArrayList<>(changes.size());
-        final Map<String, List<GitHubGitTreeEntry>> trees = new HashMap<>();
+        final Map<String, Map<String, GitHubGitTreeEntry>> trees = new HashMap<>();
         for (final Map.Entry<String, byte @Nullable []> change : changes.entrySet()) {
             final byte[] content = change.getValue();
             if (content == null) {
@@ -219,13 +219,10 @@ public final class FileChanges {
             final String treeSha,
             final String[] segments,
             final int index,
-            final Map<String, List<GitHubGitTreeEntry>> trees)
+            final Map<String, Map<String, GitHubGitTreeEntry>> trees)
             throws IOException {
         final String segment = segments[index];
-        final GitHubGitTreeEntry found = tree(github, treeSha, trees).stream()
-                .filter(entry -> segment.equals(entry.path()))
-                .findFirst()
-                .orElse(null);
+        final GitHubGitTreeEntry found = tree(github, treeSha, trees).get(segment);
         if (found == null) {
             return GitHubCreateTreeEntryMode.FILE;
         }
@@ -238,10 +235,10 @@ public final class FileChanges {
         return existingMode(github, found.sha(), segments, index + 1, trees);
     }
 
-    private List<GitHubGitTreeEntry> tree(
-            final GitHub github, final String sha, final Map<String, List<GitHubGitTreeEntry>> trees)
+    private Map<String, GitHubGitTreeEntry> tree(
+            final GitHub github, final String sha, final Map<String, Map<String, GitHubGitTreeEntry>> trees)
             throws IOException {
-        final List<GitHubGitTreeEntry> cached = trees.get(sha);
+        final Map<String, GitHubGitTreeEntry> cached = trees.get(sha);
         if (cached != null) {
             return cached;
         }
@@ -252,7 +249,8 @@ public final class FileChanges {
         if (tree.truncated()) {
             throw new IllegalStateException("Tree " + sha + " is too large to read the modes of its files");
         }
-        final List<GitHubGitTreeEntry> loaded = tree.tree();
+        final Map<String, GitHubGitTreeEntry> loaded = new HashMap<>();
+        tree.tree().forEach(entry -> loaded.putIfAbsent(entry.path(), entry));
         trees.put(sha, loaded);
         return loaded;
     }

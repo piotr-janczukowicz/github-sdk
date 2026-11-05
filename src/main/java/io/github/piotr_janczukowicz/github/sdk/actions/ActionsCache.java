@@ -26,7 +26,6 @@ public final class ActionsCache {
      * Returns the cache id.
      *
      * @return the id
-     * @throws NullPointerException if the response has no id
      */
     public long id() {
         return requireNonNull(response.id(), "id");

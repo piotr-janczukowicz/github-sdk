@@ -88,7 +88,7 @@ public final class GistUpdate {
      */
     public Gist send() throws IOException {
         state.requireChange();
-        final Map<String, GitHubUpdateGistFile> sentFiles = files.isEmpty() ? null : files;
+        final Map<String, @Nullable GitHubUpdateGistFile> sentFiles = files.isEmpty() ? null : files;
         return new Gist(
                 gist.sdk(),
                 gist.github().gists().gist().updateGist(gist.id(), new GitHubUpdatePayload(description, sentFiles)));

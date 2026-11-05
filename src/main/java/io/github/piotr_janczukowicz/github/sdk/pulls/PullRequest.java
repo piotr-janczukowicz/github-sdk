@@ -449,7 +449,8 @@ public final class PullRequest {
      * @param expectedHeadSha the commit the head is expected to be at
      * @return GitHub's answer, a message and a URL
      * @throws NullPointerException if {@code expectedHeadSha} is {@code null}
-     * @throws IllegalArgumentException if {@code expectedHeadSha} is blank or not a plain value
+     * @throws IllegalArgumentException if {@code expectedHeadSha} is blank, has a control character or a {@code .} or
+     *     {@code ..} segment
      * @throws IOException if the transport fails
      */
     public GitHubPullRequestBranchUpdateResult updateBranch(final String expectedHeadSha) throws IOException {

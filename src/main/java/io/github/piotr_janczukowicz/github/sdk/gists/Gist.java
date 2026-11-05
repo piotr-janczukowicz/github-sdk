@@ -94,7 +94,7 @@ public final class Gist {
      *
      * @return the files, empty when GitHub reports none
      */
-    public Map<String, GitHubGistSimpleFile> files() {
+    public Map<String, @Nullable GitHubGistSimpleFile> files() {
         final Map<String, @Nullable GitHubGistSimpleFile> files = response.files();
         return files == null ? Map.of() : files;
     }

@@ -327,4 +327,11 @@ class RepositoryTest {
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("payload");
     }
+
+    @Test
+    void createIssue_shouldThrowIllegalArgumentException_whenTheTitleIsBlank() {
+        final Throwable thrown = catchThrowable(() -> sut.createIssue(" "));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("title");
+    }
 }

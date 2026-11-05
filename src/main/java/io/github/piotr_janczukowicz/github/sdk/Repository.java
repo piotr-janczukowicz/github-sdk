@@ -236,11 +236,12 @@ public final class Repository {
      * @param title the issue title
      * @return the new issue as GitHub returned it
      * @throws NullPointerException if {@code title} is {@code null}
+     * @throws IllegalArgumentException if {@code title} is blank
      * @throws IOException if the transport fails
      */
     public Issue createIssue(final String title) throws IOException {
         return createIssue(GitHubCreatePayloadBuilder.builder()
-                .title(requireNonNull(title, TITLE))
+                .title(requireNotBlank(title, TITLE))
                 .build());
     }
 
@@ -407,7 +408,8 @@ public final class Repository {
      *
      * @param name the branch name
      * @return the branch, or empty when GitHub answers HTTP 404
-     * @throws IllegalArgumentException if {@code name} is blank
+     * @throws IllegalArgumentException if {@code name} is blank, has a control character or a {@code .} or {@code ..}
+     *     segment
      * @throws NullPointerException if {@code name} is {@code null}
      * @throws IOException if the transport fails
      */
@@ -782,7 +784,8 @@ public final class Repository {
      * @param path the path within the repository
      * @param ref the branch, tag or commit
      * @return the file, or empty when GitHub answers HTTP 404 or the path is a directory, symbolic link or submodule
-     * @throws IllegalArgumentException if {@code path} or {@code ref} is blank
+     * @throws IllegalArgumentException if {@code path} or {@code ref} is blank, or has a control character or a
+     *     {@code .} or {@code ..} segment
      * @throws NullPointerException if {@code path} or {@code ref} is {@code null}
      * @throws IOException if the transport fails
      */
@@ -1833,7 +1836,8 @@ public final class Repository {
      * @param sha the sha of the commit it starts at
      * @return the new branch
      * @throws NullPointerException if {@code branch} or {@code sha} is {@code null}
-     * @throws IllegalArgumentException if {@code branch} or {@code sha} is blank
+     * @throws IllegalArgumentException if {@code branch} or {@code sha} is blank, or has a control character or a
+     *     {@code .} or {@code ..} segment
      * @throws IOException if the transport fails
      * @throws IllegalStateException if GitHub does not have the branch it just created
      */
@@ -2053,8 +2057,10 @@ public final class Repository {
      * @param environment the name of the target environment
      * @return the new deployment
      * @throws NullPointerException if {@code ref} or {@code environment} is {@code null}
-     * @throws IllegalArgumentException if {@code ref} or {@code environment} is blank
-     * @throws IllegalStateException if GitHub answers with a merge instead of a deployment
+     * @throws IllegalArgumentException if {@code ref} or {@code environment} is blank, or {@code ref} has a control
+     *     character or a {@code .} or {@code ..} segment
+     * @throws IllegalStateException if GitHub answers with a merge instead of a deployment, which it does not do while
+     *     {@code auto_merge} is switched off
      * @throws IOException if the transport fails
      */
     public Deployment deploy(final String ref, final String environment) throws IOException {
