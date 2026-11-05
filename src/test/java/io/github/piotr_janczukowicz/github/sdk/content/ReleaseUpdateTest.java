@@ -120,4 +120,13 @@ class ReleaseUpdateTest {
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("release");
     }
+
+    @Test
+    void tagName_shouldThrowIllegalArgumentException_whenBlank() {
+        final ReleaseUpdate update = release.update();
+
+        final Throwable thrown = catchThrowable(() -> update.tagName(" "));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("tagName");
+    }
 }

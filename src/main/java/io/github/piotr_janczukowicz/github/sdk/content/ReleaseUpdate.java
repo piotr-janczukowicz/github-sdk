@@ -1,6 +1,7 @@
 package io.github.piotr_janczukowicz.github.sdk.content;
 
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
+import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 
 import io.github.piotr_janczukowicz.github.api.releases.GitHubUpdateReleasePayload;
 import io.github.piotr_janczukowicz.github.sdk.internal.UpdateState;
@@ -38,9 +39,10 @@ public final class ReleaseUpdate {
      * @param tagName the new value
      * @return this update
      * @throws NullPointerException if {@code tagName} is {@code null}
+     * @throws IllegalArgumentException if {@code tagName} is blank
      */
     public ReleaseUpdate tagName(final String tagName) {
-        this.tagName = requireNonNull(tagName, "tagName");
+        this.tagName = requireNotBlank(tagName, "tagName");
         return changed();
     }
 

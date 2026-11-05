@@ -41,7 +41,7 @@ final class OrganizationProjectGateway implements ProjectGateway {
     @Override
     public Stream<GitHubProjectItem> items(final long project, final GitHubListProjectItemsFilter filter)
             throws IOException {
-        return github.projects().items().listForOrg(login, project, filter, GitHubPageRequest.byPage()).stream();
+        return github.projects().items().listForOrg(login, project, filter, GitHubPageRequest.byCursor()).stream();
     }
 
     @Override

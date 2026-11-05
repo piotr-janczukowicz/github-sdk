@@ -1,7 +1,6 @@
 package io.github.piotr_janczukowicz.github.sdk.projects;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
@@ -66,7 +65,7 @@ class OrganizationProjectGatewayTest {
         when(github
                         .projects()
                         .items()
-                        .listForOrg(eq(LOGIN), eq(NUMBER), eq(filter), any(GitHubPageRequest.class))
+                        .listForOrg(eq(LOGIN), eq(NUMBER), eq(filter), eq(GitHubPageRequest.byCursor()))
                         .stream())
                 .thenReturn(Stream.of(item));
 
