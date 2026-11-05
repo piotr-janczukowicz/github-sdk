@@ -127,7 +127,7 @@ is synced with GitHub's descriptions.
 The entry points (`GitHubSdk`, `Repository`, `User`, `Organization`, `Team`, `Search`, `RateLimit`) are in
 `io.github.piotr_janczukowicz.github.sdk`. The other objects are grouped by area in sub-packages: `issues`, `pulls`,
 `content` (branches, commits, files, releases), `git` (refs, comparisons, multi-file commits), `gists`,
-`accounts`, `organizations`, `notifications`, `metrics`, `utilities`, `deploykeys`, `deployments`, `pages`, `security`, `rulesets`, `projects`, `apps`, `actions`, `checks`, `collaborators`, `reactions` and
+`accounts`, `organizations`, `notifications`, `metrics`, `utilities`, `deploykeys`, `deployments`, `pages`, `security`, `rulesets`, `projects`, `apps`, `interactions`, `actions`, `checks`, `collaborators`, `reactions` and
 `webhooks`. The `internal` package is not exported by the module and is not part of the API.
 
 ## What is covered
@@ -167,6 +167,7 @@ The entry points (`GitHubSdk`, `Repository`, `User`, `Organization`, `Team`, `Se
 | `Team`, `OrganizationInvitation`, `OrganizationWebhook`, `OrganizationVariable` | `Team`: `members()`, `repositories()`, `childTeams()`, `update(...)`, `delete()`, `addMember(...)`, `removeMember(...)`, `membership(...)`, `addRepository(...)`, `removeRepository(...)`; an invitation has `cancel()`; a webhook has `update(...)`, `ping()`, `deliveries()`, `refresh()` and `delete()`; a variable has `update(value)`, `refresh()` and `delete()` |
 | `sdk.search()` | issues, repositories, users, code and commits |
 | `sdk.rateLimit()` | `RateLimit` |
+| `RepositoryInteractions`, `RepositoryCodeQuality` | `repository.interactions()` has `current()`, `restrict(group[, expiry])` and `remove()` for the temporary limit on who may comment and open issues and pull requests; `repository.codeQuality()` has `findings()`, `findings(state)`, `finding(number)` and `setup()`, returning the client records. The limit of the owner account or organization is not handled here |
 | Events | `repository.events()`, `repository.networkEvents()`, `organization.events()`, `user.events()`, `user.receivedEvents()`, `sdk.publicEvents()` and, for the signed-in account, `sdk.me().events()` and `receivedEvents()`; each is a lazy stream of the client's `GitHubEvent`. GitHub keeps only 90 days and 300 events per feed |
 | `App`, `Installation`, `Marketplace` | `sdk.app()` is the GitHub App the SDK is authenticated as, `sdk.app(slug)` a public app. The installation and webhook calls need an App JWT: `installations()`, `installation(id)`, `organizationInstallation(...)`, `repositoryInstallation(...)`, `userInstallation(...)`, `installationRequests()`, `webhookConfig()`, `webhookDeliveries()`, `webhookDelivery(id)`, `redeliver(id)`; an `Installation` has `suspend()`, `unsuspend()`, `delete()`, `refresh()` and `accessToken(...)`. `sdk.marketplace()` reads the Marketplace plans and purchases of the app, and `sdk.me().marketplaceSubscriptions()` those of the account. Creating an app from a manifest and the OAuth app token calls are not here, because they take client secrets |
 

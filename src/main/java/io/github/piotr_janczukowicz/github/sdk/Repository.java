@@ -85,6 +85,7 @@ import io.github.piotr_janczukowicz.github.sdk.deployments.Environment;
 import io.github.piotr_janczukowicz.github.sdk.git.Comparison;
 import io.github.piotr_janczukowicz.github.sdk.git.FileChanges;
 import io.github.piotr_janczukowicz.github.sdk.git.Ref;
+import io.github.piotr_janczukowicz.github.sdk.interactions.RepositoryInteractions;
 import io.github.piotr_janczukowicz.github.sdk.internal.ClientValues;
 import io.github.piotr_janczukowicz.github.sdk.internal.Internals;
 import io.github.piotr_janczukowicz.github.sdk.internal.Lookups;
@@ -102,6 +103,7 @@ import io.github.piotr_janczukowicz.github.sdk.rulesets.RulesetEnforcement;
 import io.github.piotr_janczukowicz.github.sdk.rulesets.RulesetTarget;
 import io.github.piotr_janczukowicz.github.sdk.security.CodeScanningAlert;
 import io.github.piotr_janczukowicz.github.sdk.security.DependabotAlert;
+import io.github.piotr_janczukowicz.github.sdk.security.RepositoryCodeQuality;
 import io.github.piotr_janczukowicz.github.sdk.security.RepositorySecurity;
 import io.github.piotr_janczukowicz.github.sdk.security.SecretScanningAlert;
 import io.github.piotr_janczukowicz.github.sdk.webhooks.Webhook;
@@ -1941,6 +1943,26 @@ public final class Repository {
                 .codeScanning()
                 .getAlert(owner, name, number)
                 .map(loaded -> new CodeScanningAlert(this, loaded));
+    }
+
+    /**
+     * Returns the temporary interaction limit of the repository, which restricts who may comment and open issues and
+     * pull requests for a while. Nothing is requested until a method of the result is called.
+     *
+     * @return the interaction limit
+     */
+    public RepositoryInteractions interactions() {
+        return new RepositoryInteractions(this);
+    }
+
+    /**
+     * Returns the code quality findings and setup of the repository. Nothing is requested until a method of the result
+     * is called.
+     *
+     * @return the code quality handle
+     */
+    public RepositoryCodeQuality codeQuality() {
+        return new RepositoryCodeQuality(this);
     }
 
     /**

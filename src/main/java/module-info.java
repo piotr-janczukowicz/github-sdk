@@ -14,6 +14,7 @@ module io.github.piotr_janczukowicz.githubsdk {
     exports io.github.piotr_janczukowicz.github.sdk.deploykeys;
     exports io.github.piotr_janczukowicz.github.sdk.deployments;
     exports io.github.piotr_janczukowicz.github.sdk.git;
+    exports io.github.piotr_janczukowicz.github.sdk.interactions;
     exports io.github.piotr_janczukowicz.github.sdk.issues;
     exports io.github.piotr_janczukowicz.github.sdk.metrics;
     exports io.github.piotr_janczukowicz.github.sdk.notifications;
