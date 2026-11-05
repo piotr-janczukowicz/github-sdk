@@ -87,7 +87,7 @@ class FileChangesTest {
         assertSoftly(softly -> {
             softly.assertThat(tree.getValue().baseTree()).isEqualTo(TREE);
             softly.assertThat(entries).extracting(GitHubCreateTreeEntry::path).containsExactly("docs/a.txt", "old.txt");
-            softly.assertThat(entries.get(0).content()).isEqualTo("hello");
+            softly.assertThat(entries.getFirst().content()).isEqualTo("hello");
             softly.assertThat(entries.get(0).sha()).isNull();
             softly.assertThat(entries.get(0).mode()).isEqualTo(GitHubCreateTreeEntryMode.FILE);
             softly.assertThat(entries.get(1).sha().value()).isNull();

@@ -13,6 +13,7 @@ import io.github.piotr_janczukowicz.http.transport.RetryConfiguration;
 import io.github.piotr_janczukowicz.pagination.PaginationConfiguration;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.time.Duration;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -25,6 +26,7 @@ class ConfiguredClientTest {
 
     @Test
     void of_shouldWorkOnAConfiguredClient_whenRetryCacheAndPagingAreSet() {
+        final AtomicBoolean exhausted = new AtomicBoolean();
         final GitHubClientConfiguration configuration = GitHubClientConfiguration.builder()
                 .retry(RetryConfiguration.builder()
                         .maxRateLimitAttempts(5)
@@ -32,11 +34,7 @@ class ConfiguredClientTest {
                         .totalDeadline(Duration.ofMinutes(5))
                         .build())
                 .conditionalCacheMaxEntries(500)
-                .rateLimitListener(snapshot -> {
-                    if (snapshot.isExhausted()) {
-                        System.err.println("Rate limit exhausted until " + snapshot.resetAt());
-                    }
-                })
+                .rateLimitListener(snapshot -> exhausted.set(snapshot.isExhausted()))
                 .pagination(PaginationConfiguration.builder()
                         .perPage(100)
                         .maxPages(5)

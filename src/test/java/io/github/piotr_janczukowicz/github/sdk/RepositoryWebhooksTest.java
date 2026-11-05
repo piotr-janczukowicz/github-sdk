@@ -113,7 +113,7 @@ class RepositoryWebhooksTest {
 
     @Test
     void createWebhook_shouldThrowNullPointerException_whenPayloadIsNull() {
-        final Throwable thrown = catchThrowable(() -> sut.createWebhook((GitHubCreateWebhookPayload) null));
+        final Throwable thrown = catchThrowable(() -> sut.createWebhook(null));
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("payload");
     }

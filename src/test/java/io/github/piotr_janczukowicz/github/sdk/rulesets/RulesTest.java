@@ -8,6 +8,7 @@ import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRule
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRuleCreation;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRuleDeletion;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRuleNonFastForward;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRuleParamsStatusCheckConfiguration;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRulePullRequest;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRuleRequiredLinearHistory;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRuleRequiredSignatures;
@@ -91,7 +92,7 @@ class RulesTest {
             softly.assertThat(rule.parameters().strictRequiredStatusChecksPolicy())
                     .isTrue();
             softly.assertThat(rule.parameters().requiredStatusChecks())
-                    .extracting(check -> check.context())
+                    .extracting(GitHubRepositoryRuleParamsStatusCheckConfiguration::context)
                     .containsExactly("build", "lint");
         });
     }

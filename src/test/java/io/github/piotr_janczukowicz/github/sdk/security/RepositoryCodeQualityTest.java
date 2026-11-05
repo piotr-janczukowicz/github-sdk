@@ -57,7 +57,9 @@ class RepositoryCodeQualityTest {
         final ArgumentCaptor<GitHubListFindingsForRepoFilter> filter =
                 ArgumentCaptor.forClass(GitHubListFindingsForRepoFilter.class);
 
-        sut.findings(GitHubListFindingsForRepoState.DISMISSED).toList();
+        final List<GitHubCodeQualityFinding> found =
+                sut.findings(GitHubListFindingsForRepoState.DISMISSED).toList();
+        assertThat(found).isEmpty();
 
         verify(api).listFindingsForRepo(eq(OWNER), eq(NAME), filter.capture(), any(GitHubPageRequest.class));
         assertThat(filter.getValue().state()).isEqualTo(GitHubListFindingsForRepoState.DISMISSED);

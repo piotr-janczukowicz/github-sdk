@@ -11,6 +11,7 @@ import io.github.piotr_janczukowicz.github.sdk.accounts.SshKey;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.List;
+import java.util.Objects;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
@@ -124,14 +125,14 @@ class MeSmokeIT {
 
     private static boolean readSocialGraph(final Me me, final User profile) throws IOException {
         try {
-            me.followers().limit(5).toList();
-            me.following().limit(5).toList();
-            me.blocked().limit(5).toList();
-            me.socialAccounts().toList();
-            profile.followers().limit(5).toList();
-            profile.sshKeys().limit(5).toList();
-            profile.gpgKeys().limit(5).toList();
-            profile.signingKeys().limit(5).toList();
+            me.followers().limit(5).forEach(Objects::requireNonNull);
+            me.following().limit(5).forEach(Objects::requireNonNull);
+            me.blocked().limit(5).forEach(Objects::requireNonNull);
+            me.socialAccounts().forEach(Objects::requireNonNull);
+            profile.followers().limit(5).forEach(Objects::requireNonNull);
+            profile.sshKeys().limit(5).forEach(Objects::requireNonNull);
+            profile.gpgKeys().limit(5).forEach(Objects::requireNonNull);
+            profile.signingKeys().limit(5).forEach(Objects::requireNonNull);
             return true;
         } catch (final GitHubForbiddenException e) {
             Assumptions.abort("The token has no permission to read these account details");

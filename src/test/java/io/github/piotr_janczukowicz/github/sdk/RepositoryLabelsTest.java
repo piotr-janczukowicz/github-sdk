@@ -111,7 +111,7 @@ class RepositoryLabelsTest {
 
     @Test
     void createLabel_shouldThrowNullPointerException_whenPayloadIsNull() {
-        final Throwable thrown = catchThrowable(() -> sut.createLabel((GitHubCreateLabelPayload) null));
+        final Throwable thrown = catchThrowable(() -> sut.createLabel(null));
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("payload");
     }

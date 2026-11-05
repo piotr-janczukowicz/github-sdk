@@ -68,9 +68,9 @@ class IssueCommentReactionsTest {
 
         final List<Reaction> reactions = sut.reactions().toList();
 
-        assertThat(reactions).singleElement().satisfies(reaction -> {
-            assertThat(reaction.response()).isSameAs(listed);
-        });
+        assertThat(reactions)
+                .singleElement()
+                .satisfies(reaction -> assertThat(reaction.response()).isSameAs(listed));
     }
 
     @Test

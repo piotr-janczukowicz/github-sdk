@@ -116,6 +116,7 @@ class RepositoryFilesTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void writeFile_shouldCreateTheFileWithoutASha_whenItDoesNotExist() throws IOException {
         when(github.repositories()
                         .contents()

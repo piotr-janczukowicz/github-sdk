@@ -29,6 +29,7 @@ import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
 import io.github.piotr_janczukowicz.github.sdk.deployments.Environment;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -289,7 +290,7 @@ class RepositoryManagementTest {
 
     @Test
     void dispatchEvent_shouldAcceptNullValues_whenThePayloadHasThem() throws IOException {
-        final java.util.Map<String, Object> payload = new java.util.HashMap<>();
+        final Map<String, Object> payload = new HashMap<>();
         payload.put("ref", null);
 
         sut.dispatchEvent("deploy", payload);

@@ -148,7 +148,7 @@ class RepositoryDeploymentsTest {
 
     @Test
     void deploy_shouldThrowNullPointerException_whenPayloadIsNull() {
-        final Throwable thrown = catchThrowable(() -> sut.deploy((GitHubCreateDeploymentPayload) null));
+        final Throwable thrown = catchThrowable(() -> sut.deploy(null));
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("payload");
     }

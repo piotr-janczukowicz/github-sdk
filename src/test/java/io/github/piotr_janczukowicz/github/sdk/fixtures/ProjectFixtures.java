@@ -18,7 +18,7 @@ import java.util.Map;
 public final class ProjectFixtures {
 
     public static final String OWNER = "octocat";
-    public static final long OWNER_ID = 583231L;
+    public static final long OWNER_ID = 583_231L;
     public static final long NUMBER = 7L;
     public static final long ITEM_ID = 51L;
     public static final long FIELD_ID = 61L;

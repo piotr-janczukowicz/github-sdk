@@ -3,6 +3,8 @@ package io.github.piotr_janczukowicz.github.sdk.smoke;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
+import io.github.piotr_janczukowicz.github.api.issues.GitHubIssueEvent;
+import io.github.piotr_janczukowicz.github.api.issues.GitHubTimelineEvent;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
 import io.github.piotr_janczukowicz.github.sdk.issues.Issue;
 import io.github.piotr_janczukowicz.github.sdk.issues.IssueComment;
@@ -104,9 +106,9 @@ class ReactionsSmokeIT {
 
         issue.comment("smoke comment");
         final Issue closed = issue.close();
-        final List<String> events = closed.events().map(event -> event.event()).toList();
+        final List<String> events = closed.events().map(GitHubIssueEvent::event).toList();
         final List<String> timeline =
-                closed.timeline().map(entry -> entry.event()).toList();
+                closed.timeline().map(GitHubTimelineEvent::event).toList();
 
         assertSoftly(softly -> {
             softly.assertThat(events).contains("closed");

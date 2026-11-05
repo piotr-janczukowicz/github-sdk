@@ -20,6 +20,7 @@ import io.github.piotr_janczukowicz.github.api.projects.GitHubListProjectItemsFi
 import io.github.piotr_janczukowicz.github.api.projects.GitHubProject;
 import io.github.piotr_janczukowicz.github.api.projects.GitHubProjectField;
 import io.github.piotr_janczukowicz.github.api.projects.GitHubProjectFieldDataType;
+import io.github.piotr_janczukowicz.github.api.projects.GitHubProjectFieldSingleSelectOption;
 import io.github.piotr_janczukowicz.github.api.projects.GitHubProjectItem;
 import io.github.piotr_janczukowicz.github.api.projects.GitHubProjectItemContentType;
 import io.github.piotr_janczukowicz.github.api.projects.GitHubProjectItemSimple;
@@ -116,7 +117,8 @@ class ProjectTest {
         final ArgumentCaptor<GitHubListProjectItemsFilter> filter =
                 ArgumentCaptor.forClass(GitHubListProjectItemsFilter.class);
 
-        sut.items("is:issue").toList();
+        final List<ProjectItem> found = sut.items("is:issue").toList();
+        assertThat(found).isEmpty();
 
         verify(gateway).items(eq(NUMBER), filter.capture());
         assertThat(filter.getValue().q()).isEqualTo("is:issue");
@@ -304,7 +306,7 @@ class ProjectTest {
             softly.assertThat(result.response()).isSameAs(created);
             softly.assertThat(payload.getValue().name()).isEqualTo("Status");
             softly.assertThat(payload.getValue().singleSelectOptions())
-                    .extracting(option -> option.name())
+                    .extracting(GitHubProjectFieldSingleSelectOption::name)
                     .containsExactly("Todo", "Done");
         });
     }

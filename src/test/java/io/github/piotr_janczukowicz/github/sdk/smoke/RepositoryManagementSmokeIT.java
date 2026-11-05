@@ -86,7 +86,7 @@ class RepositoryManagementSmokeIT {
     }
 
     @Test
-    void languagesAndContributors_shouldBeListed_whenTheRepositoryHasContent() throws IOException {
+    void languagesAndContributors_shouldBeListed_whenTheRepositoryHasContent() {
         final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
 
         assertSoftly(softly -> {
