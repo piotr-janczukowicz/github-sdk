@@ -14,6 +14,8 @@ sandbox repository.
 
 - Repository permissions, read and write: Commit statuses, Contents, Issues, Pull requests, Webhooks.
 - Repository permissions, read: Metadata.
+- Account permissions, read and write: Starring and Watching, when your token form offers them. The star and watch
+  tests are skipped, not failed, when GitHub answers 403.
 
 Reading check runs needs the `checks: read` permission (GitHub names it in the `X-Accepted-GitHub-Permissions` response
 header), but the fine-grained token form does not offer it and no other permission grants it. A classic token with the
@@ -44,6 +46,7 @@ Without `SMOKE_GITHUB_TOKEN` every smoke class is skipped.
 | `ChecksSmokeIT` | commit status: create, list, combined state; check runs of the head commit when there are any; 404 on a missing check run. Check runs cannot be created, because GitHub accepts that only from GitHub Apps |
 | `ReactionsSmokeIT` | react, list and delete a reaction on an issue, an issue comment and a pull request review comment; issue events and timeline |
 | `CollaboratorsSmokeIT` | list collaborators, check membership, the owner's permission level, list invitations. Adding, removing and changing collaborators are not run live, because an invitation goes to a real account |
+| `ActivitySmokeIT` | star, check, list stargazers and starred repositories, unstar; watch, ignore and unwatch; list watchers and forks. The tests restore your original star and subscription. Forking is not run live, because a user cannot fork their own repository |
 | `ContentSmokeIT` | default branch, its head commit, branch and commit lists, 404 on a missing branch |
 | `FilesSmokeIT` | write, update, read, delete a file on a throwaway branch (binary and UTF-8 text), directory and missing paths |
 | `ReleasesSmokeIT` | draft release: create, update, list, refresh, delete; latest release; tags |

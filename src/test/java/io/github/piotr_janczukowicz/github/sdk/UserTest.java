@@ -11,6 +11,7 @@ import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.organizations.GitHubOrganizationFull;
 import io.github.piotr_janczukowicz.github.api.organizations.GitHubOrganizationSimple;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubMinimalRepository;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepository;
 import io.github.piotr_janczukowicz.github.api.users.GitHubAuthenticatedUser;
 import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
 import io.github.piotr_janczukowicz.github.api.users.GitHubUser;
@@ -112,6 +113,48 @@ class UserTest {
         assertSoftly(softly -> {
             softly.assertThat(repositories.getFirst().owner()).isEqualTo("octocat");
             softly.assertThat(repositories.getFirst().name()).isEqualTo("hello-world");
+        });
+    }
+
+    @Test
+    void starredRepositories_shouldReturnHandlesOfTheStarredRepositories_whenTheUserStarredSome() throws IOException {
+        final GitHubUser response = mock(GitHubUser.class);
+        when(response.login()).thenReturn("octocat");
+        final GitHubSimpleUser owner = mock(GitHubSimpleUser.class);
+        when(owner.login()).thenReturn("hubot");
+        final GitHubRepository listed = mock(GitHubRepository.class);
+        when(listed.owner()).thenReturn(owner);
+        when(listed.name()).thenReturn("linguist");
+        when(github.activity().starring().listReposStarredByUser("octocat").stream())
+                .thenReturn(Stream.of(listed));
+        final User sut = new User(sdk, response);
+
+        final List<Repository> repositories = sut.starredRepositories().toList();
+
+        assertThat(repositories).singleElement().satisfies(repository -> {
+            assertThat(repository.owner()).isEqualTo("hubot");
+            assertThat(repository.name()).isEqualTo("linguist");
+        });
+    }
+
+    @Test
+    void watchedRepositories_shouldReturnHandlesOfTheWatchedRepositories_whenTheUserWatchesSome() throws IOException {
+        final GitHubUser response = mock(GitHubUser.class);
+        when(response.login()).thenReturn("octocat");
+        final GitHubSimpleUser owner = mock(GitHubSimpleUser.class);
+        when(owner.login()).thenReturn("hubot");
+        final GitHubMinimalRepository listed = mock(GitHubMinimalRepository.class);
+        when(listed.owner()).thenReturn(owner);
+        when(listed.name()).thenReturn("linguist");
+        when(github.activity().watching().listReposWatchedByUser("octocat").stream())
+                .thenReturn(Stream.of(listed));
+        final User sut = new User(sdk, response);
+
+        final List<Repository> repositories = sut.watchedRepositories().toList();
+
+        assertThat(repositories).singleElement().satisfies(repository -> {
+            assertThat(repository.owner()).isEqualTo("hubot");
+            assertThat(repository.name()).isEqualTo("linguist");
         });
     }
 

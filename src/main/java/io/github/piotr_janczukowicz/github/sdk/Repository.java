@@ -3,6 +3,7 @@ package io.github.piotr_janczukowicz.github.sdk;
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 
+import io.github.piotr_janczukowicz.github.api.activity.GitHubSetRepoSubscriptionPayload;
 import io.github.piotr_janczukowicz.github.api.branches.GitHubListBranchesFilter;
 import io.github.piotr_janczukowicz.github.api.branches.GitHubShortBranch;
 import io.github.piotr_janczukowicz.github.api.collaborators.GitHubAddCollaboratorPayload;
@@ -19,13 +20,17 @@ import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubListPullReques
 import io.github.piotr_janczukowicz.github.api.releases.GitHubCreateReleasePayload;
 import io.github.piotr_janczukowicz.github.api.releases.GitHubCreateReleasePayloadBuilder;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubContentFile;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateForkPayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateOrUpdateFileContentsPayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateWebhookPayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubFullRepository;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubGetContentFilter;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubListForksFilter;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubPullRequestSimple;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositorySubscription;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryTag;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubWebhookConfig;
+import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
 import io.github.piotr_janczukowicz.github.pagination.GitHubPageRequest;
 import java.io.IOException;
 import java.util.Base64;
@@ -753,6 +758,163 @@ public final class Repository {
     }
 
     /**
+     * Stars the repository for the authenticated user ({@code PUT /user/starred/{owner}/{repo}}). Starring a starred
+     * repository changes nothing.
+     *
+     * @throws IOException if the transport fails
+     */
+    public void star() throws IOException {
+        sdk.github().activity().starring().starRepoForAuthenticatedUser(owner, name);
+    }
+
+    /**
+     * Removes the authenticated user's star ({@code DELETE /user/starred/{owner}/{repo}}). Unstarring a repository that
+     * is not starred changes nothing.
+     *
+     * @throws IOException if the transport fails
+     */
+    public void unstar() throws IOException {
+        sdk.github().activity().starring().unstarRepoForAuthenticatedUser(owner, name);
+    }
+
+    /**
+     * Tells whether the authenticated user starred the repository ({@code GET /user/starred/{owner}/{repo}}).
+     *
+     * @return {@code true} when the repository is starred
+     * @throws IOException if the transport fails
+     */
+    public boolean isStarred() throws IOException {
+        return sdk.github().activity().starring().checkRepoIsStarredByAuthenticatedUser(owner, name);
+    }
+
+    /**
+     * Lists the users who starred the repository ({@code GET /repos/{owner}/{repo}/stargazers}). The client's records
+     * are passed through. Pages are fetched only as the stream is consumed; transport failures during iteration are
+     * {@link java.io.UncheckedIOException}.
+     *
+     * @return the stargazers
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<GitHubSimpleUser> stargazers() throws IOException {
+        return sdk.github().activity().starring().listStargazersForRepo(owner, name).stream();
+    }
+
+    /**
+     * Lists the users who watch the repository ({@code GET /repos/{owner}/{repo}/subscribers}). The client's records
+     * are passed through. Pages are fetched only as the stream is consumed; transport failures during iteration are
+     * {@link java.io.UncheckedIOException}.
+     *
+     * @return the watchers
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<GitHubSimpleUser> watchers() throws IOException {
+        return sdk.github().activity().watching().listWatchersForRepo(owner, name).stream();
+    }
+
+    /**
+     * Loads the authenticated user's subscription to the repository ({@code GET /repos/{owner}/{repo}/subscription}).
+     * The client's record is passed through.
+     *
+     * @return the subscription, or empty when the user neither watches nor ignores the repository
+     * @throws IOException if the transport fails
+     */
+    public Optional<GitHubRepositorySubscription> subscription() throws IOException {
+        return sdk.github().activity().watching().getRepoSubscription(owner, name);
+    }
+
+    /**
+     * Subscribes the authenticated user to all notifications of the repository ({@code PUT
+     * /repos/{owner}/{repo}/subscription}).
+     *
+     * @return the subscription as GitHub returned it
+     * @throws IOException if the transport fails
+     */
+    public GitHubRepositorySubscription watch() throws IOException {
+        return sdk.github()
+                .activity()
+                .watching()
+                .setRepoSubscription(owner, name, new GitHubSetRepoSubscriptionPayload(true, false));
+    }
+
+    /**
+     * Mutes all notifications of the repository for the authenticated user ({@code PUT
+     * /repos/{owner}/{repo}/subscription}).
+     *
+     * @return the subscription as GitHub returned it
+     * @throws IOException if the transport fails
+     */
+    public GitHubRepositorySubscription ignore() throws IOException {
+        return sdk.github()
+                .activity()
+                .watching()
+                .setRepoSubscription(owner, name, new GitHubSetRepoSubscriptionPayload(false, true));
+    }
+
+    /**
+     * Removes the authenticated user's subscription ({@code DELETE /repos/{owner}/{repo}/subscription}), so the user is
+     * notified only about conversations they take part in.
+     *
+     * @throws IOException if the transport fails
+     */
+    public void unwatch() throws IOException {
+        sdk.github().activity().watching().deleteRepoSubscription(owner, name);
+    }
+
+    /**
+     * Lists the forks ({@code GET /repos/{owner}/{repo}/forks}). See {@link #forks(GitHubListForksFilter)}.
+     *
+     * @return handles of the forks
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<Repository> forks() throws IOException {
+        return forks(GitHubListForksFilter.empty());
+    }
+
+    /**
+     * Lists the forks ({@code GET /repos/{owner}/{repo}/forks}). The elements are handles that are not loaded; call
+     * {@link #fetch()} to load one. Pages are fetched only as the stream is consumed; transport failures during
+     * iteration are {@link java.io.UncheckedIOException}.
+     *
+     * @param filter the sort order
+     * @return handles of the forks
+     * @throws NullPointerException if {@code filter} is {@code null}
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<Repository> forks(final GitHubListForksFilter filter) throws IOException {
+        return sdk
+                .github()
+                .repositories()
+                .forks()
+                .listForks(owner, name, requireNonNull(filter, FILTER), GitHubPageRequest.byPage())
+                .stream()
+                .map(listed -> sdk.repository(listed.owner().login(), listed.name()));
+    }
+
+    /**
+     * Forks the repository into the authenticated user's account ({@code POST /repos/{owner}/{repo}/forks}). GitHub
+     * creates the fork asynchronously, so the Git data may not be available right away.
+     *
+     * @return the fork, loaded with what GitHub returned
+     * @throws IOException if the transport fails
+     */
+    public Repository fork() throws IOException {
+        return createFork(null);
+    }
+
+    /**
+     * Forks the repository with options ({@code POST /repos/{owner}/{repo}/forks}). GitHub creates the fork
+     * asynchronously, so the Git data may not be available right away.
+     *
+     * @param payload the target organization, the fork's name and whether to copy only the default branch
+     * @return the fork, loaded with what GitHub returned
+     * @throws NullPointerException if {@code payload} is {@code null}
+     * @throws IOException if the transport fails
+     */
+    public Repository fork(final GitHubCreateForkPayload payload) throws IOException {
+        return createFork(requireNonNull(payload, PAYLOAD));
+    }
+
+    /**
      * Returns the SDK this repository belongs to.
      *
      * @return the SDK
@@ -768,6 +930,11 @@ public final class Repository {
 
     private Branch loadBranch(final GitHubShortBranch listed) {
         return Lookups.require(() -> branch(listed.name()), () -> "Branch " + listed.name() + " is gone");
+    }
+
+    private Repository createFork(final @Nullable GitHubCreateForkPayload payload) throws IOException {
+        final GitHubFullRepository created = sdk.github().repositories().forks().createFork(owner, name, payload);
+        return new Repository(sdk, created.owner().login(), created.name(), created);
     }
 
     private Optional<RepositoryFile> read(final String path, final @Nullable String ref) throws IOException {

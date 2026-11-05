@@ -63,6 +63,32 @@ public final class User {
     }
 
     /**
+     * Lists the repositories the user starred ({@code GET /users/{username}/starred}). The elements are handles that
+     * are not loaded; call {@link Repository#fetch()} to load one. Pages are fetched only as the stream is consumed;
+     * transport failures during iteration are {@link java.io.UncheckedIOException}.
+     *
+     * @return handles of the starred repositories
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<Repository> starredRepositories() throws IOException {
+        return sdk.github().activity().starring().listReposStarredByUser(login()).stream()
+                .map(listed -> sdk.repository(listed.owner().login(), listed.name()));
+    }
+
+    /**
+     * Lists the repositories the user watches ({@code GET /users/{username}/subscriptions}). The elements are handles
+     * that are not loaded; call {@link Repository#fetch()} to load one. Pages are fetched only as the stream is
+     * consumed; transport failures during iteration are {@link java.io.UncheckedIOException}.
+     *
+     * @return handles of the watched repositories
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<Repository> watchedRepositories() throws IOException {
+        return sdk.github().activity().watching().listReposWatchedByUser(login()).stream()
+                .map(listed -> sdk.repository(listed.owner().login(), listed.name()));
+    }
+
+    /**
      * Lists the public organizations of the user ({@code GET /users/{username}/orgs}). GitHub's list holds only a
      * summary of each organization, so every listed organization is loaded with one more request as the stream reaches
      * it; a {@code limit} on the stream bounds the cost. A transport failure during iteration is an

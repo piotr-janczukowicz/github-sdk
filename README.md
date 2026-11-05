@@ -62,6 +62,7 @@ try (GitHubClient client = GitHubClients.create(AuthenticationProviders.bearer(S
 | `sdk.repository(owner, name)` | `Repository`: `fetch()`, issues, pull requests, branches, commits, files (`file(path)`, `writeFile(...)`), releases, tags, labels, milestones, webhooks |
 | `Issue` | `update()`, `refresh()`, `close()`, `reopen()`, `lock()`, `unlock()`, labels, assignees, `comment(...)`, `comments()`, `react(...)`, `reactions()`, `events()`, `timeline()` |
 | `Collaborator`, `Invitation` | `repository.collaborators()`, `isCollaborator(...)`, `collaboratorPermission(...)`, `addCollaborator(...)`, `invitations()`; a collaborator has `remove()`, an invitation `changePermission(...)` and `cancel()` |
+| `Repository` (activity) | `star()`, `unstar()`, `isStarred()`, `stargazers()`, `watchers()`, `subscription()`, `watch()`, `ignore()`, `unwatch()`, `forks()`, `fork()`; `User` lists `starredRepositories()` and `watchedRepositories()` |
 | `Reaction` | `content()`, `user()`, `delete()`; made on an issue, an `IssueComment` or a `PullRequestReviewComment` with `react(...)` |
 | `PullRequest` | `update()`, `refresh()`, `close()`, `reopen()`, `merge(...)`, `reviews()`, `review(...)`, `draftReview(...)`, `reviewComments()`, `commentOnLine(...)`, reviewers, files, commits, `issue()` |
 | `PullRequestReview` | `edit(...)`, `submit(...)`, `dismiss(...)`, `deletePending()`, `comments()`, `refresh()` |
