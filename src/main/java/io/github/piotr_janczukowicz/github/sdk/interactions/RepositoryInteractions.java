@@ -37,10 +37,7 @@ public final class RepositoryInteractions {
      * @throws IOException if the transport fails
      */
     public Optional<GitHubInteractionLimitResponse> current() throws IOException {
-        return github().interactions()
-                .repos()
-                .getRestrictionsForRepo(repository.owner(), repository.name())
-                .filter(limit -> limit.limit() != null);
+        return github().interactions().repos().getRestrictionsForRepo(repository.owner(), repository.name());
     }
 
     /**

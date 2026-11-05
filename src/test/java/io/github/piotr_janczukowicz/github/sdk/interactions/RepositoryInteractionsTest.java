@@ -39,7 +39,6 @@ class RepositoryInteractionsTest {
     @Test
     void current_shouldReturnTheLimit_whenOneIsActive() throws IOException {
         final GitHubInteractionLimitResponse active = mock(GitHubInteractionLimitResponse.class);
-        when(active.limit()).thenReturn(GitHubInteractionGroup.COLLABORATORS_ONLY);
         when(api.getRestrictionsForRepo(OWNER, NAME)).thenReturn(Optional.of(active));
 
         final Optional<GitHubInteractionLimitResponse> current = sut.current();
@@ -48,13 +47,10 @@ class RepositoryInteractionsTest {
     }
 
     @Test
-    void current_shouldBeEmpty_whenGitHubReturnsAnEmptyLimit() throws IOException {
-        final GitHubInteractionLimitResponse none = mock(GitHubInteractionLimitResponse.class);
-        when(api.getRestrictionsForRepo(OWNER, NAME)).thenReturn(Optional.of(none));
+    void current_shouldBeEmpty_whenNoLimitIsActive() throws IOException {
+        when(api.getRestrictionsForRepo(OWNER, NAME)).thenReturn(Optional.empty());
 
-        final Optional<GitHubInteractionLimitResponse> current = sut.current();
-
-        assertThat(current).isEmpty();
+        assertThat(sut.current()).isEmpty();
     }
 
     @Test
