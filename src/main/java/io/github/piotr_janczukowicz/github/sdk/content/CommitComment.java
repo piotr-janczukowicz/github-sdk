@@ -6,12 +6,18 @@ import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.commits.GitHubCommitComment;
 import io.github.piotr_janczukowicz.github.api.commits.GitHubUpdateCommitCommentPayload;
+import io.github.piotr_janczukowicz.github.api.reactions.GitHubCreateForCommitCommentPayload;
+import io.github.piotr_janczukowicz.github.api.reactions.GitHubReaction;
 import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
+import io.github.piotr_janczukowicz.github.sdk.internal.ClientValues;
 import io.github.piotr_janczukowicz.github.sdk.internal.Internals;
+import io.github.piotr_janczukowicz.github.sdk.reactions.Reaction;
+import io.github.piotr_janczukowicz.github.sdk.reactions.ReactionContent;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.stream.Stream;
 
 /**
  * A comment on a commit of a {@link Repository}, as GitHub returned it. The object is immutable, and
@@ -145,11 +151,55 @@ public final class CommitComment {
     }
 
     /**
+     * Reacts to the comment ({@code POST /repos/{owner}/{repo}/comments/{comment_id}/reactions}). If the current user
+     * already reacted with the same emoji, GitHub returns that reaction. This object is not changed.
+     *
+     * @param content the emoji
+     * @return the reaction
+     * @throws NullPointerException if {@code content} is {@code null}
+     * @throws IOException if the transport fails
+     */
+    public Reaction react(final ReactionContent content) throws IOException {
+        return reaction(Internals.github(repository)
+                .reactions()
+                .createForCommitComment(
+                        repository.owner(),
+                        repository.name(),
+                        id(),
+                        new GitHubCreateForCommitCommentPayload(
+                                ClientValues.reactionToClient(requireNonNull(content, "content")))));
+    }
+
+    /**
+     * Lists the reactions to the comment ({@code GET /repos/{owner}/{repo}/comments/{comment_id}/reactions}). Pages are
+     * fetched only as the stream is consumed; transport failures during iteration are
+     * {@link java.io.UncheckedIOException}.
+     *
+     * @return the reactions
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<Reaction> reactions() throws IOException {
+        return Internals.github(repository)
+                .reactions()
+                .listForCommitComment(repository.owner(), repository.name(), id())
+                .stream()
+                .map(this::reaction);
+    }
+
+    /**
      * Returns the complete response this object was built from.
      *
      * @return the response record
      */
     public GitHubCommitComment response() {
         return response;
+    }
+
+    private Reaction reaction(final GitHubReaction listed) {
+        return new Reaction(
+                listed,
+                reactionId -> Internals.github(repository)
+                        .reactions()
+                        .deleteForCommitComment(repository.owner(), repository.name(), id(), reactionId));
     }
 }

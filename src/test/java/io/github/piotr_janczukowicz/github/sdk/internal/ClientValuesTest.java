@@ -7,6 +7,7 @@ import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import io.github.piotr_janczukowicz.github.api.commits.GitHubCommitStatusState;
 import io.github.piotr_janczukowicz.github.api.organizations.GitHubOrganizationMembershipRole;
 import io.github.piotr_janczukowicz.github.api.reactions.GitHubReactionContent;
+import io.github.piotr_janczukowicz.github.api.reactions.GitHubReleaseReactionContent;
 import io.github.piotr_janczukowicz.github.api.teams.GitHubTeamRole;
 import io.github.piotr_janczukowicz.github.sdk.checks.CommitStatusState;
 import io.github.piotr_janczukowicz.github.sdk.collaborators.RepositoryPermission;
@@ -30,6 +31,23 @@ class ClientValuesTest {
                         content -> ClientValues.reactionToClient(content).name().equals(content.name()));
 
         assertThat(isEveryNameKept).isTrue();
+    }
+
+    @Test
+    void releaseReactionToClient_shouldMapTheSixAcceptedEmojis_whenCalled() {
+        final boolean isEveryNameKept = Arrays.stream(GitHubReleaseReactionContent.values())
+                .allMatch(content -> ClientValues.releaseReactionToClient(ReactionContent.valueOf(content.name()))
+                        .name()
+                        .equals(content.name()));
+
+        assertThat(isEveryNameKept).isTrue();
+    }
+
+    @Test
+    void releaseReactionToClient_shouldThrowIllegalArgumentException_whenTheEmojiIsConfused() {
+        final Throwable thrown = catchThrowable(() -> ClientValues.releaseReactionToClient(ReactionContent.CONFUSED));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("CONFUSED");
     }
 
     @Test

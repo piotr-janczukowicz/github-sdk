@@ -6,6 +6,7 @@ import io.github.piotr_janczukowicz.github.api.commits.GitHubCommitStatusState;
 import io.github.piotr_janczukowicz.github.api.organizations.GitHubOrganizationInvitationRole;
 import io.github.piotr_janczukowicz.github.api.organizations.GitHubOrganizationMembershipRole;
 import io.github.piotr_janczukowicz.github.api.reactions.GitHubReactionContent;
+import io.github.piotr_janczukowicz.github.api.reactions.GitHubReleaseReactionContent;
 import io.github.piotr_janczukowicz.github.api.teams.GitHubTeamRole;
 import io.github.piotr_janczukowicz.github.sdk.checks.CommitStatusState;
 import io.github.piotr_janczukowicz.github.sdk.collaborators.RepositoryPermission;
@@ -41,6 +42,27 @@ public final class ClientValues {
             case HOORAY -> GitHubReactionContent.HOORAY;
             case ROCKET -> GitHubReactionContent.ROCKET;
             case EYES -> GitHubReactionContent.EYES;
+        };
+    }
+
+    /**
+     * Converts an SDK reaction emoji to the client value for a release, which accepts only six of the eight emojis.
+     *
+     * @param content the SDK value
+     * @return the client value of the same name
+     * @throws IllegalArgumentException if the emoji is {@code MINUS_ONE} or {@code CONFUSED}, which GitHub does not
+     *     accept on a release
+     */
+    public static GitHubReleaseReactionContent releaseReactionToClient(final ReactionContent content) {
+        return switch (content) {
+            case PLUS_ONE -> GitHubReleaseReactionContent.PLUS_ONE;
+            case LAUGH -> GitHubReleaseReactionContent.LAUGH;
+            case HEART -> GitHubReleaseReactionContent.HEART;
+            case HOORAY -> GitHubReleaseReactionContent.HOORAY;
+            case ROCKET -> GitHubReleaseReactionContent.ROCKET;
+            case EYES -> GitHubReleaseReactionContent.EYES;
+            case MINUS_ONE, CONFUSED ->
+                throw new IllegalArgumentException("A release does not accept the reaction " + content);
         };
     }
 

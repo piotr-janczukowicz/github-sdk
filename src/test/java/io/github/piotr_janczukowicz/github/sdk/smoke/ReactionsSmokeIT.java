@@ -5,7 +5,12 @@ import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 import io.github.piotr_janczukowicz.github.api.issues.GitHubIssueEvent;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubTimelineEvent;
+import io.github.piotr_janczukowicz.github.api.releases.GitHubCreateReleasePayloadBuilder;
+import io.github.piotr_janczukowicz.github.client.exception.GitHubForbiddenException;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
+import io.github.piotr_janczukowicz.github.sdk.content.Commit;
+import io.github.piotr_janczukowicz.github.sdk.content.CommitComment;
+import io.github.piotr_janczukowicz.github.sdk.content.Release;
 import io.github.piotr_janczukowicz.github.sdk.issues.Issue;
 import io.github.piotr_janczukowicz.github.sdk.issues.IssueComment;
 import io.github.piotr_janczukowicz.github.sdk.pulls.PullRequest;
@@ -14,6 +19,7 @@ import io.github.piotr_janczukowicz.github.sdk.reactions.Reaction;
 import io.github.piotr_janczukowicz.github.sdk.reactions.ReactionContent;
 import java.io.IOException;
 import java.util.List;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -114,5 +120,71 @@ class ReactionsSmokeIT {
             softly.assertThat(events).contains("closed");
             softly.assertThat(timeline).contains("commented", "closed");
         });
+    }
+
+    @Test
+    void reaction_shouldBeAddedListedAndDeleted_whenItIsOnACommitComment() throws IOException {
+        final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
+        final String base = repository.fetch().orElseThrow().response().defaultBranch();
+        final CommitComment comment =
+                comment(repository.branch(base).orElseThrow().commit());
+        try {
+            final Reaction heart = comment.react(ReactionContent.HEART);
+            final List<ReactionContent> before =
+                    comment.reactions().map(Reaction::content).toList();
+            heart.delete();
+            final List<ReactionContent> after =
+                    comment.reactions().map(Reaction::content).toList();
+
+            assertSoftly(softly -> {
+                softly.assertThat(heart.content()).isEqualTo(ReactionContent.HEART);
+                softly.assertThat(before).contains(ReactionContent.HEART);
+                softly.assertThat(after).doesNotContain(ReactionContent.HEART);
+            });
+        } finally {
+            comment.delete();
+        }
+    }
+
+    @Test
+    void reaction_shouldBeAddedListedAndDeleted_whenItIsOnARelease() throws IOException {
+        final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
+        final Release release = repository.createRelease(GitHubCreateReleasePayloadBuilder.builder()
+                .tagName(ENV.name("release-reactions"))
+                .name("smoke reactions")
+                .draft(false)
+                .build());
+        try {
+            final Reaction rocket = release.react(ReactionContent.ROCKET);
+            final List<ReactionContent> before =
+                    release.reactions().map(Reaction::content).toList();
+            rocket.delete();
+            final List<ReactionContent> after =
+                    release.reactions().map(Reaction::content).toList();
+
+            assertSoftly(softly -> {
+                softly.assertThat(rocket.content()).isEqualTo(ReactionContent.ROCKET);
+                softly.assertThat(before).contains(ReactionContent.ROCKET);
+                softly.assertThat(after).doesNotContain(ReactionContent.ROCKET);
+            });
+        } finally {
+            release.delete();
+            repository.ref("tags/" + release.tagName()).ifPresent(tag -> {
+                try {
+                    tag.delete();
+                } catch (final IOException e) {
+                    throw new java.io.UncheckedIOException(e);
+                }
+            });
+        }
+    }
+
+    private static CommitComment comment(final Commit commit) throws IOException {
+        try {
+            return commit.comment("smoke reactions " + ENV.runId());
+        } catch (final GitHubForbiddenException e) {
+            Assumptions.abort("The token has no Contents write permission, so GitHub refuses commit comments");
+            throw e;
+        }
     }
 }

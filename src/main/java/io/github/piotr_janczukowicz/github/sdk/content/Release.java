@@ -4,10 +4,15 @@ import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 
 import io.github.piotr_janczukowicz.github.api.GitHub;
+import io.github.piotr_janczukowicz.github.api.reactions.GitHubCreateForReleasePayload;
+import io.github.piotr_janczukowicz.github.api.reactions.GitHubReaction;
 import io.github.piotr_janczukowicz.github.api.releases.GitHubRelease;
 import io.github.piotr_janczukowicz.github.api.releases.GitHubUpdateReleasePayload;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
+import io.github.piotr_janczukowicz.github.sdk.internal.ClientValues;
 import io.github.piotr_janczukowicz.github.sdk.internal.Internals;
+import io.github.piotr_janczukowicz.github.sdk.reactions.Reaction;
+import io.github.piotr_janczukowicz.github.sdk.reactions.ReactionContent;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -179,6 +184,41 @@ public final class Release {
     }
 
     /**
+     * Reacts to the release ({@code POST /repos/{owner}/{repo}/releases/{release_id}/reactions}). A release accepts six
+     * emojis: not {@code MINUS_ONE} and not {@code CONFUSED}. A draft release refuses reactions with HTTP 403 (checked
+     * live), so publish the release first. If the current user already reacted with the same emoji, GitHub returns that
+     * reaction. This object is not changed.
+     *
+     * @param content the emoji
+     * @return the reaction
+     * @throws NullPointerException if {@code content} is {@code null}
+     * @throws IllegalArgumentException if {@code content} is {@code MINUS_ONE} or {@code CONFUSED}
+     * @throws IOException if the transport fails
+     */
+    public Reaction react(final ReactionContent content) throws IOException {
+        return reaction(github().reactions()
+                .createForRelease(
+                        repository.owner(),
+                        repository.name(),
+                        response.id(),
+                        new GitHubCreateForReleasePayload(
+                                ClientValues.releaseReactionToClient(requireNonNull(content, "content")))));
+    }
+
+    /**
+     * Lists the reactions to the release ({@code GET /repos/{owner}/{repo}/releases/{release_id}/reactions}). Pages are
+     * fetched only as the stream is consumed; transport failures during iteration are
+     * {@link java.io.UncheckedIOException}.
+     *
+     * @return the reactions
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<Reaction> reactions() throws IOException {
+        return github().reactions().listForRelease(repository.owner(), repository.name(), response.id()).stream()
+                .map(this::reaction);
+    }
+
+    /**
      * Returns the complete response this object was built from.
      *
      * @return the response record
@@ -193,6 +233,13 @@ public final class Release {
                 github().releases()
                         .release()
                         .updateRelease(repository.owner(), repository.name(), response.id(), payload));
+    }
+
+    private Reaction reaction(final GitHubReaction listed) {
+        return new Reaction(
+                listed,
+                reactionId -> github().reactions()
+                        .deleteForRelease(repository.owner(), repository.name(), response.id(), reactionId));
     }
 
     private GitHub github() {
