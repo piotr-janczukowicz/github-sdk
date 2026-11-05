@@ -155,7 +155,8 @@ public final class Commit {
      * @param state the state to report
      * @param context the name of the service or check that reports, for example {@code ci/build}
      * @return the new status
-     * @throws NullPointerException if {@code state} is {@code null}
+     * @throws NullPointerException if {@code state} or {@code context} is {@code null}
+     * @throws IllegalArgumentException if {@code context} is blank
      * @throws IOException if the transport fails
      */
     public CommitStatus createStatus(final CommitStatusState state, final String context) throws IOException {

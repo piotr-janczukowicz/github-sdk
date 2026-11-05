@@ -138,4 +138,11 @@ class IssueUpdateTest {
             softly.assertThat(assignees).isInstanceOf(IllegalArgumentException.class);
         });
     }
+
+    @Test
+    void title_shouldThrowIllegalArgumentException_whenTitleIsBlank() {
+        final Throwable thrown = catchThrowable(() -> issue.update().title(" "));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("title");
+    }
 }

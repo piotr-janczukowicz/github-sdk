@@ -109,4 +109,11 @@ class LabelUpdateTest {
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("label");
     }
+
+    @Test
+    void name_shouldThrowIllegalArgumentException_whenNameIsBlank() {
+        final Throwable thrown = catchThrowable(() -> label.update().name(" "));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("name");
+    }
 }

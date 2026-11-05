@@ -170,8 +170,8 @@ class BranchProtectionUpdateTest {
     }
 
     @Test
-    void requirePullRequestReviews_shouldThrowIllegalArgumentException_whenApprovalsAreBelowOne() {
-        final Throwable thrown = catchThrowable(() -> branch.protect().requirePullRequestReviews(0));
+    void requirePullRequestReviews_shouldThrowIllegalArgumentException_whenApprovalsAreNegative() {
+        final Throwable thrown = catchThrowable(() -> branch.protect().requirePullRequestReviews(-1));
 
         assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("approvals");
     }

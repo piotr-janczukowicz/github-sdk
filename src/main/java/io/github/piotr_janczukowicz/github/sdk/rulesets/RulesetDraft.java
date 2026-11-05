@@ -115,9 +115,7 @@ public final class RulesetDraft {
             throw new IllegalArgumentException("A deploy key has no actor id; use bypassDeployKeys(mode)");
         }
         bypassActors.add(new GitHubRepositoryRulesetBypassActor(
-                actorId,
-                requireNonNull(type, "type").toClient(),
-                requireNonNull(mode, "mode").toClient()));
+                actorId, type.toClient(), requireNonNull(mode, "mode").toClient()));
         return this;
     }
 

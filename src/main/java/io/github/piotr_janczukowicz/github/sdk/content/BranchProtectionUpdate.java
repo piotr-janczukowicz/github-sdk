@@ -20,7 +20,7 @@ import org.jspecify.annotations.Nullable;
  */
 public final class BranchProtectionUpdate {
 
-    private static final int MIN_APPROVALS = 1;
+    private static final int MIN_APPROVALS = 0;
     private static final int MAX_APPROVALS = 6;
 
     private final Branch branch;
@@ -46,7 +46,8 @@ public final class BranchProtectionUpdate {
      * @param isStrict {@code true} to also require the pull request branch to be up to date with the base branch
      * @param contexts the names of the checks that must pass
      * @return this update
-     * @throws NullPointerException if {@code contexts} is {@code null}
+     * @throws NullPointerException if {@code contexts} or a context is {@code null}
+     * @throws IllegalArgumentException if a context is blank
      */
     public BranchProtectionUpdate requireStatusChecks(final boolean isStrict, final List<String> contexts) {
         this.statusChecks = new GitHubUpdateBranchProtectionRequiredStatusChecks(
@@ -57,9 +58,9 @@ public final class BranchProtectionUpdate {
     /**
      * Requires approving reviews before a pull request can be merged, with no further review options.
      *
-     * @param approvals the number of approving reviews, from 1 to 6
+     * @param approvals the number of approving reviews, from 0 to 6
      * @return this update
-     * @throws IllegalArgumentException if {@code approvals} is not from 1 to 6
+     * @throws IllegalArgumentException if {@code approvals} is not from 0 to 6
      */
     public BranchProtectionUpdate requirePullRequestReviews(final int approvals) {
         return requirePullRequestReviews(approvals, false, false, false);
@@ -68,12 +69,12 @@ public final class BranchProtectionUpdate {
     /**
      * Requires approving reviews before a pull request can be merged.
      *
-     * @param approvals the number of approving reviews, from 1 to 6
+     * @param approvals the number of approving reviews, from 0 to 6
      * @param isStaleDismissed {@code true} to dismiss approvals when new commits are pushed
      * @param isCodeOwnerRequired {@code true} to require a review from the code owners
      * @param isLastPushApprovalRequired {@code true} to require that someone other than the last pusher approves
      * @return this update
-     * @throws IllegalArgumentException if {@code approvals} is not from 1 to 6
+     * @throws IllegalArgumentException if {@code approvals} is not from 0 to 6
      */
     public BranchProtectionUpdate requirePullRequestReviews(
             final int approvals,
@@ -176,7 +177,9 @@ public final class BranchProtectionUpdate {
      * @param teams the slugs of the teams who may push
      * @param apps the slugs of the apps that may push
      * @return this update
-     * @throws NullPointerException if {@code users}, {@code teams} or {@code apps} is {@code null}
+     * @throws NullPointerException if {@code users}, {@code teams}, {@code apps} or one of their entries is
+     *     {@code null}
+     * @throws IllegalArgumentException if an entry is blank
      */
     public BranchProtectionUpdate restrictPushesTo(
             final List<String> users, final List<String> teams, final List<String> apps) {

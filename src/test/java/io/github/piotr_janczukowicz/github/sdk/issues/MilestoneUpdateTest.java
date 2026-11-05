@@ -117,4 +117,11 @@ class MilestoneUpdateTest {
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("milestone");
     }
+
+    @Test
+    void title_shouldThrowIllegalArgumentException_whenTitleIsBlank() {
+        final Throwable thrown = catchThrowable(() -> milestone.update().title(" "));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("title");
+    }
 }

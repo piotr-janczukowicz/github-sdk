@@ -1,6 +1,7 @@
 package io.github.piotr_janczukowicz.github.sdk.issues;
 
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
+import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 
 import io.github.piotr_janczukowicz.github.api.issues.GitHubUpdateLabelPayload;
 import io.github.piotr_janczukowicz.github.sdk.internal.UpdateState;
@@ -36,9 +37,10 @@ public final class LabelUpdate {
      * @param name the new value
      * @return this update
      * @throws NullPointerException if {@code name} is {@code null}
+     * @throws IllegalArgumentException if {@code name} is blank
      */
     public LabelUpdate name(final String name) {
-        this.name = requireNonNull(name, "name");
+        this.name = requireNotBlank(name, "name");
         return changed();
     }
 

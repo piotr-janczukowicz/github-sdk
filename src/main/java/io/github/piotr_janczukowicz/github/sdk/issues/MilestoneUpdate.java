@@ -1,6 +1,7 @@
 package io.github.piotr_janczukowicz.github.sdk.issues;
 
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
+import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 
 import io.github.piotr_janczukowicz.github.api.issues.GitHubUpdateMilestonePayload;
 import io.github.piotr_janczukowicz.github.sdk.internal.UpdateState;
@@ -37,9 +38,10 @@ public final class MilestoneUpdate {
      * @param title the new value
      * @return this update
      * @throws NullPointerException if {@code title} is {@code null}
+     * @throws IllegalArgumentException if {@code title} is blank
      */
     public MilestoneUpdate title(final String title) {
-        this.title = requireNonNull(title, "title");
+        this.title = requireNotBlank(title, "title");
         return changed();
     }
 

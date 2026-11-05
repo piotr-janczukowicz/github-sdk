@@ -91,7 +91,8 @@ public final class RulesetUpdate {
     }
 
     /**
-     * Removes the rule of a type, whether the ruleset already has it or it was added earlier in this update.
+     * Removes the rule of a type, whether the ruleset already has it or it was added earlier in this update. It always
+     * removes the existing rule of that type too; to cancel only a pending addition, do not call {@code addRule}.
      *
      * @param type the client record class of the rule, for example {@code GitHubRepositoryRuleDeletion.class}
      * @return this update

@@ -1,6 +1,7 @@
 package io.github.piotr_janczukowicz.github.sdk.issues;
 
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
+import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 
 import io.github.piotr_janczukowicz.github.api.issues.GitHubIssueMilestoneReference;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubUpdateIssueAssignee;
@@ -39,9 +40,10 @@ public final class IssueUpdate {
      * @param title the new title
      * @return this update
      * @throws NullPointerException if {@code title} is {@code null}
+     * @throws IllegalArgumentException if {@code title} is blank
      */
     public IssueUpdate title(final String title) {
-        payload.title(OptionalNull.of(requireNonNull(title, "title")));
+        payload.title(OptionalNull.of(requireNotBlank(title, "title")));
         return changed();
     }
 

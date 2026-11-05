@@ -41,7 +41,8 @@ public final class WebhookUpdate {
      *
      * @param events the event names
      * @return this update
-     * @throws NullPointerException if {@code events} is {@code null}
+     * @throws NullPointerException if {@code events} or an event name is {@code null}
+     * @throws IllegalArgumentException if an event name is blank
      */
     public WebhookUpdate events(final List<String> events) {
         this.events = Arguments.requireNotBlankElements(events, EVENTS);
@@ -53,7 +54,8 @@ public final class WebhookUpdate {
      *
      * @param events the event names
      * @return this update
-     * @throws NullPointerException if {@code events} is {@code null}
+     * @throws NullPointerException if {@code events} or an event name is {@code null}
+     * @throws IllegalArgumentException if an event name is blank
      */
     public WebhookUpdate addEvents(final List<String> events) {
         this.addEvents = Arguments.requireNotBlankElements(events, EVENTS);
@@ -65,7 +67,8 @@ public final class WebhookUpdate {
      *
      * @param events the event names
      * @return this update
-     * @throws NullPointerException if {@code events} is {@code null}
+     * @throws NullPointerException if {@code events} or an event name is {@code null}
+     * @throws IllegalArgumentException if an event name is blank
      */
     public WebhookUpdate removeEvents(final List<String> events) {
         this.removeEvents = Arguments.requireNotBlankElements(events, EVENTS);

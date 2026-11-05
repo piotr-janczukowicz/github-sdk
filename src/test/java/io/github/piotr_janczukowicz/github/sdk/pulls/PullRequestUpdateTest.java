@@ -120,4 +120,11 @@ class PullRequestUpdateTest {
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("pullRequest");
     }
+
+    @Test
+    void title_shouldThrowIllegalArgumentException_whenTitleIsBlank() {
+        final Throwable thrown = catchThrowable(() -> pullRequest.update().title(" "));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("title");
+    }
 }
