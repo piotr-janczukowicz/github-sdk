@@ -141,7 +141,8 @@ public final class Rules {
      * Requires status checks to pass before matching refs can be updated.
      *
      * @param isStrict {@code true} to also require the branch to be up to date with the base branch
-     * @param contexts the names of the checks that must pass
+     * @param contexts the names of the checks that must pass; GitHub accepts an empty list and then names no check
+     *     (checked on a rule with disabled enforcement)
      * @return the rule
      * @throws NullPointerException if {@code contexts} or a context is {@code null}
      * @throws IllegalArgumentException if a context is blank
