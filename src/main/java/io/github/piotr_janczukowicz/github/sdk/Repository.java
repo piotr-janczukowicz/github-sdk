@@ -65,6 +65,7 @@ import io.github.piotr_janczukowicz.github.api.secretscanning.GitHubListSecretSc
 import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
 import io.github.piotr_janczukowicz.github.pagination.GitHubPageRequest;
 import io.github.piotr_janczukowicz.github.sdk.actions.Artifact;
+import io.github.piotr_janczukowicz.github.sdk.actions.RepositoryActionsCache;
 import io.github.piotr_janczukowicz.github.sdk.actions.Variable;
 import io.github.piotr_janczukowicz.github.sdk.actions.Workflow;
 import io.github.piotr_janczukowicz.github.sdk.actions.WorkflowRun;
@@ -106,6 +107,7 @@ import io.github.piotr_janczukowicz.github.sdk.rulesets.RulesetTarget;
 import io.github.piotr_janczukowicz.github.sdk.security.CodeScanningAlert;
 import io.github.piotr_janczukowicz.github.sdk.security.DependabotAlert;
 import io.github.piotr_janczukowicz.github.sdk.security.RepositoryCodeQuality;
+import io.github.piotr_janczukowicz.github.sdk.security.RepositoryCodeScanning;
 import io.github.piotr_janczukowicz.github.sdk.security.RepositorySecurity;
 import io.github.piotr_janczukowicz.github.sdk.security.SecretScanningAlert;
 import io.github.piotr_janczukowicz.github.sdk.webhooks.Webhook;
@@ -1985,6 +1987,26 @@ public final class Repository {
      */
     public RepositoryDependencies dependencies() {
         return new RepositoryDependencies(this);
+    }
+
+    /**
+     * Returns the GitHub Actions caches of the repository with their usage and limits. Nothing is requested until a
+     * method of the result is called.
+     *
+     * @return the Actions caches
+     */
+    public RepositoryActionsCache actionsCache() {
+        return new RepositoryActionsCache(this);
+    }
+
+    /**
+     * Returns the code scanning analyses, SARIF uploads, CodeQL databases and default setup of the repository. The
+     * alerts are on {@link #codeScanningAlerts()}. Nothing is requested until a method of the result is called.
+     *
+     * @return the code scanning handle
+     */
+    public RepositoryCodeScanning codeScanning() {
+        return new RepositoryCodeScanning(this);
     }
 
     /**

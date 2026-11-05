@@ -3,6 +3,8 @@ package io.github.piotr_janczukowicz.github.sdk;
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 
+import io.github.piotr_janczukowicz.github.api.actions.GitHubActionsCacheUsageByRepository;
+import io.github.piotr_janczukowicz.github.api.actions.GitHubActionsCacheUsageOrgEnterprise;
 import io.github.piotr_janczukowicz.github.api.actions.GitHubCreateOrgVariablePayload;
 import io.github.piotr_janczukowicz.github.api.activity.GitHubEvent;
 import io.github.piotr_janczukowicz.github.api.organizations.GitHubCreateOrgWebhookPayload;
@@ -461,6 +463,28 @@ public final class Organization {
      */
     public Stream<GitHubRepositoryAdvisory> advisories() throws IOException {
         return sdk.github().securityAdvisories().repositoryAdvisories().listOrgRepositoryAdvisories(login()).stream();
+    }
+
+    /**
+     * Returns the GitHub Actions cache usage of the whole organization ({@code GET /orgs/{org}/actions/cache/usage}) as
+     * GitHub returns it.
+     *
+     * @return the usage
+     * @throws IOException if the transport fails
+     */
+    public GitHubActionsCacheUsageOrgEnterprise actionsCacheUsage() throws IOException {
+        return sdk.github().actions().cache().getOrgCacheUsage(login());
+    }
+
+    /**
+     * Lists the GitHub Actions cache usage of each repository of the organization ({@code GET
+     * /orgs/{org}/actions/cache/usage-by-repository}) as GitHub returns it. The stream is lazy and can be used once.
+     *
+     * @return the usage per repository
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<GitHubActionsCacheUsageByRepository> actionsCacheUsageByRepository() throws IOException {
+        return sdk.github().actions().cache().listOrgCacheUsageByRepository(login()).stream();
     }
 
     /**
