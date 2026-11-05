@@ -16,6 +16,7 @@ import io.github.piotr_janczukowicz.github.api.organizations.GitHubCreateOrganiz
 import io.github.piotr_janczukowicz.github.api.organizations.GitHubOrgMembership;
 import io.github.piotr_janczukowicz.github.api.organizations.GitHubOrganizationActionsSecret;
 import io.github.piotr_janczukowicz.github.api.organizations.GitHubOrganizationFull;
+import io.github.piotr_janczukowicz.github.api.organizations.GitHubOrganizationMembershipRole;
 import io.github.piotr_janczukowicz.github.api.organizations.GitHubSetOrganizationMembershipPayload;
 import io.github.piotr_janczukowicz.github.api.packages.GitHubPackageType;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateInOrgPayload;
@@ -31,7 +32,6 @@ import io.github.piotr_janczukowicz.github.sdk.internal.ClientValues;
 import io.github.piotr_janczukowicz.github.sdk.internal.Lookups;
 import io.github.piotr_janczukowicz.github.sdk.organizations.InvitationRole;
 import io.github.piotr_janczukowicz.github.sdk.organizations.OrganizationInvitation;
-import io.github.piotr_janczukowicz.github.sdk.organizations.OrganizationRole;
 import io.github.piotr_janczukowicz.github.sdk.organizations.OrganizationVariable;
 import io.github.piotr_janczukowicz.github.sdk.organizations.OrganizationWebhook;
 import io.github.piotr_janczukowicz.github.sdk.organizations.VariableVisibility;
@@ -190,15 +190,15 @@ public final class Organization {
      * @throws IllegalArgumentException if {@code login} is blank
      * @throws IOException if the transport fails
      */
-    public GitHubOrgMembership changeMembership(final String login, final OrganizationRole role) throws IOException {
+    public GitHubOrgMembership changeMembership(final String login, final GitHubOrganizationMembershipRole role)
+            throws IOException {
         return sdk.github()
                 .organizations()
                 .members()
                 .setMembership(
                         this.login(),
                         requireNotBlank(login, LOGIN),
-                        new GitHubSetOrganizationMembershipPayload(
-                                ClientValues.organizationRoleToClient(requireNonNull(role, "role"))));
+                        new GitHubSetOrganizationMembershipPayload(requireNonNull(role, "role")));
     }
 
     /**

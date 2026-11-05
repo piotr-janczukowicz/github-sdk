@@ -97,7 +97,7 @@ class PullRequestDiffAndMergeTest {
         final ArgumentCaptor<GitHubMergePullRequestAsyncPayload> payload =
                 ArgumentCaptor.forClass(GitHubMergePullRequestAsyncPayload.class);
 
-        final GitHubPullRequestMergeAsyncResult answer = sut.mergeAsync(MergeMethod.SQUASH);
+        final GitHubPullRequestMergeAsyncResult answer = sut.mergeAsync(GitHubPullRequestMergeMethod.SQUASH);
 
         verify(github.pullRequests().pullRequest()).mergeAsync(eq(OWNER), eq(NAME), eq(NUMBER), payload.capture());
         assertSoftly(softly -> {
@@ -121,7 +121,7 @@ class PullRequestDiffAndMergeTest {
 
     @Test
     void mergeAsync_shouldThrowNullPointerException_whenTheMethodIsNull() {
-        final Throwable thrown = catchThrowable(() -> sut.mergeAsync((MergeMethod) null));
+        final Throwable thrown = catchThrowable(() -> sut.mergeAsync((GitHubPullRequestMergeMethod) null));
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("method");
     }

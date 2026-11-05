@@ -2,20 +2,12 @@ package io.github.piotr_janczukowicz.github.sdk.internal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
-import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
-import io.github.piotr_janczukowicz.github.api.commits.GitHubCommitStatusState;
-import io.github.piotr_janczukowicz.github.api.organizations.GitHubOrganizationMembershipRole;
 import io.github.piotr_janczukowicz.github.api.reactions.GitHubReactionContent;
 import io.github.piotr_janczukowicz.github.api.reactions.GitHubReleaseReactionContent;
-import io.github.piotr_janczukowicz.github.api.teams.GitHubTeamRole;
-import io.github.piotr_janczukowicz.github.sdk.checks.CommitStatusState;
 import io.github.piotr_janczukowicz.github.sdk.collaborators.RepositoryPermission;
 import io.github.piotr_janczukowicz.github.sdk.organizations.InvitationRole;
-import io.github.piotr_janczukowicz.github.sdk.organizations.OrganizationRole;
-import io.github.piotr_janczukowicz.github.sdk.organizations.TeamRole;
 import io.github.piotr_janczukowicz.github.sdk.organizations.VariableVisibility;
-import io.github.piotr_janczukowicz.github.sdk.reactions.ReactionContent;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.lang.reflect.Constructor;
 import java.util.Arrays;
@@ -25,18 +17,9 @@ import org.junit.jupiter.api.Test;
 class ClientValuesTest {
 
     @Test
-    void reactionToClient_shouldMapEveryContentToTheClientValueOfTheSameName_whenCalled() {
-        final boolean isEveryNameKept = Arrays.stream(ReactionContent.values())
-                .allMatch(
-                        content -> ClientValues.reactionToClient(content).name().equals(content.name()));
-
-        assertThat(isEveryNameKept).isTrue();
-    }
-
-    @Test
     void releaseReactionToClient_shouldMapTheSixAcceptedEmojis_whenCalled() {
         final boolean isEveryNameKept = Arrays.stream(GitHubReleaseReactionContent.values())
-                .allMatch(content -> ClientValues.releaseReactionToClient(ReactionContent.valueOf(content.name()))
+                .allMatch(content -> ClientValues.releaseReactionToClient(GitHubReactionContent.valueOf(content.name()))
                         .name()
                         .equals(content.name()));
 
@@ -45,35 +28,10 @@ class ClientValuesTest {
 
     @Test
     void releaseReactionToClient_shouldThrowIllegalArgumentException_whenTheEmojiIsConfused() {
-        final Throwable thrown = catchThrowable(() -> ClientValues.releaseReactionToClient(ReactionContent.CONFUSED));
+        final Throwable thrown =
+                catchThrowable(() -> ClientValues.releaseReactionToClient(GitHubReactionContent.CONFUSED));
 
         assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("CONFUSED");
-    }
-
-    @Test
-    void reactionFromClient_shouldMapEveryClientValueBack_whenCalled() {
-        final boolean isEveryValueRestored = Arrays.stream(GitHubReactionContent.values())
-                .allMatch(
-                        content -> ClientValues.reactionToClient(ClientValues.reactionFromClient(content)) == content);
-
-        assertThat(isEveryValueRestored).isTrue();
-    }
-
-    @Test
-    void reactionValues_shouldMatchTheClientValues_whenCompared() {
-        assertThat(ReactionContent.values()).hasSameSizeAs(GitHubReactionContent.values());
-    }
-
-    @Test
-    void statusStateToClient_shouldMapEveryStateToTheClientValueOfTheSameName_whenCalled() {
-        final boolean isEveryNameKept = Arrays.stream(CommitStatusState.values())
-                .allMatch(
-                        state -> ClientValues.statusStateToClient(state).name().equals(state.name()));
-
-        assertSoftly(softly -> {
-            softly.assertThat(isEveryNameKept).isTrue();
-            softly.assertThat(CommitStatusState.values()).hasSameSizeAs(GitHubCommitStatusState.values());
-        });
     }
 
     @Test
@@ -86,35 +44,12 @@ class ClientValuesTest {
     }
 
     @Test
-    void organizationRoleToClient_shouldMapEveryRoleToTheClientValueOfTheSameName_whenCalled() {
-        final boolean isEveryNameKept = Arrays.stream(OrganizationRole.values())
-                .allMatch(role ->
-                        ClientValues.organizationRoleToClient(role).name().equals(role.name()));
-
-        assertSoftly(softly -> {
-            softly.assertThat(isEveryNameKept).isTrue();
-            softly.assertThat(OrganizationRole.values()).hasSameSizeAs(GitHubOrganizationMembershipRole.values());
-        });
-    }
-
-    @Test
     void invitationRoleToClient_shouldMapEveryRoleToTheClientValueOfTheSameName_whenCalled() {
         final boolean isEveryNameKept = Arrays.stream(InvitationRole.values())
                 .allMatch(
                         role -> ClientValues.invitationRoleToClient(role).name().equals(role.name()));
 
         assertThat(isEveryNameKept).isTrue();
-    }
-
-    @Test
-    void teamRoleToClient_shouldMapEveryRoleToTheClientValueOfTheSameName_whenCalled() {
-        final boolean isEveryNameKept = Arrays.stream(TeamRole.values())
-                .allMatch(role -> ClientValues.teamRoleToClient(role).name().equals(role.name()));
-
-        assertSoftly(softly -> {
-            softly.assertThat(isEveryNameKept).isTrue();
-            softly.assertThat(TeamRole.values()).hasSameSizeAs(GitHubTeamRole.values());
-        });
     }
 
     @Test

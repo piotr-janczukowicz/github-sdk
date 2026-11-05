@@ -53,7 +53,7 @@ class RulesetUpdateTest {
 
         final Ruleset result = ruleset.edit()
                 .name("renamed")
-                .enforcement(RulesetEnforcement.EVALUATE)
+                .enforcement(GitHubRepositoryRuleEnforcement.EVALUATE)
                 .refs(List.of("~ALL"), List.of("refs/heads/x"))
                 .send();
 

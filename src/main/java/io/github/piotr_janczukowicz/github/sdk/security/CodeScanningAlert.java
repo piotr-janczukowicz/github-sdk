@@ -133,18 +133,15 @@ public final class CodeScanningAlert {
     }
 
     /**
-     * Dismisses the alert without a comment. See {@link #dismiss(CodeScanningDismissal, String)}.
+     * Dismisses the alert without a comment. See {@link #dismiss(GitHubCodeScanningAlertDismissedReason, String)}.
      *
      * @param reason why the alert is dismissed
      * @return the alert as GitHub holds it afterwards
      * @throws NullPointerException if {@code reason} is {@code null}
      * @throws IOException if the transport fails
      */
-    public CodeScanningAlert dismiss(final CodeScanningDismissal reason) throws IOException {
-        return update(
-                GitHubCodeScanningAlertSetState.DISMISSED,
-                requireNonNull(reason, "reason").toClient(),
-                null);
+    public CodeScanningAlert dismiss(final GitHubCodeScanningAlertDismissedReason reason) throws IOException {
+        return update(GitHubCodeScanningAlertSetState.DISMISSED, requireNonNull(reason, "reason"), null);
     }
 
     /**
@@ -157,10 +154,11 @@ public final class CodeScanningAlert {
      * @throws NullPointerException if {@code reason} or {@code comment} is {@code null}
      * @throws IOException if the transport fails
      */
-    public CodeScanningAlert dismiss(final CodeScanningDismissal reason, final String comment) throws IOException {
+    public CodeScanningAlert dismiss(final GitHubCodeScanningAlertDismissedReason reason, final String comment)
+            throws IOException {
         return update(
                 GitHubCodeScanningAlertSetState.DISMISSED,
-                requireNonNull(reason, "reason").toClient(),
+                requireNonNull(reason, "reason"),
                 requireNonNull(comment, "comment"));
     }
 

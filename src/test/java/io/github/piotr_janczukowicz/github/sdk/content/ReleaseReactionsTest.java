@@ -13,13 +13,13 @@ import static org.mockito.Mockito.when;
 import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.reactions.GitHubCreateForReleasePayload;
 import io.github.piotr_janczukowicz.github.api.reactions.GitHubReaction;
+import io.github.piotr_janczukowicz.github.api.reactions.GitHubReactionContent;
 import io.github.piotr_janczukowicz.github.api.reactions.GitHubReleaseReactionContent;
 import io.github.piotr_janczukowicz.github.sdk.GitHubSdk;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
 import io.github.piotr_janczukowicz.github.sdk.fixtures.ReactionsFixtures;
 import io.github.piotr_janczukowicz.github.sdk.fixtures.RepositoryContentFixtures;
 import io.github.piotr_janczukowicz.github.sdk.reactions.Reaction;
-import io.github.piotr_janczukowicz.github.sdk.reactions.ReactionContent;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.io.IOException;
 import java.util.List;
@@ -46,7 +46,7 @@ class ReleaseReactionsTest {
         final ArgumentCaptor<GitHubCreateForReleasePayload> payload =
                 ArgumentCaptor.forClass(GitHubCreateForReleasePayload.class);
 
-        final Reaction reaction = sut.react(ReactionContent.EYES);
+        final Reaction reaction = sut.react(GitHubReactionContent.EYES);
 
         verify(github.reactions()).createForRelease(eq(OWNER), eq(NAME), eq(ID), payload.capture());
         assertSoftly(softly -> {
@@ -64,7 +64,7 @@ class ReleaseReactionsTest {
 
     @Test
     void react_shouldThrowIllegalArgumentException_whenTheReleaseDoesNotAcceptTheEmoji() {
-        final Throwable thrown = catchThrowable(() -> sut.react(ReactionContent.MINUS_ONE));
+        final Throwable thrown = catchThrowable(() -> sut.react(GitHubReactionContent.MINUS_ONE));
 
         assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("MINUS_ONE");
     }

@@ -25,13 +25,12 @@ import io.github.piotr_janczukowicz.github.api.issues.GitHubUpdatePayload;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubUpdatePayloadBuilder;
 import io.github.piotr_janczukowicz.github.api.reactions.GitHubCreateForCommitCommentPayload;
 import io.github.piotr_janczukowicz.github.api.reactions.GitHubReaction;
+import io.github.piotr_janczukowicz.github.api.reactions.GitHubReactionContent;
 import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
 import io.github.piotr_janczukowicz.github.sdk.internal.Arguments;
-import io.github.piotr_janczukowicz.github.sdk.internal.ClientValues;
 import io.github.piotr_janczukowicz.github.sdk.internal.Internals;
 import io.github.piotr_janczukowicz.github.sdk.reactions.Reaction;
-import io.github.piotr_janczukowicz.github.sdk.reactions.ReactionContent;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -349,9 +348,9 @@ public final class Issue {
      * @throws NullPointerException if {@code content} is {@code null}
      * @throws IOException if the transport fails
      */
-    public Reaction react(final ReactionContent content) throws IOException {
-        final GitHubCreateForCommitCommentPayload payload = new GitHubCreateForCommitCommentPayload(
-                ClientValues.reactionToClient(requireNonNull(content, "content")));
+    public Reaction react(final GitHubReactionContent content) throws IOException {
+        final GitHubCreateForCommitCommentPayload payload =
+                new GitHubCreateForCommitCommentPayload(requireNonNull(content, "content"));
         return reaction(github().reactions().createForIssue(repository.owner(), repository.name(), number(), payload));
     }
 

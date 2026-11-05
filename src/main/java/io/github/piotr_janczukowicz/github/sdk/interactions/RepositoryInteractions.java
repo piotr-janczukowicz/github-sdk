@@ -3,6 +3,8 @@ package io.github.piotr_janczukowicz.github.sdk.interactions;
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
 
 import io.github.piotr_janczukowicz.github.api.GitHub;
+import io.github.piotr_janczukowicz.github.api.interactions.GitHubInteractionExpiry;
+import io.github.piotr_janczukowicz.github.api.interactions.GitHubInteractionGroup;
 import io.github.piotr_janczukowicz.github.api.interactions.GitHubInteractionLimit;
 import io.github.piotr_janczukowicz.github.api.interactions.GitHubInteractionLimitResponse;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
@@ -49,8 +51,8 @@ public final class RepositoryInteractions {
      * @throws NullPointerException if {@code group} is {@code null}
      * @throws IOException if the transport fails
      */
-    public GitHubInteractionLimitResponse restrict(final InteractionGroup group) throws IOException {
-        return restrict(group, InteractionExpiry.ONE_DAY);
+    public GitHubInteractionLimitResponse restrict(final GitHubInteractionGroup group) throws IOException {
+        return restrict(group, GitHubInteractionExpiry.ONE_DAY);
     }
 
     /**
@@ -62,11 +64,10 @@ public final class RepositoryInteractions {
      * @throws NullPointerException if {@code group} or {@code expiry} is {@code null}
      * @throws IOException if the transport fails
      */
-    public GitHubInteractionLimitResponse restrict(final InteractionGroup group, final InteractionExpiry expiry)
-            throws IOException {
-        final GitHubInteractionLimit limit = new GitHubInteractionLimit(
-                requireNonNull(group, "group").toClient(),
-                requireNonNull(expiry, "expiry").toClient());
+    public GitHubInteractionLimitResponse restrict(
+            final GitHubInteractionGroup group, final GitHubInteractionExpiry expiry) throws IOException {
+        final GitHubInteractionLimit limit =
+                new GitHubInteractionLimit(requireNonNull(group, "group"), requireNonNull(expiry, "expiry"));
         return github().interactions().repos().setRestrictionsForRepo(repository.owner(), repository.name(), limit);
     }
 

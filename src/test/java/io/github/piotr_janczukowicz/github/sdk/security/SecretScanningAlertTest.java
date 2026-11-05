@@ -120,7 +120,7 @@ class SecretScanningAlertTest {
         final ArgumentCaptor<GitHubUpdateSecretScanningAlertPayload> payload =
                 ArgumentCaptor.forClass(GitHubUpdateSecretScanningAlertPayload.class);
 
-        final SecretScanningAlert result = sut.resolve(SecretResolution.REVOKED);
+        final SecretScanningAlert result = sut.resolve(GitHubSecretScanningAlertResolution.REVOKED);
 
         verify(api).updateAlert(eq(OWNER), eq(NAME), eq(NUMBER), payload.capture());
         assertSoftly(softly -> {
@@ -140,7 +140,7 @@ class SecretScanningAlertTest {
         final ArgumentCaptor<GitHubUpdateSecretScanningAlertPayload> payload =
                 ArgumentCaptor.forClass(GitHubUpdateSecretScanningAlertPayload.class);
 
-        sut.resolve(SecretResolution.USED_IN_TESTS, "Test fixture");
+        sut.resolve(GitHubSecretScanningAlertResolution.USED_IN_TESTS, "Test fixture");
 
         verify(api).updateAlert(eq(OWNER), eq(NAME), eq(NUMBER), payload.capture());
         assertThat(payload.getValue().resolutionComment().value()).isEqualTo("Test fixture");
@@ -173,7 +173,7 @@ class SecretScanningAlertTest {
 
     @Test
     void resolve_shouldThrowNullPointerException_whenCommentIsNull() {
-        final Throwable thrown = catchThrowable(() -> sut.resolve(SecretResolution.REVOKED, null));
+        final Throwable thrown = catchThrowable(() -> sut.resolve(GitHubSecretScanningAlertResolution.REVOKED, null));
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("comment");
     }

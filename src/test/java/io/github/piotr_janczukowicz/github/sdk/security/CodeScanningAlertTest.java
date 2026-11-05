@@ -106,7 +106,7 @@ class CodeScanningAlertTest {
         final ArgumentCaptor<GitHubUpdateAlertPayload> payload =
                 ArgumentCaptor.forClass(GitHubUpdateAlertPayload.class);
 
-        final CodeScanningAlert result = sut.dismiss(CodeScanningDismissal.FALSE_POSITIVE);
+        final CodeScanningAlert result = sut.dismiss(GitHubCodeScanningAlertDismissedReason.FALSE_POSITIVE);
 
         verify(api).updateAlert(eq(OWNER), eq(NAME), eq(NUMBER), payload.capture());
         assertSoftly(softly -> {
@@ -125,7 +125,7 @@ class CodeScanningAlertTest {
         final ArgumentCaptor<GitHubUpdateAlertPayload> payload =
                 ArgumentCaptor.forClass(GitHubUpdateAlertPayload.class);
 
-        sut.dismiss(CodeScanningDismissal.MITIGATED, "Handled upstream");
+        sut.dismiss(GitHubCodeScanningAlertDismissedReason.MITIGATED, "Handled upstream");
 
         verify(api).updateAlert(eq(OWNER), eq(NAME), eq(NUMBER), payload.capture());
         assertThat(payload.getValue().dismissedComment()).isEqualTo("Handled upstream");
@@ -156,7 +156,8 @@ class CodeScanningAlertTest {
 
     @Test
     void dismiss_shouldThrowNullPointerException_whenCommentIsNull() {
-        final Throwable thrown = catchThrowable(() -> sut.dismiss(CodeScanningDismissal.MITIGATED, null));
+        final Throwable thrown =
+                catchThrowable(() -> sut.dismiss(GitHubCodeScanningAlertDismissedReason.MITIGATED, null));
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("comment");
     }

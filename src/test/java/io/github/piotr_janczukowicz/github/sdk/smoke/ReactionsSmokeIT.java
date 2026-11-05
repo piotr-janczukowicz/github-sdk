@@ -5,6 +5,7 @@ import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 import io.github.piotr_janczukowicz.github.api.issues.GitHubIssueEvent;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubTimelineEvent;
+import io.github.piotr_janczukowicz.github.api.reactions.GitHubReactionContent;
 import io.github.piotr_janczukowicz.github.api.releases.GitHubCreateReleasePayloadBuilder;
 import io.github.piotr_janczukowicz.github.client.exception.GitHubForbiddenException;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
@@ -17,7 +18,6 @@ import io.github.piotr_janczukowicz.github.sdk.issues.IssueComment;
 import io.github.piotr_janczukowicz.github.sdk.pulls.PullRequest;
 import io.github.piotr_janczukowicz.github.sdk.pulls.PullRequestReviewComment;
 import io.github.piotr_janczukowicz.github.sdk.reactions.Reaction;
-import io.github.piotr_janczukowicz.github.sdk.reactions.ReactionContent;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -41,19 +41,21 @@ class ReactionsSmokeIT {
         final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
         final Issue issue = repository.createIssue(ENV.name("reactions"));
         try {
-            final Reaction heart = issue.react(ReactionContent.HEART);
-            final Reaction rocket = issue.react(ReactionContent.ROCKET);
-            final List<ReactionContent> before =
+            final Reaction heart = issue.react(GitHubReactionContent.HEART);
+            final Reaction rocket = issue.react(GitHubReactionContent.ROCKET);
+            final List<GitHubReactionContent> before =
                     issue.reactions().map(Reaction::content).toList();
             heart.delete();
-            final List<ReactionContent> after =
+            final List<GitHubReactionContent> after =
                     issue.reactions().map(Reaction::content).toList();
 
             assertSoftly(softly -> {
-                softly.assertThat(heart.content()).isEqualTo(ReactionContent.HEART);
-                softly.assertThat(rocket.content()).isEqualTo(ReactionContent.ROCKET);
-                softly.assertThat(before).contains(ReactionContent.HEART, ReactionContent.ROCKET);
-                softly.assertThat(after).contains(ReactionContent.ROCKET).doesNotContain(ReactionContent.HEART);
+                softly.assertThat(heart.content()).isEqualTo(GitHubReactionContent.HEART);
+                softly.assertThat(rocket.content()).isEqualTo(GitHubReactionContent.ROCKET);
+                softly.assertThat(before).contains(GitHubReactionContent.HEART, GitHubReactionContent.ROCKET);
+                softly.assertThat(after)
+                        .contains(GitHubReactionContent.ROCKET)
+                        .doesNotContain(GitHubReactionContent.HEART);
             });
         } finally {
             issue.close();
@@ -67,7 +69,7 @@ class ReactionsSmokeIT {
         try {
             final IssueComment comment = issue.comment("smoke comment");
 
-            final Reaction eyes = comment.react(ReactionContent.EYES);
+            final Reaction eyes = comment.react(GitHubReactionContent.EYES);
             final List<Long> ids = comment.reactions().map(Reaction::id).toList();
             eyes.delete();
 
@@ -93,7 +95,7 @@ class ReactionsSmokeIT {
             final PullRequestReviewComment comment =
                     pullRequest.commentOnLine(pullRequest.response().head().sha(), path, 1, "react to me");
 
-            final Reaction hooray = comment.react(ReactionContent.HOORAY);
+            final Reaction hooray = comment.react(GitHubReactionContent.HOORAY);
             final List<Long> ids = comment.reactions().map(Reaction::id).toList();
             hooray.delete();
             comment.delete();
@@ -131,17 +133,17 @@ class ReactionsSmokeIT {
         final CommitComment comment =
                 comment(repository.branch(base).orElseThrow().commit());
         try {
-            final Reaction heart = comment.react(ReactionContent.HEART);
-            final List<ReactionContent> before =
+            final Reaction heart = comment.react(GitHubReactionContent.HEART);
+            final List<GitHubReactionContent> before =
                     comment.reactions().map(Reaction::content).toList();
             heart.delete();
-            final List<ReactionContent> after =
+            final List<GitHubReactionContent> after =
                     comment.reactions().map(Reaction::content).toList();
 
             assertSoftly(softly -> {
-                softly.assertThat(heart.content()).isEqualTo(ReactionContent.HEART);
-                softly.assertThat(before).contains(ReactionContent.HEART);
-                softly.assertThat(after).doesNotContain(ReactionContent.HEART);
+                softly.assertThat(heart.content()).isEqualTo(GitHubReactionContent.HEART);
+                softly.assertThat(before).contains(GitHubReactionContent.HEART);
+                softly.assertThat(after).doesNotContain(GitHubReactionContent.HEART);
             });
         } finally {
             comment.delete();
@@ -157,17 +159,17 @@ class ReactionsSmokeIT {
                 .draft(false)
                 .build());
         try {
-            final Reaction rocket = release.react(ReactionContent.ROCKET);
-            final List<ReactionContent> before =
+            final Reaction rocket = release.react(GitHubReactionContent.ROCKET);
+            final List<GitHubReactionContent> before =
                     release.reactions().map(Reaction::content).toList();
             rocket.delete();
-            final List<ReactionContent> after =
+            final List<GitHubReactionContent> after =
                     release.reactions().map(Reaction::content).toList();
 
             assertSoftly(softly -> {
-                softly.assertThat(rocket.content()).isEqualTo(ReactionContent.ROCKET);
-                softly.assertThat(before).contains(ReactionContent.ROCKET);
-                softly.assertThat(after).doesNotContain(ReactionContent.ROCKET);
+                softly.assertThat(rocket.content()).isEqualTo(GitHubReactionContent.ROCKET);
+                softly.assertThat(before).contains(GitHubReactionContent.ROCKET);
+                softly.assertThat(after).doesNotContain(GitHubReactionContent.ROCKET);
             });
         } finally {
             release.delete();

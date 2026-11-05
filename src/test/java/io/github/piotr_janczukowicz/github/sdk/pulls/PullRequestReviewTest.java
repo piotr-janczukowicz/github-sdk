@@ -119,7 +119,7 @@ class PullRequestReviewTest {
         final ArgumentCaptor<GitHubSubmitReviewPayload> payload =
                 ArgumentCaptor.forClass(GitHubSubmitReviewPayload.class);
 
-        final PullRequestReview result = sut.submit(ReviewEvent.REQUEST_CHANGES, "Please fix");
+        final PullRequestReview result = sut.submit(GitHubPullRequestReviewEvent.REQUEST_CHANGES, "Please fix");
 
         verify(github.pullRequests().reviews()).submit(eq(OWNER), eq(NAME), eq(NUMBER), eq(ID), payload.capture());
         assertSoftly(softly -> {
@@ -137,7 +137,7 @@ class PullRequestReviewTest {
         final ArgumentCaptor<GitHubSubmitReviewPayload> payload =
                 ArgumentCaptor.forClass(GitHubSubmitReviewPayload.class);
 
-        sut.submit(ReviewEvent.APPROVE);
+        sut.submit(GitHubPullRequestReviewEvent.APPROVE);
 
         verify(github.pullRequests().reviews()).submit(eq(OWNER), eq(NAME), eq(NUMBER), eq(ID), payload.capture());
         assertSoftly(softly -> {

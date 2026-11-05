@@ -6,12 +6,12 @@ import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import io.github.piotr_janczukowicz.github.api.checks.GitHubCheckRunStatus;
 import io.github.piotr_janczukowicz.github.api.checks.GitHubUpdateCheckRunConclusion;
 import io.github.piotr_janczukowicz.github.api.checks.GitHubUpdateCheckRunStatus;
+import io.github.piotr_janczukowicz.github.api.commits.GitHubCommitStatusState;
 import io.github.piotr_janczukowicz.github.client.exception.GitHubForbiddenException;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
 import io.github.piotr_janczukowicz.github.sdk.checks.CheckRun;
 import io.github.piotr_janczukowicz.github.sdk.checks.CombinedStatus;
 import io.github.piotr_janczukowicz.github.sdk.checks.CommitStatus;
-import io.github.piotr_janczukowicz.github.sdk.checks.CommitStatusState;
 import io.github.piotr_janczukowicz.github.sdk.content.Commit;
 import java.io.IOException;
 import java.util.List;
@@ -42,9 +42,9 @@ class ChecksSmokeIT {
             final Commit commit =
                     repository.commit(SandboxBranches.branchSha(ENV, head)).orElseThrow();
 
-            final CommitStatus pending = commit.createStatus(CommitStatusState.PENDING, context);
+            final CommitStatus pending = commit.createStatus(GitHubCommitStatusState.PENDING, context);
             final CommitStatus success = commit.createStatus(
-                    CommitStatusState.SUCCESS, context, "Smoke passed", "https://example.com/smoke");
+                    GitHubCommitStatusState.SUCCESS, context, "Smoke passed", "https://example.com/smoke");
             final List<CommitStatus> statuses = commit.statuses().toList();
             final CombinedStatus combined = commit.combinedStatus().orElseThrow();
 

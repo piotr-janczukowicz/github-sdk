@@ -24,7 +24,6 @@ import io.github.piotr_janczukowicz.github.sdk.Repository;
 import io.github.piotr_janczukowicz.github.sdk.checks.CheckRun;
 import io.github.piotr_janczukowicz.github.sdk.checks.CombinedStatus;
 import io.github.piotr_janczukowicz.github.sdk.checks.CommitStatus;
-import io.github.piotr_janczukowicz.github.sdk.checks.CommitStatusState;
 import io.github.piotr_janczukowicz.github.sdk.fixtures.ChecksFixtures;
 import io.github.piotr_janczukowicz.github.sdk.fixtures.RepositoryContentFixtures;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
@@ -128,7 +127,7 @@ class CommitChecksTest {
         final ArgumentCaptor<GitHubCreateCommitStatusPayload> payload =
                 ArgumentCaptor.forClass(GitHubCreateCommitStatusPayload.class);
 
-        final CommitStatus status = sut.createStatus(CommitStatusState.SUCCESS, "ci/build");
+        final CommitStatus status = sut.createStatus(GitHubCommitStatusState.SUCCESS, "ci/build");
 
         verify(github.commits().statuses()).createCommitStatus(eq(OWNER), eq(NAME), eq(SHA), payload.capture());
         assertSoftly(softly -> {
@@ -148,7 +147,7 @@ class CommitChecksTest {
         final ArgumentCaptor<GitHubCreateCommitStatusPayload> payload =
                 ArgumentCaptor.forClass(GitHubCreateCommitStatusPayload.class);
 
-        sut.createStatus(CommitStatusState.PENDING, "ci/build", "Running", "https://ci.example.com/1");
+        sut.createStatus(GitHubCommitStatusState.PENDING, "ci/build", "Running", "https://ci.example.com/1");
 
         verify(github.commits().statuses()).createCommitStatus(eq(OWNER), eq(NAME), eq(SHA), payload.capture());
         assertSoftly(softly -> {
@@ -167,7 +166,7 @@ class CommitChecksTest {
 
     @Test
     void createStatus_shouldThrowIllegalArgumentException_whenContextIsBlank() {
-        final Throwable thrown = catchThrowable(() -> sut.createStatus(CommitStatusState.SUCCESS, " "));
+        final Throwable thrown = catchThrowable(() -> sut.createStatus(GitHubCommitStatusState.SUCCESS, " "));
 
         assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("context");
     }

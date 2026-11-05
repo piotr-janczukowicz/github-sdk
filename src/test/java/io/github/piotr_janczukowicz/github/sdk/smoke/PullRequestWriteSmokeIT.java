@@ -3,9 +3,9 @@ package io.github.piotr_janczukowicz.github.sdk.smoke;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubPullRequestBranchUpdateResult;
+import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubPullRequestMergeMethod;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
 import io.github.piotr_janczukowicz.github.sdk.issues.Issue;
-import io.github.piotr_janczukowicz.github.sdk.pulls.MergeMethod;
 import io.github.piotr_janczukowicz.github.sdk.pulls.PullRequest;
 import io.github.piotr_janczukowicz.github.sdk.pulls.PullRequestState;
 import java.io.IOException;
@@ -68,7 +68,7 @@ class PullRequestWriteSmokeIT {
             final PullRequest created =
                     repository.createPullRequest(SandboxBranches.newPullRequest(head, base, ENV.name("merge")));
 
-            final PullRequest merged = created.merge(MergeMethod.SQUASH);
+            final PullRequest merged = created.merge(GitHubPullRequestMergeMethod.SQUASH);
 
             assertThat(created.isMerged()).isFalse();
             assertThat(merged.isMerged()).isTrue();

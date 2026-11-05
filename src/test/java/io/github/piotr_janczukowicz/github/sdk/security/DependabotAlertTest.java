@@ -99,7 +99,7 @@ class DependabotAlertTest {
         final ArgumentCaptor<GitHubUpdateAlertPayload> payload =
                 ArgumentCaptor.forClass(GitHubUpdateAlertPayload.class);
 
-        final DependabotAlert result = sut.dismiss(DependabotDismissal.NOT_USED);
+        final DependabotAlert result = sut.dismiss(GitHubDependabotAlertDismissedReason.NOT_USED);
 
         verify(api).updateAlert(eq(OWNER), eq(NAME), eq(NUMBER), payload.capture());
         assertSoftly(softly -> {
@@ -118,7 +118,7 @@ class DependabotAlertTest {
         final ArgumentCaptor<GitHubUpdateAlertPayload> payload =
                 ArgumentCaptor.forClass(GitHubUpdateAlertPayload.class);
 
-        sut.dismiss(DependabotDismissal.TOLERABLE_RISK, "Accepted");
+        sut.dismiss(GitHubDependabotAlertDismissedReason.TOLERABLE_RISK, "Accepted");
 
         verify(api).updateAlert(eq(OWNER), eq(NAME), eq(NUMBER), payload.capture());
         assertThat(payload.getValue().dismissedComment()).isEqualTo("Accepted");
@@ -149,7 +149,7 @@ class DependabotAlertTest {
 
     @Test
     void dismiss_shouldThrowNullPointerException_whenCommentIsNull() {
-        final Throwable thrown = catchThrowable(() -> sut.dismiss(DependabotDismissal.NOT_USED, null));
+        final Throwable thrown = catchThrowable(() -> sut.dismiss(GitHubDependabotAlertDismissedReason.NOT_USED, null));
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("comment");
     }

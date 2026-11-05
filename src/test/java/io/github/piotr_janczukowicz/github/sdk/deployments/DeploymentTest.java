@@ -123,7 +123,7 @@ class DeploymentTest {
         final ArgumentCaptor<GitHubCreateDeploymentStatusPayload> payload =
                 ArgumentCaptor.forClass(GitHubCreateDeploymentStatusPayload.class);
 
-        final GitHubDeploymentStatus result = sut.createStatus(DeploymentState.IN_PROGRESS);
+        final GitHubDeploymentStatus result = sut.createStatus(GitHubDeploymentStatusState.IN_PROGRESS);
 
         verify(api).createDeploymentStatus(eq(OWNER), eq(NAME), eq(ID), payload.capture());
         assertSoftly(softly -> {
@@ -142,7 +142,7 @@ class DeploymentTest {
         final ArgumentCaptor<GitHubCreateDeploymentStatusPayload> payload =
                 ArgumentCaptor.forClass(GitHubCreateDeploymentStatusPayload.class);
 
-        sut.createStatus(DeploymentState.SUCCESS, "Done");
+        sut.createStatus(GitHubDeploymentStatusState.SUCCESS, "Done");
 
         verify(api).createDeploymentStatus(eq(OWNER), eq(NAME), eq(ID), payload.capture());
         assertSoftly(softly -> {
@@ -153,14 +153,14 @@ class DeploymentTest {
 
     @Test
     void createStatus_shouldThrowNullPointerException_whenStateIsNull() {
-        final Throwable thrown = catchThrowable(() -> sut.createStatus((DeploymentState) null));
+        final Throwable thrown = catchThrowable(() -> sut.createStatus((GitHubDeploymentStatusState) null));
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("state");
     }
 
     @Test
     void createStatus_shouldThrowNullPointerException_whenDescriptionIsNull() {
-        final Throwable thrown = catchThrowable(() -> sut.createStatus(DeploymentState.SUCCESS, null));
+        final Throwable thrown = catchThrowable(() -> sut.createStatus(GitHubDeploymentStatusState.SUCCESS, null));
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("description");
     }

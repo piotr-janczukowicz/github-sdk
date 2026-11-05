@@ -163,7 +163,7 @@ class PullRequestTest {
         final ArgumentCaptor<GitHubMergePullRequestPayload> payload =
                 ArgumentCaptor.forClass(GitHubMergePullRequestPayload.class);
 
-        final PullRequest result = sut.merge(MergeMethod.SQUASH);
+        final PullRequest result = sut.merge(GitHubPullRequestMergeMethod.SQUASH);
 
         verify(github.pullRequests().pullRequest()).merge(eq(OWNER), eq(NAME), eq(NUMBER), payload.capture());
         assertSoftly(softly -> {
@@ -180,7 +180,7 @@ class PullRequestTest {
         final ArgumentCaptor<GitHubMergePullRequestPayload> payload =
                 ArgumentCaptor.forClass(GitHubMergePullRequestPayload.class);
 
-        sut.merge(MergeMethod.MERGE, "Merge the feature");
+        sut.merge(GitHubPullRequestMergeMethod.MERGE, "Merge the feature");
 
         verify(github.pullRequests().pullRequest()).merge(eq(OWNER), eq(NAME), eq(NUMBER), payload.capture());
         assertSoftly(softly -> {
@@ -238,7 +238,7 @@ class PullRequestTest {
         final ArgumentCaptor<GitHubCreateReviewPayload> payload =
                 ArgumentCaptor.forClass(GitHubCreateReviewPayload.class);
 
-        final PullRequestReview review = sut.review(ReviewEvent.COMMENT, "Thoughts");
+        final PullRequestReview review = sut.review(GitHubPullRequestReviewEvent.COMMENT, "Thoughts");
 
         verify(github.pullRequests().reviews()).create(eq(OWNER), eq(NAME), eq(NUMBER), payload.capture());
         assertSoftly(softly -> {
@@ -256,7 +256,7 @@ class PullRequestTest {
         final ArgumentCaptor<GitHubCreateReviewPayload> payload =
                 ArgumentCaptor.forClass(GitHubCreateReviewPayload.class);
 
-        sut.review(ReviewEvent.APPROVE);
+        sut.review(GitHubPullRequestReviewEvent.APPROVE);
 
         verify(github.pullRequests().reviews()).create(eq(OWNER), eq(NAME), eq(NUMBER), payload.capture());
         assertSoftly(softly -> {

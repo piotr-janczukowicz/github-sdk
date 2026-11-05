@@ -66,7 +66,7 @@ class RepositoryUpdateTest {
                 .name("renamed")
                 .description("A greeting")
                 .homepage("https://example.com")
-                .visibility(RepositoryVisibility.PRIVATE)
+                .visibility(GitHubRepositoryVisibility.PRIVATE)
                 .defaultBranch("trunk")
                 .issues(true)
                 .projects(false)

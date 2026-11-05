@@ -12,6 +12,7 @@ import io.github.piotr_janczukowicz.github.api.users.GitHubCreateGpgKeyPayload;
 import io.github.piotr_janczukowicz.github.api.users.GitHubCreatePublicSshKeyPayload;
 import io.github.piotr_janczukowicz.github.api.users.GitHubCreateSshSigningKeyPayload;
 import io.github.piotr_janczukowicz.github.api.users.GitHubEmail;
+import io.github.piotr_janczukowicz.github.api.users.GitHubEmailVisibility;
 import io.github.piotr_janczukowicz.github.api.users.GitHubSetPrimaryEmailVisibilityPayload;
 import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
 import io.github.piotr_janczukowicz.github.api.users.GitHubSocialAccount;
@@ -154,11 +155,11 @@ public final class Me {
      * @throws NullPointerException if {@code visibility} is {@code null}
      * @throws IOException if the transport fails
      */
-    public List<GitHubEmail> changeEmailVisibility(final EmailVisibility visibility) throws IOException {
+    public List<GitHubEmail> changeEmailVisibility(final GitHubEmailVisibility visibility) throws IOException {
         return github().users()
                 .emails()
-                .setPrimaryEmailVisibility(new GitHubSetPrimaryEmailVisibilityPayload(
-                        requireNonNull(visibility, "visibility").toClient()));
+                .setPrimaryEmailVisibility(
+                        new GitHubSetPrimaryEmailVisibilityPayload(requireNonNull(visibility, "visibility")));
     }
 
     /**

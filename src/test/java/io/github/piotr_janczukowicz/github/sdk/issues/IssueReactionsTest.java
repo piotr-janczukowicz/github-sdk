@@ -21,7 +21,6 @@ import io.github.piotr_janczukowicz.github.sdk.Repository;
 import io.github.piotr_janczukowicz.github.sdk.fixtures.IssuesFixtures;
 import io.github.piotr_janczukowicz.github.sdk.fixtures.ReactionsFixtures;
 import io.github.piotr_janczukowicz.github.sdk.reactions.Reaction;
-import io.github.piotr_janczukowicz.github.sdk.reactions.ReactionContent;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.io.IOException;
 import java.util.List;
@@ -48,7 +47,7 @@ class IssueReactionsTest {
         final ArgumentCaptor<GitHubCreateForCommitCommentPayload> payload =
                 ArgumentCaptor.forClass(GitHubCreateForCommitCommentPayload.class);
 
-        final Reaction reaction = sut.react(ReactionContent.ROCKET);
+        final Reaction reaction = sut.react(GitHubReactionContent.ROCKET);
 
         verify(github.reactions()).createForIssue(eq(OWNER), eq(NAME), eq(NUMBER), payload.capture());
         assertSoftly(softly -> {

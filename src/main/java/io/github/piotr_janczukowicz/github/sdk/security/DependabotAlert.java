@@ -5,6 +5,7 @@ import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
 import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.dependabot.GitHubDependabotAlert;
 import io.github.piotr_janczukowicz.github.api.dependabot.GitHubDependabotAlertDependency;
+import io.github.piotr_janczukowicz.github.api.dependabot.GitHubDependabotAlertDismissedReason;
 import io.github.piotr_janczukowicz.github.api.dependabot.GitHubDependabotAlertPackage;
 import io.github.piotr_janczukowicz.github.api.dependabot.GitHubDependabotAlertSeverity;
 import io.github.piotr_janczukowicz.github.api.dependabot.GitHubDependabotAlertState;
@@ -129,14 +130,14 @@ public final class DependabotAlert {
     }
 
     /**
-     * Dismisses the alert without a comment. See {@link #dismiss(DependabotDismissal, String)}.
+     * Dismisses the alert without a comment. See {@link #dismiss(GitHubDependabotAlertDismissedReason, String)}.
      *
      * @param reason why the alert is dismissed
      * @return the alert as GitHub holds it afterwards
      * @throws NullPointerException if {@code reason} is {@code null}
      * @throws IOException if the transport fails
      */
-    public DependabotAlert dismiss(final DependabotDismissal reason) throws IOException {
+    public DependabotAlert dismiss(final GitHubDependabotAlertDismissedReason reason) throws IOException {
         return update(GitHubDependabotAlertUpdateState.DISMISSED, requireNonNull(reason, "reason"), null);
     }
 
@@ -150,7 +151,8 @@ public final class DependabotAlert {
      * @throws NullPointerException if {@code reason} or {@code comment} is {@code null}
      * @throws IOException if the transport fails
      */
-    public DependabotAlert dismiss(final DependabotDismissal reason, final String comment) throws IOException {
+    public DependabotAlert dismiss(final GitHubDependabotAlertDismissedReason reason, final String comment)
+            throws IOException {
         return update(
                 GitHubDependabotAlertUpdateState.DISMISSED,
                 requireNonNull(reason, "reason"),
@@ -179,7 +181,7 @@ public final class DependabotAlert {
 
     private DependabotAlert update(
             final GitHubDependabotAlertUpdateState state,
-            final @Nullable DependabotDismissal reason,
+            final @Nullable GitHubDependabotAlertDismissedReason reason,
             final @Nullable String comment)
             throws IOException {
         return new DependabotAlert(
@@ -190,8 +192,7 @@ public final class DependabotAlert {
                                 repository.owner(),
                                 repository.name(),
                                 number(),
-                                new GitHubUpdateAlertPayload(
-                                        state, reason == null ? null : reason.toClient(), comment, null, null)));
+                                new GitHubUpdateAlertPayload(state, reason, comment, null, null)));
     }
 
     private GitHub github() {

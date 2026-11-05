@@ -6,6 +6,7 @@ import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 import io.github.piotr_janczukowicz.github.api.reactions.GitHubReaction;
 import io.github.piotr_janczukowicz.github.api.reactions.GitHubReactionBuilder;
+import io.github.piotr_janczukowicz.github.api.reactions.GitHubReactionContent;
 import io.github.piotr_janczukowicz.github.sdk.fixtures.ReactionsFixtures;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.io.IOException;
@@ -23,7 +24,7 @@ class ReactionTest {
     void accessors_shouldExposeTheResponse_whenReactionIsLoaded() {
         assertSoftly(softly -> {
             softly.assertThat(sut.id()).isEqualTo(ReactionsFixtures.REACTION_ID);
-            softly.assertThat(sut.content()).isEqualTo(ReactionContent.HEART);
+            softly.assertThat(sut.content()).isEqualTo(GitHubReactionContent.HEART);
             softly.assertThat(sut.user()).containsSame(response.user());
             softly.assertThat(sut.response()).isSameAs(response);
         });

@@ -72,6 +72,8 @@ import io.github.piotr_janczukowicz.github.api.repositories.GitHubMinimalReposit
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubPullRequestSimple;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubReplaceAllTopicsPayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryActivity;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRuleEnforcement;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRulesetPayloadTarget;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositorySubscription;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryTag;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRuleSuite;
@@ -127,8 +129,6 @@ import io.github.piotr_janczukowicz.github.sdk.pages.PagesSite;
 import io.github.piotr_janczukowicz.github.sdk.pulls.PullRequest;
 import io.github.piotr_janczukowicz.github.sdk.rulesets.Ruleset;
 import io.github.piotr_janczukowicz.github.sdk.rulesets.RulesetDraft;
-import io.github.piotr_janczukowicz.github.sdk.rulesets.RulesetEnforcement;
-import io.github.piotr_janczukowicz.github.sdk.rulesets.RulesetTarget;
 import io.github.piotr_janczukowicz.github.sdk.security.CodeScanningAlert;
 import io.github.piotr_janczukowicz.github.sdk.security.DependabotAlert;
 import io.github.piotr_janczukowicz.github.sdk.security.RepositoryCodeQuality;
@@ -151,11 +151,13 @@ import org.jspecify.annotations.Nullable;
  * data from GitHub; {@link #fetch()} returns a loaded repository. It is the starting point for the operations that
  * belong to a repository.
  */
+@SuppressWarnings("java:S6539")
 public final class Repository {
 
     private static final String PAYLOAD = "payload";
     private static final String BRANCH = "branch";
     private static final String NAME_ARGUMENT = "name";
+    private static final String NUMBER_ARGUMENT = "number";
     private static final String TITLE = "title";
     private static final String FILTER = "filter";
     private static final String LOGIN = "login";
@@ -2600,7 +2602,9 @@ public final class Repository {
      * @throws IllegalArgumentException if {@code rulesetName} is blank
      */
     public RulesetDraft newRuleset(
-            final String rulesetName, final RulesetTarget target, final RulesetEnforcement enforcement) {
+            final String rulesetName,
+            final GitHubRepositoryRulesetPayloadTarget target,
+            final GitHubRepositoryRuleEnforcement enforcement) {
         return new RulesetDraft(this, rulesetName, target, enforcement);
     }
 
@@ -2698,17 +2702,18 @@ public final class Repository {
     }
 
     private Optional<PullRequest> loadPullRequest(final GitHubPullRequestSimple listed) {
-        final int number = requireNonNull(listed.number(), "number");
+        final int number = requireNonNull(listed.number(), NUMBER_ARGUMENT);
         return Lookups.find(() -> pullRequest(number));
     }
 
+    @SuppressWarnings("java:S2259")
     private Optional<SecretScanningAlert> loadSecretScanningAlert(final GitHubSecretScanningAlert listed) {
-        final int number = requireNonNull(listed.number(), "number");
+        final int number = requireNonNull(listed.number(), NUMBER_ARGUMENT);
         return Lookups.find(() -> secretScanningAlert(number));
     }
 
     private Optional<CodeScanningAlert> loadCodeScanningAlert(final GitHubCodeScanningAlertItems listed) {
-        final int number = requireNonNull(listed.number(), "number");
+        final int number = requireNonNull(listed.number(), NUMBER_ARGUMENT);
         return Lookups.find(() -> codeScanningAlert(number));
     }
 

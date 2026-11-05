@@ -5,6 +5,7 @@ import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 
 import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRule;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRuleEnforcement;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRulesetConditions;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRulesetConditionsRefName;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRulesetTarget;
@@ -27,7 +28,7 @@ public final class RulesetUpdate {
 
     private final Ruleset ruleset;
     private @Nullable String name;
-    private @Nullable RulesetEnforcement enforcement;
+    private @Nullable GitHubRepositoryRuleEnforcement enforcement;
     private @Nullable List<String> includedRefs;
     private @Nullable List<String> excludedRefs;
     private final List<GitHubRepositoryRule> addedRules = new ArrayList<>();
@@ -57,7 +58,7 @@ public final class RulesetUpdate {
      * @return this update
      * @throws NullPointerException if {@code newEnforcement} is {@code null}
      */
-    public RulesetUpdate enforcement(final RulesetEnforcement newEnforcement) {
+    public RulesetUpdate enforcement(final GitHubRepositoryRuleEnforcement newEnforcement) {
         this.enforcement = requireNonNull(newEnforcement, "enforcement");
         return this;
     }
@@ -125,12 +126,7 @@ public final class RulesetUpdate {
 
     private GitHubUpdateRepoRulesetPayload payload() throws IOException {
         return new GitHubUpdateRepoRulesetPayload(
-                name,
-                null,
-                enforcement == null ? null : enforcement.toClient(),
-                null,
-                conditions(),
-                areRulesChanged() ? changedRules() : null);
+                name, null, enforcement, null, conditions(), areRulesChanged() ? changedRules() : null);
     }
 
     private @Nullable GitHubRepositoryRulesetConditions conditions() {

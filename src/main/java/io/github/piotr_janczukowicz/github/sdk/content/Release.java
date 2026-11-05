@@ -6,13 +6,13 @@ import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.reactions.GitHubCreateForReleasePayload;
 import io.github.piotr_janczukowicz.github.api.reactions.GitHubReaction;
+import io.github.piotr_janczukowicz.github.api.reactions.GitHubReactionContent;
 import io.github.piotr_janczukowicz.github.api.releases.GitHubRelease;
 import io.github.piotr_janczukowicz.github.api.releases.GitHubUpdateReleasePayload;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
 import io.github.piotr_janczukowicz.github.sdk.internal.ClientValues;
 import io.github.piotr_janczukowicz.github.sdk.internal.Internals;
 import io.github.piotr_janczukowicz.github.sdk.reactions.Reaction;
-import io.github.piotr_janczukowicz.github.sdk.reactions.ReactionContent;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -195,7 +195,7 @@ public final class Release {
      * @throws IllegalArgumentException if {@code content} is {@code MINUS_ONE} or {@code CONFUSED}
      * @throws IOException if the transport fails
      */
-    public Reaction react(final ReactionContent content) throws IOException {
+    public Reaction react(final GitHubReactionContent content) throws IOException {
         return reaction(github().reactions()
                 .createForRelease(
                         repository.owner(),

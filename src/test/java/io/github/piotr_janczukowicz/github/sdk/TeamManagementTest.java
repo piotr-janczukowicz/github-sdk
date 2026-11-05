@@ -25,7 +25,6 @@ import io.github.piotr_janczukowicz.github.api.teams.GitHubUpsertTeamMembershipP
 import io.github.piotr_janczukowicz.github.api.teams.GitHubUpsertTeamRepositoryPermissionPayload;
 import io.github.piotr_janczukowicz.github.sdk.collaborators.RepositoryPermission;
 import io.github.piotr_janczukowicz.github.sdk.fixtures.OrganizationFixtures;
-import io.github.piotr_janczukowicz.github.sdk.organizations.TeamRole;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.io.IOException;
 import java.util.List;
@@ -112,7 +111,7 @@ class TeamManagementTest {
         final ArgumentCaptor<GitHubUpsertTeamMembershipPayload> payload =
                 ArgumentCaptor.forClass(GitHubUpsertTeamMembershipPayload.class);
 
-        sut.addMember("hubot", TeamRole.MAINTAINER);
+        sut.addMember("hubot", GitHubTeamRole.MAINTAINER);
 
         verify(api).upsertMembership(eq(ORG), eq(SLUG), eq("hubot"), payload.capture());
         assertThat(payload.getValue().role()).isEqualTo(GitHubTeamRole.MAINTAINER);

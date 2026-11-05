@@ -3,8 +3,8 @@ package io.github.piotr_janczukowicz.github.sdk.reactions;
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
 
 import io.github.piotr_janczukowicz.github.api.reactions.GitHubReaction;
+import io.github.piotr_janczukowicz.github.api.reactions.GitHubReactionContent;
 import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
-import io.github.piotr_janczukowicz.github.sdk.internal.ClientValues;
 import io.github.piotr_janczukowicz.github.sdk.issues.Issue;
 import io.github.piotr_janczukowicz.github.sdk.issues.IssueComment;
 import io.github.piotr_janczukowicz.github.sdk.pulls.PullRequestReviewComment;
@@ -49,8 +49,8 @@ public final class Reaction {
      *
      * @return the content
      */
-    public ReactionContent content() {
-        return ClientValues.reactionFromClient(response.content());
+    public GitHubReactionContent content() {
+        return response.content();
     }
 
     /**

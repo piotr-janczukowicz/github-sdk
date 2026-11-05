@@ -55,6 +55,7 @@ public final class SecretScanningAlert {
      * @return the number
      * @throws NullPointerException if the response has no number
      */
+    @SuppressWarnings({"java:S2637", "java:S2259"})
     public int number() {
         return requireNonNull(response.number(), "number");
     }
@@ -65,6 +66,7 @@ public final class SecretScanningAlert {
      * @return the state
      * @throws NullPointerException if the response has no state
      */
+    @SuppressWarnings("java:S2637")
     public GitHubSecretScanningAlertState state() {
         return requireNonNull(response.state(), "state");
     }
@@ -145,18 +147,15 @@ public final class SecretScanningAlert {
     }
 
     /**
-     * Resolves the alert without a comment. See {@link #resolve(SecretResolution, String)}.
+     * Resolves the alert without a comment. See {@link #resolve(GitHubSecretScanningAlertResolution, String)}.
      *
      * @param resolution how the alert is resolved
      * @return the alert as GitHub holds it afterwards
      * @throws NullPointerException if {@code resolution} is {@code null}
      * @throws IOException if the transport fails
      */
-    public SecretScanningAlert resolve(final SecretResolution resolution) throws IOException {
-        return update(
-                GitHubSecretScanningAlertState.RESOLVED,
-                requireNonNull(resolution, "resolution").toClient(),
-                null);
+    public SecretScanningAlert resolve(final GitHubSecretScanningAlertResolution resolution) throws IOException {
+        return update(GitHubSecretScanningAlertState.RESOLVED, requireNonNull(resolution, "resolution"), null);
     }
 
     /**
@@ -169,10 +168,11 @@ public final class SecretScanningAlert {
      * @throws NullPointerException if {@code resolution} or {@code comment} is {@code null}
      * @throws IOException if the transport fails
      */
-    public SecretScanningAlert resolve(final SecretResolution resolution, final String comment) throws IOException {
+    public SecretScanningAlert resolve(final GitHubSecretScanningAlertResolution resolution, final String comment)
+            throws IOException {
         return update(
                 GitHubSecretScanningAlertState.RESOLVED,
-                requireNonNull(resolution, "resolution").toClient(),
+                requireNonNull(resolution, "resolution"),
                 requireNonNull(comment, "comment"));
     }
 

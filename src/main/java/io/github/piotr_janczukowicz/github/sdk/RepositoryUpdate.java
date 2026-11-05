@@ -3,6 +3,7 @@ package io.github.piotr_janczukowicz.github.sdk;
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryVisibility;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubUpdatePayloadBuilder;
 import io.github.piotr_janczukowicz.github.sdk.internal.UpdateState;
 import java.io.IOException;
@@ -65,8 +66,8 @@ public final class RepositoryUpdate {
      * @return this update
      * @throws NullPointerException if {@code visibility} is {@code null}
      */
-    public RepositoryUpdate visibility(final RepositoryVisibility visibility) {
-        payload.visibility(requireNonNull(visibility, "visibility").toClient());
+    public RepositoryUpdate visibility(final GitHubRepositoryVisibility visibility) {
+        payload.visibility(requireNonNull(visibility, "visibility"));
         return changed();
     }
 

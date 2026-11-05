@@ -44,7 +44,11 @@ class RulesetDraftTest {
         final GitHubRepositoriesRulesApi api = github.repositories().rules();
         doReturn(created).when(api).createRepoRuleset(eq(OWNER), eq(NAME), any(GitHubCreateRepoRulesetPayload.class));
         final GitHubRepositoryRule rule = Rules.restrictDeletion();
-        final RulesetDraft sut = new RulesetDraft(repository, RULESET, RulesetTarget.BRANCH, RulesetEnforcement.ACTIVE)
+        final RulesetDraft sut = new RulesetDraft(
+                        repository,
+                        RULESET,
+                        GitHubRepositoryRulesetPayloadTarget.BRANCH,
+                        GitHubRepositoryRuleEnforcement.ACTIVE)
                 .includeRefs("~DEFAULT_BRANCH")
                 .excludeRefs("refs/heads/legacy")
                 .rule(rule)
@@ -88,7 +92,11 @@ class RulesetDraftTest {
         doReturn(RulesetFixtures.ruleset())
                 .when(api)
                 .createRepoRuleset(eq(OWNER), eq(NAME), any(GitHubCreateRepoRulesetPayload.class));
-        final RulesetDraft sut = new RulesetDraft(repository, RULESET, RulesetTarget.PUSH, RulesetEnforcement.EVALUATE);
+        final RulesetDraft sut = new RulesetDraft(
+                repository,
+                RULESET,
+                GitHubRepositoryRulesetPayloadTarget.PUSH,
+                GitHubRepositoryRuleEnforcement.EVALUATE);
         final ArgumentCaptor<GitHubCreateRepoRulesetPayload> payload =
                 ArgumentCaptor.forClass(GitHubCreateRepoRulesetPayload.class);
 
@@ -110,7 +118,11 @@ class RulesetDraftTest {
         doReturn(RulesetFixtures.ruleset())
                 .when(api)
                 .createRepoRuleset(eq(OWNER), eq(NAME), any(GitHubCreateRepoRulesetPayload.class));
-        final RulesetDraft sut = new RulesetDraft(repository, RULESET, RulesetTarget.PUSH, RulesetEnforcement.DISABLED)
+        final RulesetDraft sut = new RulesetDraft(
+                        repository,
+                        RULESET,
+                        GitHubRepositoryRulesetPayloadTarget.PUSH,
+                        GitHubRepositoryRuleEnforcement.DISABLED)
                 .excludeRefs("refs/heads/x");
         final ArgumentCaptor<GitHubCreateRepoRulesetPayload> payload =
                 ArgumentCaptor.forClass(GitHubCreateRepoRulesetPayload.class);
@@ -123,7 +135,8 @@ class RulesetDraftTest {
 
     @Test
     void create_shouldThrowIllegalStateException_whenATagRulesetHasNoIncludedRef() {
-        final RulesetDraft sut = new RulesetDraft(repository, RULESET, RulesetTarget.TAG, RulesetEnforcement.ACTIVE);
+        final RulesetDraft sut = new RulesetDraft(
+                repository, RULESET, GitHubRepositoryRulesetPayloadTarget.TAG, GitHubRepositoryRuleEnforcement.ACTIVE);
 
         final Throwable thrown = catchThrowable(sut::create);
 
@@ -132,31 +145,35 @@ class RulesetDraftTest {
 
     @Test
     void constructor_shouldThrowIllegalArgumentException_whenNameIsBlank() {
-        final Throwable thrown = catchThrowable(
-                () -> new RulesetDraft(repository, " ", RulesetTarget.BRANCH, RulesetEnforcement.ACTIVE));
+        final Throwable thrown = catchThrowable(() -> new RulesetDraft(
+                repository, " ", GitHubRepositoryRulesetPayloadTarget.BRANCH, GitHubRepositoryRuleEnforcement.ACTIVE));
 
         assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("name");
     }
 
     @Test
     void constructor_shouldThrowNullPointerException_whenTargetIsNull() {
-        final Throwable thrown =
-                catchThrowable(() -> new RulesetDraft(repository, RULESET, null, RulesetEnforcement.ACTIVE));
+        final Throwable thrown = catchThrowable(
+                () -> new RulesetDraft(repository, RULESET, null, GitHubRepositoryRuleEnforcement.ACTIVE));
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("target");
     }
 
     @Test
     void constructor_shouldThrowNullPointerException_whenEnforcementIsNull() {
-        final Throwable thrown =
-                catchThrowable(() -> new RulesetDraft(repository, RULESET, RulesetTarget.BRANCH, null));
+        final Throwable thrown = catchThrowable(
+                () -> new RulesetDraft(repository, RULESET, GitHubRepositoryRulesetPayloadTarget.BRANCH, null));
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("enforcement");
     }
 
     @Test
     void includeRefs_shouldThrowNullPointerException_whenPatternsAreNull() {
-        final RulesetDraft sut = new RulesetDraft(repository, RULESET, RulesetTarget.BRANCH, RulesetEnforcement.ACTIVE);
+        final RulesetDraft sut = new RulesetDraft(
+                repository,
+                RULESET,
+                GitHubRepositoryRulesetPayloadTarget.BRANCH,
+                GitHubRepositoryRuleEnforcement.ACTIVE);
 
         final Throwable thrown = catchThrowable(() -> sut.includeRefs((String[]) null));
 
@@ -165,7 +182,11 @@ class RulesetDraftTest {
 
     @Test
     void excludeRefs_shouldThrowNullPointerException_whenPatternsAreNull() {
-        final RulesetDraft sut = new RulesetDraft(repository, RULESET, RulesetTarget.BRANCH, RulesetEnforcement.ACTIVE);
+        final RulesetDraft sut = new RulesetDraft(
+                repository,
+                RULESET,
+                GitHubRepositoryRulesetPayloadTarget.BRANCH,
+                GitHubRepositoryRuleEnforcement.ACTIVE);
 
         final Throwable thrown = catchThrowable(() -> sut.excludeRefs((String[]) null));
 
@@ -174,7 +195,11 @@ class RulesetDraftTest {
 
     @Test
     void rule_shouldThrowNullPointerException_whenRuleIsNull() {
-        final RulesetDraft sut = new RulesetDraft(repository, RULESET, RulesetTarget.BRANCH, RulesetEnforcement.ACTIVE);
+        final RulesetDraft sut = new RulesetDraft(
+                repository,
+                RULESET,
+                GitHubRepositoryRulesetPayloadTarget.BRANCH,
+                GitHubRepositoryRuleEnforcement.ACTIVE);
 
         final Throwable thrown = catchThrowable(() -> sut.rule(null));
 
@@ -183,7 +208,11 @@ class RulesetDraftTest {
 
     @Test
     void bypass_shouldThrowNullPointerException_whenTypeIsNull() {
-        final RulesetDraft sut = new RulesetDraft(repository, RULESET, RulesetTarget.BRANCH, RulesetEnforcement.ACTIVE);
+        final RulesetDraft sut = new RulesetDraft(
+                repository,
+                RULESET,
+                GitHubRepositoryRulesetPayloadTarget.BRANCH,
+                GitHubRepositoryRuleEnforcement.ACTIVE);
 
         final Throwable thrown = catchThrowable(() -> sut.bypass(null, 1L, BypassMode.ALWAYS));
 
@@ -192,7 +221,11 @@ class RulesetDraftTest {
 
     @Test
     void bypass_shouldThrowNullPointerException_whenModeIsNull() {
-        final RulesetDraft sut = new RulesetDraft(repository, RULESET, RulesetTarget.BRANCH, RulesetEnforcement.ACTIVE);
+        final RulesetDraft sut = new RulesetDraft(
+                repository,
+                RULESET,
+                GitHubRepositoryRulesetPayloadTarget.BRANCH,
+                GitHubRepositoryRuleEnforcement.ACTIVE);
 
         final Throwable thrown = catchThrowable(() -> sut.bypass(BypassActorType.TEAM, 1L, null));
 
@@ -201,7 +234,11 @@ class RulesetDraftTest {
 
     @Test
     void bypassDeployKeys_shouldThrowNullPointerException_whenModeIsNull() {
-        final RulesetDraft sut = new RulesetDraft(repository, RULESET, RulesetTarget.BRANCH, RulesetEnforcement.ACTIVE);
+        final RulesetDraft sut = new RulesetDraft(
+                repository,
+                RULESET,
+                GitHubRepositoryRulesetPayloadTarget.BRANCH,
+                GitHubRepositoryRuleEnforcement.ACTIVE);
 
         final Throwable thrown = catchThrowable(() -> sut.bypassDeployKeys(null));
 
@@ -224,27 +261,36 @@ class RulesetDraftTest {
 
     @Test
     void includeRefs_shouldThrowIllegalArgumentException_whenAPatternIsBlank() {
-        final Throwable thrown = catchThrowable(
-                () -> new RulesetDraft(repository, RULESET, RulesetTarget.BRANCH, RulesetEnforcement.ACTIVE)
-                        .includeRefs(" "));
+        final Throwable thrown = catchThrowable(() -> new RulesetDraft(
+                        repository,
+                        RULESET,
+                        GitHubRepositoryRulesetPayloadTarget.BRANCH,
+                        GitHubRepositoryRuleEnforcement.ACTIVE)
+                .includeRefs(" "));
 
         assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("patterns");
     }
 
     @Test
     void excludeRefs_shouldThrowIllegalArgumentException_whenAPatternIsBlank() {
-        final Throwable thrown = catchThrowable(
-                () -> new RulesetDraft(repository, RULESET, RulesetTarget.BRANCH, RulesetEnforcement.ACTIVE)
-                        .excludeRefs(" "));
+        final Throwable thrown = catchThrowable(() -> new RulesetDraft(
+                        repository,
+                        RULESET,
+                        GitHubRepositoryRulesetPayloadTarget.BRANCH,
+                        GitHubRepositoryRuleEnforcement.ACTIVE)
+                .excludeRefs(" "));
 
         assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("patterns");
     }
 
     @Test
     void bypass_shouldThrowIllegalArgumentException_whenTheTypeIsADeployKey() {
-        final Throwable thrown = catchThrowable(
-                () -> new RulesetDraft(repository, RULESET, RulesetTarget.BRANCH, RulesetEnforcement.ACTIVE)
-                        .bypass(BypassActorType.DEPLOY_KEY, 5L, BypassMode.ALWAYS));
+        final Throwable thrown = catchThrowable(() -> new RulesetDraft(
+                        repository,
+                        RULESET,
+                        GitHubRepositoryRulesetPayloadTarget.BRANCH,
+                        GitHubRepositoryRuleEnforcement.ACTIVE)
+                .bypass(BypassActorType.DEPLOY_KEY, 5L, BypassMode.ALWAYS));
 
         assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("deploy key");
     }

@@ -6,9 +6,11 @@ import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateRepoRulesetPayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRule;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRuleEnforcement;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRulesetBypassActor;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRulesetConditions;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRulesetConditionsRefName;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRulesetPayloadTarget;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
 import io.github.piotr_janczukowicz.github.sdk.internal.Arguments;
 import io.github.piotr_janczukowicz.github.sdk.internal.Internals;
@@ -29,8 +31,8 @@ public final class RulesetDraft {
 
     private final Repository repository;
     private final String name;
-    private final RulesetTarget target;
-    private final RulesetEnforcement enforcement;
+    private final GitHubRepositoryRulesetPayloadTarget target;
+    private final GitHubRepositoryRuleEnforcement enforcement;
     private final List<String> includedRefs = new ArrayList<>();
     private final List<String> excludedRefs = new ArrayList<>();
     private final List<GitHubRepositoryRule> rules = new ArrayList<>();
@@ -50,8 +52,8 @@ public final class RulesetDraft {
     public RulesetDraft(
             final Repository repository,
             final String name,
-            final RulesetTarget target,
-            final RulesetEnforcement enforcement) {
+            final GitHubRepositoryRulesetPayloadTarget target,
+            final GitHubRepositoryRuleEnforcement enforcement) {
         this.repository = requireNonNull(repository, "repository");
         this.name = requireNotBlank(name, "name");
         this.target = requireNonNull(target, "target");
@@ -142,7 +144,7 @@ public final class RulesetDraft {
      * @throws IOException if the transport fails
      */
     public Ruleset create() throws IOException {
-        if (target != RulesetTarget.PUSH && includedRefs.isEmpty()) {
+        if (target != GitHubRepositoryRulesetPayloadTarget.PUSH && includedRefs.isEmpty()) {
             throw new IllegalStateException("A " + target + " ruleset needs at least one included ref pattern");
         }
         return new Ruleset(
@@ -153,8 +155,8 @@ public final class RulesetDraft {
     private GitHubCreateRepoRulesetPayload payload() {
         return new GitHubCreateRepoRulesetPayload(
                 name,
-                target.toClient(),
-                enforcement.toClient(),
+                target,
+                enforcement,
                 bypassActors.isEmpty() ? null : List.copyOf(bypassActors),
                 conditions(),
                 List.copyOf(rules));

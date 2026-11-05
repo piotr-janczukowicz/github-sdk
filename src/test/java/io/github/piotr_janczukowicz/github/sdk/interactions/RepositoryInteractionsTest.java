@@ -20,7 +20,6 @@ import io.github.piotr_janczukowicz.github.sdk.GitHubSdk;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -59,7 +58,7 @@ class RepositoryInteractionsTest {
         when(api.setRestrictionsForRepo(eq(OWNER), eq(NAME), any())).thenReturn(set);
         final ArgumentCaptor<GitHubInteractionLimit> limit = ArgumentCaptor.forClass(GitHubInteractionLimit.class);
 
-        final GitHubInteractionLimitResponse result = sut.restrict(InteractionGroup.CONTRIBUTORS_ONLY);
+        final GitHubInteractionLimitResponse result = sut.restrict(GitHubInteractionGroup.CONTRIBUTORS_ONLY);
 
         verify(api).setRestrictionsForRepo(eq(OWNER), eq(NAME), limit.capture());
         assertSoftly(softly -> {
@@ -75,7 +74,7 @@ class RepositoryInteractionsTest {
         when(api.setRestrictionsForRepo(eq(OWNER), eq(NAME), any())).thenReturn(set);
         final ArgumentCaptor<GitHubInteractionLimit> limit = ArgumentCaptor.forClass(GitHubInteractionLimit.class);
 
-        sut.restrict(InteractionGroup.EXISTING_USERS, InteractionExpiry.SIX_MONTHS);
+        sut.restrict(GitHubInteractionGroup.EXISTING_USERS, GitHubInteractionExpiry.SIX_MONTHS);
 
         verify(api).setRestrictionsForRepo(eq(OWNER), eq(NAME), limit.capture());
         assertSoftly(softly -> {
@@ -93,7 +92,7 @@ class RepositoryInteractionsTest {
 
     @Test
     void restrict_shouldThrowNullPointerException_whenExpiryIsNull() {
-        final Throwable thrown = catchThrowable(() -> sut.restrict(InteractionGroup.EXISTING_USERS, null));
+        final Throwable thrown = catchThrowable(() -> sut.restrict(GitHubInteractionGroup.EXISTING_USERS, null));
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("expiry");
     }
@@ -110,18 +109,5 @@ class RepositoryInteractionsTest {
         final Throwable thrown = catchThrowable(() -> new RepositoryInteractions(null));
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("repository");
-    }
-
-    @Test
-    void toClient_shouldMapEveryValueByName_whenGroupsAndExpiriesAreConverted() {
-        final boolean areGroupsMapped = Arrays.stream(InteractionGroup.values())
-                .allMatch(group -> group.toClient().name().equals(group.name()));
-        final boolean areExpiriesMapped = Arrays.stream(InteractionExpiry.values())
-                .allMatch(expiry -> expiry.toClient().name().equals(expiry.name()));
-
-        assertSoftly(softly -> {
-            softly.assertThat(areGroupsMapped).isTrue();
-            softly.assertThat(areExpiriesMapped).isTrue();
-        });
     }
 }

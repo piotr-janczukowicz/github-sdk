@@ -8,7 +8,6 @@ import io.github.piotr_janczukowicz.github.api.deployments.GitHubDeploymentStatu
 import io.github.piotr_janczukowicz.github.client.exception.GitHubForbiddenException;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
 import io.github.piotr_janczukowicz.github.sdk.deployments.Deployment;
-import io.github.piotr_janczukowicz.github.sdk.deployments.DeploymentState;
 import io.github.piotr_janczukowicz.github.sdk.deployments.Environment;
 import io.github.piotr_janczukowicz.github.sdk.pages.PagesSite;
 import java.io.IOException;
@@ -36,13 +35,14 @@ class DeploymentsSmokeIT {
         final String environment = ENV.name("env");
         final Deployment created = deploy(repository, base, environment);
         try {
-            final GitHubDeploymentStatus pending = created.createStatus(DeploymentState.IN_PROGRESS, "Started");
-            final GitHubDeploymentStatus done = created.createStatus(DeploymentState.SUCCESS);
+            final GitHubDeploymentStatus pending =
+                    created.createStatus(GitHubDeploymentStatusState.IN_PROGRESS, "Started");
+            final GitHubDeploymentStatus done = created.createStatus(GitHubDeploymentStatusState.SUCCESS);
             final GitHubDeploymentStatus latest = created.latestStatus().orElseThrow();
             final List<GitHubDeploymentStatus> statuses = created.statuses().toList();
             final boolean isListed =
                     repository.deployments().limit(20).anyMatch(deployment -> deployment.id() == created.id());
-            created.createStatus(DeploymentState.INACTIVE);
+            created.createStatus(GitHubDeploymentStatusState.INACTIVE);
 
             assertSoftly(softly -> {
                 softly.assertThat(created.ref()).isEqualTo(base);

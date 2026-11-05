@@ -6,6 +6,7 @@ import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.deployments.GitHubCreateDeploymentStatusPayload;
 import io.github.piotr_janczukowicz.github.api.deployments.GitHubDeployment;
 import io.github.piotr_janczukowicz.github.api.deployments.GitHubDeploymentStatus;
+import io.github.piotr_janczukowicz.github.api.deployments.GitHubDeploymentStatusState;
 import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
 import io.github.piotr_janczukowicz.github.pagination.GitHubPageRequest;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
@@ -145,9 +146,9 @@ public final class Deployment {
      * @throws NullPointerException if {@code state} is {@code null}
      * @throws IOException if the transport fails
      */
-    public GitHubDeploymentStatus createStatus(final DeploymentState state) throws IOException {
+    public GitHubDeploymentStatus createStatus(final GitHubDeploymentStatusState state) throws IOException {
         return createStatus(new GitHubCreateDeploymentStatusPayload(
-                requireNonNull(state, "state").toClient(), null, null, null, null, null, null));
+                requireNonNull(state, "state"), null, null, null, null, null, null));
     }
 
     /**
@@ -160,10 +161,10 @@ public final class Deployment {
      * @throws NullPointerException if {@code state} or {@code description} is {@code null}
      * @throws IOException if the transport fails
      */
-    public GitHubDeploymentStatus createStatus(final DeploymentState state, final String description)
+    public GitHubDeploymentStatus createStatus(final GitHubDeploymentStatusState state, final String description)
             throws IOException {
         return createStatus(new GitHubCreateDeploymentStatusPayload(
-                requireNonNull(state, "state").toClient(),
+                requireNonNull(state, "state"),
                 null,
                 null,
                 requireNonNull(description, "description"),
@@ -204,8 +205,8 @@ public final class Deployment {
 
     /**
      * Deletes the deployment ({@code DELETE /repos/{owner}/{repo}/deployments/{deployment_id}}). GitHub deletes only an
-     * inactive deployment, so report {@link DeploymentState#INACTIVE} first; a deployment that is still active makes
-     * GitHub answer HTTP 422.
+     * inactive deployment, so report {@link GitHubDeploymentStatusState#INACTIVE} first; a deployment that is still
+     * active makes GitHub answer HTTP 422.
      *
      * @throws IOException if the transport fails
      */

@@ -6,6 +6,7 @@ import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.checks.GitHubListForRefFilter;
 import io.github.piotr_janczukowicz.github.api.checks.GitHubListForRefFilterBuilder;
+import io.github.piotr_janczukowicz.github.api.commits.GitHubCommitStatusState;
 import io.github.piotr_janczukowicz.github.api.commits.GitHubCreateCommitCommentPayload;
 import io.github.piotr_janczukowicz.github.api.commits.GitHubCreateCommitStatusPayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubCommit;
@@ -16,8 +17,6 @@ import io.github.piotr_janczukowicz.github.sdk.checks.CheckRun;
 import io.github.piotr_janczukowicz.github.sdk.checks.CheckSuite;
 import io.github.piotr_janczukowicz.github.sdk.checks.CombinedStatus;
 import io.github.piotr_janczukowicz.github.sdk.checks.CommitStatus;
-import io.github.piotr_janczukowicz.github.sdk.checks.CommitStatusState;
-import io.github.piotr_janczukowicz.github.sdk.internal.ClientValues;
 import io.github.piotr_janczukowicz.github.sdk.internal.Internals;
 import java.io.IOException;
 import java.util.Optional;
@@ -159,7 +158,7 @@ public final class Commit {
      * @throws IllegalArgumentException if {@code context} is blank
      * @throws IOException if the transport fails
      */
-    public CommitStatus createStatus(final CommitStatusState state, final String context) throws IOException {
+    public CommitStatus createStatus(final GitHubCommitStatusState state, final String context) throws IOException {
         return createStatus(state, context, null, null);
     }
 
@@ -176,16 +175,13 @@ public final class Commit {
      * @throws IOException if the transport fails
      */
     public CommitStatus createStatus(
-            final CommitStatusState state,
+            final GitHubCommitStatusState state,
             final String context,
             final @Nullable String description,
             final @Nullable String targetUrl)
             throws IOException {
         final GitHubCreateCommitStatusPayload payload = new GitHubCreateCommitStatusPayload(
-                ClientValues.statusStateToClient(requireNonNull(state, "state")),
-                targetUrl,
-                description,
-                requireNotBlank(context, "context"));
+                requireNonNull(state, "state"), targetUrl, description, requireNotBlank(context, "context"));
         return new CommitStatus(
                 this,
                 github().commits()

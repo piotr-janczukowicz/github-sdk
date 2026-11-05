@@ -3,11 +3,11 @@ package io.github.piotr_janczukowicz.github.sdk.smoke;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
+import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubPullRequestReviewEvent;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
 import io.github.piotr_janczukowicz.github.sdk.pulls.PullRequest;
 import io.github.piotr_janczukowicz.github.sdk.pulls.PullRequestReview;
 import io.github.piotr_janczukowicz.github.sdk.pulls.PullRequestReviewComment;
-import io.github.piotr_janczukowicz.github.sdk.pulls.ReviewEvent;
 import java.io.IOException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
@@ -34,7 +34,8 @@ class PullRequestReviewsSmokeIT {
             SandboxBranches.commitFile(ENV, head, "smoke/" + ENV.runId() + "-review.txt");
             pullRequest = repository.createPullRequest(SandboxBranches.newPullRequest(head, base, ENV.name("review")));
 
-            final PullRequestReview submitted = pullRequest.review(ReviewEvent.COMMENT, "smoke review");
+            final PullRequestReview submitted =
+                    pullRequest.review(GitHubPullRequestReviewEvent.COMMENT, "smoke review");
             final boolean isListed = pullRequest.reviews().anyMatch(review -> review.id() == submitted.id());
             final PullRequestReview loaded = pullRequest.review(submitted.id()).orElseThrow();
             final boolean isUnknownEmpty = pullRequest.review(Long.MAX_VALUE).isEmpty();
@@ -68,7 +69,7 @@ class PullRequestReviewsSmokeIT {
             final PullRequestReview draft = pullRequest.draftReview("first thoughts");
             final PullRequestReview edited = draft.edit("better thoughts");
             final PullRequestReview refreshed = edited.refresh();
-            final PullRequestReview submitted = refreshed.submit(ReviewEvent.COMMENT);
+            final PullRequestReview submitted = refreshed.submit(GitHubPullRequestReviewEvent.COMMENT);
 
             assertSoftly(softly -> {
                 softly.assertThat(draft.isPending()).isTrue();

@@ -123,7 +123,7 @@ class MeTest {
         final ArgumentCaptor<GitHubSetPrimaryEmailVisibilityPayload> payload =
                 ArgumentCaptor.forClass(GitHubSetPrimaryEmailVisibilityPayload.class);
 
-        final List<GitHubEmail> emails = sut.changeEmailVisibility(EmailVisibility.PUBLIC);
+        final List<GitHubEmail> emails = sut.changeEmailVisibility(GitHubEmailVisibility.PUBLIC);
 
         verify(api).setPrimaryEmailVisibility(payload.capture());
         assertSoftly(softly -> {

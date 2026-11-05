@@ -6,6 +6,7 @@ import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubDismissReviewPayload;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubPullRequestReview;
+import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubPullRequestReviewEvent;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubReviewComment;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubSubmitReviewPayload;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubUpdateReviewPayload;
@@ -148,7 +149,7 @@ public final class PullRequestReview {
      * @throws NullPointerException if {@code event} is {@code null}
      * @throws IOException if the transport fails
      */
-    public PullRequestReview submit(final ReviewEvent event) throws IOException {
+    public PullRequestReview submit(final GitHubPullRequestReviewEvent event) throws IOException {
         return submit(event, null);
     }
 
@@ -162,9 +163,9 @@ public final class PullRequestReview {
      * @throws NullPointerException if {@code event} is {@code null}
      * @throws IOException if the transport fails
      */
-    public PullRequestReview submit(final ReviewEvent event, final @Nullable String body) throws IOException {
-        final GitHubSubmitReviewPayload payload = new GitHubSubmitReviewPayload(
-                body, requireNonNull(event, "event").toClient());
+    public PullRequestReview submit(final GitHubPullRequestReviewEvent event, final @Nullable String body)
+            throws IOException {
+        final GitHubSubmitReviewPayload payload = new GitHubSubmitReviewPayload(body, requireNonNull(event, "event"));
         final Repository repository = pullRequest.repository();
         final GitHub github = Internals.github(repository);
         return new PullRequestReview(

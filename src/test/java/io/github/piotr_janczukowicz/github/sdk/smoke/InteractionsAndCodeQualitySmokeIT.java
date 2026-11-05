@@ -3,12 +3,11 @@ package io.github.piotr_janczukowicz.github.sdk.smoke;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
+import io.github.piotr_janczukowicz.github.api.interactions.GitHubInteractionExpiry;
 import io.github.piotr_janczukowicz.github.api.interactions.GitHubInteractionGroup;
 import io.github.piotr_janczukowicz.github.api.interactions.GitHubInteractionLimitResponse;
 import io.github.piotr_janczukowicz.github.client.exception.GitHubForbiddenException;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
-import io.github.piotr_janczukowicz.github.sdk.interactions.InteractionExpiry;
-import io.github.piotr_janczukowicz.github.sdk.interactions.InteractionGroup;
 import io.github.piotr_janczukowicz.github.sdk.interactions.RepositoryInteractions;
 import java.io.IOException;
 import java.util.Optional;
@@ -68,7 +67,7 @@ class InteractionsAndCodeQualitySmokeIT {
     private static GitHubInteractionLimitResponse restrict(final RepositoryInteractions interactions)
             throws IOException {
         try {
-            return interactions.restrict(InteractionGroup.COLLABORATORS_ONLY, InteractionExpiry.ONE_DAY);
+            return interactions.restrict(GitHubInteractionGroup.COLLABORATORS_ONLY, GitHubInteractionExpiry.ONE_DAY);
         } catch (final GitHubForbiddenException e) {
             Assumptions.abort("GitHub refuses interaction limits here: no Administration permission");
             throw e;

@@ -5,12 +5,11 @@ import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRuleEnforcement;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRuleRequiredLinearHistory;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRulesetPayloadTarget;
 import io.github.piotr_janczukowicz.github.client.exception.GitHubForbiddenException;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
 import io.github.piotr_janczukowicz.github.sdk.rulesets.Rules;
 import io.github.piotr_janczukowicz.github.sdk.rulesets.Ruleset;
-import io.github.piotr_janczukowicz.github.sdk.rulesets.RulesetEnforcement;
-import io.github.piotr_janczukowicz.github.sdk.rulesets.RulesetTarget;
 import java.io.IOException;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
@@ -35,7 +34,7 @@ class RulesetsSmokeIT {
         try {
             final Ruleset renamed = created.edit()
                     .name(name + "-renamed")
-                    .enforcement(RulesetEnforcement.DISABLED)
+                    .enforcement(GitHubRepositoryRuleEnforcement.DISABLED)
                     .addRule(Rules.requirePullRequest(1))
                     .removeRule(GitHubRepositoryRuleRequiredLinearHistory.class)
                     .send();
@@ -63,7 +62,8 @@ class RulesetsSmokeIT {
     private static Ruleset create(final Repository repository, final String name) throws IOException {
         try {
             return repository
-                    .newRuleset(name, RulesetTarget.BRANCH, RulesetEnforcement.ACTIVE)
+                    .newRuleset(
+                            name, GitHubRepositoryRulesetPayloadTarget.BRANCH, GitHubRepositoryRuleEnforcement.ACTIVE)
                     .includeRefs("refs/heads/" + name)
                     .rule(Rules.requireLinearHistory())
                     .rule(Rules.restrictDeletion())

@@ -7,12 +7,12 @@ import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.teams.GitHubTeamFull;
 import io.github.piotr_janczukowicz.github.api.teams.GitHubTeamMember;
 import io.github.piotr_janczukowicz.github.api.teams.GitHubTeamMembership;
+import io.github.piotr_janczukowicz.github.api.teams.GitHubTeamRole;
 import io.github.piotr_janczukowicz.github.api.teams.GitHubUpdateTeamPayload;
 import io.github.piotr_janczukowicz.github.api.teams.GitHubUpsertTeamMembershipPayload;
 import io.github.piotr_janczukowicz.github.api.teams.GitHubUpsertTeamRepositoryPermissionPayload;
 import io.github.piotr_janczukowicz.github.sdk.collaborators.RepositoryPermission;
 import io.github.piotr_janczukowicz.github.sdk.internal.ClientValues;
-import io.github.piotr_janczukowicz.github.sdk.organizations.TeamRole;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -127,7 +127,7 @@ public final class Team {
     /**
      * Adds a user to the team as a regular member. GitHub's endpoint is an upsert, so this also sets the role of an
      * existing maintainer to member; check {@link #membership(String)} first or use {@link #addMember(String,
-     * TeamRole)} to keep a role. See {@link #addMember(String, TeamRole)}.
+     * GitHubTeamRole)} to keep a role. See {@link #addMember(String, GitHubTeamRole)}.
      *
      * @param login the login of the user
      * @return the membership as GitHub holds it afterwards
@@ -151,15 +151,14 @@ public final class Team {
      * @throws IllegalArgumentException if {@code login} is blank
      * @throws IOException if the transport fails
      */
-    public GitHubTeamMembership addMember(final String login, final TeamRole role) throws IOException {
+    public GitHubTeamMembership addMember(final String login, final GitHubTeamRole role) throws IOException {
         return github().teams()
                 .members()
                 .upsertMembership(
                         organization.login(),
                         slug(),
                         requireNotBlank(login, LOGIN),
-                        new GitHubUpsertTeamMembershipPayload(
-                                ClientValues.teamRoleToClient(requireNonNull(role, "role"))));
+                        new GitHubUpsertTeamMembershipPayload(requireNonNull(role, "role")));
     }
 
     /**

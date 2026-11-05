@@ -11,14 +11,14 @@ import static org.mockito.Mockito.when;
 import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoriesRuleSuitesApi;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoriesRulesApi;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRuleEnforcement;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRuleset;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRulesetPayloadTarget;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRuleSuite;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRuleSuiteListItem;
 import io.github.piotr_janczukowicz.github.sdk.fixtures.RulesetFixtures;
 import io.github.piotr_janczukowicz.github.sdk.rulesets.Ruleset;
 import io.github.piotr_janczukowicz.github.sdk.rulesets.RulesetDraft;
-import io.github.piotr_janczukowicz.github.sdk.rulesets.RulesetEnforcement;
-import io.github.piotr_janczukowicz.github.sdk.rulesets.RulesetTarget;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -108,7 +108,8 @@ class RepositoryRulesetsTest {
 
     @Test
     void newRuleset_shouldStartADraft_whenCalled() {
-        final RulesetDraft draft = sut.newRuleset("protect-main", RulesetTarget.BRANCH, RulesetEnforcement.ACTIVE);
+        final RulesetDraft draft = sut.newRuleset(
+                "protect-main", GitHubRepositoryRulesetPayloadTarget.BRANCH, GitHubRepositoryRuleEnforcement.ACTIVE);
 
         assertThat(draft).isNotNull();
     }

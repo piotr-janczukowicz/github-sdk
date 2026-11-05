@@ -11,6 +11,8 @@ import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubMergePullReque
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubPullRequest;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubPullRequestBranchUpdateResult;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubPullRequestMergeAsyncResult;
+import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubPullRequestMergeMethod;
+import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubPullRequestReviewEvent;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubPullRequestReviewRequest;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubPullRequestUpdateState;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubRemoveReviewersPayload;
@@ -199,9 +201,8 @@ public final class PullRequest {
      * @throws IOException if the transport fails
      * @throws IllegalStateException if the pull request is gone after the merge
      */
-    public PullRequest merge(final MergeMethod method) throws IOException {
-        return sendMerge(new GitHubMergePullRequestPayload(
-                null, null, null, requireNonNull(method, "method").toClient()));
+    public PullRequest merge(final GitHubPullRequestMergeMethod method) throws IOException {
+        return sendMerge(new GitHubMergePullRequestPayload(null, null, null, requireNonNull(method, "method")));
     }
 
     /**
@@ -215,12 +216,9 @@ public final class PullRequest {
      * @throws IOException if the transport fails
      * @throws IllegalStateException if the pull request is gone after the merge
      */
-    public PullRequest merge(final MergeMethod method, final String commitMessage) throws IOException {
+    public PullRequest merge(final GitHubPullRequestMergeMethod method, final String commitMessage) throws IOException {
         return sendMerge(new GitHubMergePullRequestPayload(
-                null,
-                requireNonNull(commitMessage, "commitMessage"),
-                null,
-                requireNonNull(method, "method").toClient()));
+                null, requireNonNull(commitMessage, "commitMessage"), null, requireNonNull(method, "method")));
     }
 
     /**
@@ -253,13 +251,14 @@ public final class PullRequest {
      * Reviews the pull request with no text and submits the review at once ({@code POST
      * /repos/{owner}/{repo}/pulls/{pull_number}/reviews}). This object is not changed.
      *
-     * @param event what the review says; GitHub requires text for every event but {@link ReviewEvent#APPROVE}, so use
-     *     {@link #review(ReviewEvent, String)} for the others
+     * @param event what the review says; GitHub requires text for every event but
+     *     {@link GitHubPullRequestReviewEvent#APPROVE}, so use {@link #review(GitHubPullRequestReviewEvent, String)}
+     *     for the others
      * @return the submitted review
      * @throws NullPointerException if {@code event} is {@code null}
      * @throws IOException if the transport fails
      */
-    public PullRequestReview review(final ReviewEvent event) throws IOException {
+    public PullRequestReview review(final GitHubPullRequestReviewEvent event) throws IOException {
         return review(event, null);
     }
 
@@ -273,14 +272,14 @@ public final class PullRequest {
      * @throws NullPointerException if {@code event} is {@code null}
      * @throws IOException if the transport fails
      */
-    public PullRequestReview review(final ReviewEvent event, final @Nullable String body) throws IOException {
-        return createReview(new GitHubCreateReviewPayload(
-                null, body, requireNonNull(event, "event").toClient(), null));
+    public PullRequestReview review(final GitHubPullRequestReviewEvent event, final @Nullable String body)
+            throws IOException {
+        return createReview(new GitHubCreateReviewPayload(null, body, requireNonNull(event, "event"), null));
     }
 
     /**
      * Starts a review that stays pending, visible only to its author, until
-     * {@link PullRequestReview#submit(ReviewEvent)} is called ({@code POST
+     * {@link PullRequestReview#submit(GitHubPullRequestReviewEvent)} is called ({@code POST
      * /repos/{owner}/{repo}/pulls/{pull_number}/reviews}). This object is not changed.
      *
      * @param body the review text in Markdown, or {@code null} for none
@@ -468,9 +467,9 @@ public final class PullRequest {
      * @throws UnsupportedOperationException if the client is limited to another flavor of GitHub
      * @throws IOException if the transport fails
      */
-    public GitHubPullRequestMergeAsyncResult mergeAsync(final MergeMethod method) throws IOException {
-        return mergeAsync(new GitHubMergePullRequestAsyncPayload(
-                null, null, null, requireNonNull(method, "method").toClient(), null, null));
+    public GitHubPullRequestMergeAsyncResult mergeAsync(final GitHubPullRequestMergeMethod method) throws IOException {
+        return mergeAsync(
+                new GitHubMergePullRequestAsyncPayload(null, null, null, requireNonNull(method, "method"), null, null));
     }
 
     /**
@@ -496,7 +495,7 @@ public final class PullRequest {
      * /repos/{owner}/{repo}/pulls/{pull_number}/merge-async/{uuid}}). Available on GitHub.com and GitHub Enterprise
      * Cloud only.
      *
-     * @param uuid the UUID from the details of {@link #mergeAsync(MergeMethod)}
+     * @param uuid the UUID from the details of {@link #mergeAsync(GitHubPullRequestMergeMethod)}
      * @return the result, or empty when GitHub answers HTTP 404
      * @throws NullPointerException if {@code uuid} is {@code null}
      * @throws IllegalArgumentException if {@code uuid} is blank

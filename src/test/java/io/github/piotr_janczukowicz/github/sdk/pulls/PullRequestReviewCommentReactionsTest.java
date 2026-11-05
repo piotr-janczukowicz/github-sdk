@@ -20,7 +20,6 @@ import io.github.piotr_janczukowicz.github.sdk.fixtures.PullRequestsFixtures;
 import io.github.piotr_janczukowicz.github.sdk.fixtures.ReactionsFixtures;
 import io.github.piotr_janczukowicz.github.sdk.fixtures.ReviewsFixtures;
 import io.github.piotr_janczukowicz.github.sdk.reactions.Reaction;
-import io.github.piotr_janczukowicz.github.sdk.reactions.ReactionContent;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.io.IOException;
 import java.util.List;
@@ -48,7 +47,7 @@ class PullRequestReviewCommentReactionsTest {
         final ArgumentCaptor<GitHubCreateForCommitCommentPayload> payload =
                 ArgumentCaptor.forClass(GitHubCreateForCommitCommentPayload.class);
 
-        final Reaction reaction = sut.react(ReactionContent.PLUS_ONE);
+        final Reaction reaction = sut.react(GitHubReactionContent.PLUS_ONE);
 
         verify(github.reactions()).createForPullRequestReviewComment(eq(OWNER), eq(NAME), eq(ID), payload.capture());
         assertSoftly(softly -> {

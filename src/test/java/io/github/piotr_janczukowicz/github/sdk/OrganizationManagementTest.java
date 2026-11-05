@@ -37,7 +37,6 @@ import io.github.piotr_janczukowicz.github.pagination.GitHubPageRequest;
 import io.github.piotr_janczukowicz.github.sdk.fixtures.OrganizationFixtures;
 import io.github.piotr_janczukowicz.github.sdk.organizations.InvitationRole;
 import io.github.piotr_janczukowicz.github.sdk.organizations.OrganizationInvitation;
-import io.github.piotr_janczukowicz.github.sdk.organizations.OrganizationRole;
 import io.github.piotr_janczukowicz.github.sdk.organizations.OrganizationVariable;
 import io.github.piotr_janczukowicz.github.sdk.organizations.OrganizationWebhook;
 import io.github.piotr_janczukowicz.github.sdk.organizations.VariableVisibility;
@@ -89,7 +88,7 @@ class OrganizationManagementTest {
         final ArgumentCaptor<GitHubSetOrganizationMembershipPayload> payload =
                 ArgumentCaptor.forClass(GitHubSetOrganizationMembershipPayload.class);
 
-        final GitHubOrgMembership result = sut.changeMembership("hubot", OrganizationRole.ADMIN);
+        final GitHubOrgMembership result = sut.changeMembership("hubot", GitHubOrganizationMembershipRole.ADMIN);
 
         verify(api).setMembership(eq(ORG), eq("hubot"), payload.capture());
         assertSoftly(softly -> {
