@@ -78,19 +78,19 @@ public final class CodeScanningAlert {
     /**
      * Returns the id of the rule that raised the alert, for example {@code java/sql-injection}.
      *
-     * @return the rule id
+     * @return the rule id, or empty when the response has none
      */
-    public String ruleId() {
-        return response.rule().id();
+    public Optional<String> ruleId() {
+        return Optional.ofNullable(response.rule().id());
     }
 
     /**
      * Returns the name of the rule that raised the alert.
      *
-     * @return the rule name
+     * @return the rule name, or empty when the response has none
      */
-    public String ruleName() {
-        return response.rule().name();
+    public Optional<String> ruleName() {
+        return Optional.ofNullable(response.rule().name());
     }
 
     /**

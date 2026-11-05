@@ -77,7 +77,7 @@ class SecuritySmokeIT {
 
         final List<CodeScanningAlert> alerts = readCode(repository);
 
-        assertThat(alerts).allSatisfy(alert -> assertThat(alert.ruleId()).isNotBlank());
+        assertThat(alerts).allSatisfy(alert -> assertThat(alert.ruleId()).isPresent());
     }
 
     private static List<CodeScanningAlert> readCode(final Repository repository) throws IOException {

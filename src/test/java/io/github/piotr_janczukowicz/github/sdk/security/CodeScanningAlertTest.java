@@ -49,8 +49,8 @@ class CodeScanningAlertTest {
             softly.assertThat(sut.number()).isEqualTo(NUMBER);
             softly.assertThat(sut.state()).contains(GitHubCodeScanningAlertState.OPEN);
             softly.assertThat(sut.isOpen()).isTrue();
-            softly.assertThat(sut.ruleId()).isEqualTo("java/sql-injection");
-            softly.assertThat(sut.ruleName()).isEqualTo("SQL injection");
+            softly.assertThat(sut.ruleId()).contains("java/sql-injection");
+            softly.assertThat(sut.ruleName()).contains("SQL injection");
             softly.assertThat(sut.htmlUrl()).endsWith("code-scanning/3");
             softly.assertThat(sut.response()).isSameAs(response);
         });

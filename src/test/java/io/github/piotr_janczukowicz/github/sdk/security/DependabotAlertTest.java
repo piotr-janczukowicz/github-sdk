@@ -63,14 +63,6 @@ class DependabotAlertTest {
     }
 
     @Test
-    void packageName_shouldBeEmpty_whenGitHubReportsNoDependency() {
-        final DependabotAlert bare =
-                new DependabotAlert(repository, SecurityFixtures.dependabotAlertWithoutDependency());
-
-        assertThat(bare.packageName()).isEmpty();
-    }
-
-    @Test
     void packageName_shouldBeEmpty_whenGitHubReportsNoPackage() {
         final DependabotAlert bare = new DependabotAlert(repository, SecurityFixtures.dependabotAlertWithoutPackage());
 

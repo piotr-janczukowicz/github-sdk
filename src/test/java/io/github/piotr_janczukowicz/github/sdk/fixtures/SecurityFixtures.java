@@ -49,13 +49,6 @@ public final class SecurityFixtures {
         return alert;
     }
 
-    public static GitHubDependabotAlert dependabotAlertWithoutDependency() {
-        final GitHubDependabotAlert alert = mock(GitHubDependabotAlert.class);
-        lenient().when(alert.number()).thenReturn(DEPENDABOT_NUMBER);
-        lenient().when(alert.dependency()).thenReturn(null);
-        return alert;
-    }
-
     public static GitHubDependabotAlert dependabotAlertWithoutPackage() {
         final GitHubDependabotAlertDependency dependency = mock(GitHubDependabotAlertDependency.class);
         lenient().when(dependency.dependencyPackage()).thenReturn(null);

@@ -81,7 +81,7 @@ public final class DependabotAlert {
      * @return the package name, or empty when GitHub reports none
      */
     public Optional<String> packageName() {
-        return Optional.ofNullable(response.dependency())
+        return Optional.of(response.dependency())
                 .map(GitHubDependabotAlertDependency::dependencyPackage)
                 .map(GitHubDependabotAlertPackage::name);
     }

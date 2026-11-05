@@ -5,7 +5,6 @@ import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
 import io.github.piotr_janczukowicz.github.api.reactions.GitHubReaction;
 import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
 import io.github.piotr_janczukowicz.github.sdk.internal.ClientValues;
-import io.github.piotr_janczukowicz.github.sdk.internal.IoLongConsumer;
 import io.github.piotr_janczukowicz.github.sdk.issues.Issue;
 import io.github.piotr_janczukowicz.github.sdk.issues.IssueComment;
 import io.github.piotr_janczukowicz.github.sdk.pulls.PullRequestReviewComment;
@@ -21,17 +20,17 @@ import java.util.Optional;
 public final class Reaction {
 
     private final GitHubReaction response;
-    private final IoLongConsumer deletion;
+    private final ReactionDeletion deletion;
 
     /**
      * Wraps a response. Applications normally get this object from the object that owns it; call the constructor only
      * to wrap a response that was loaded some other way.
      *
      * @param response the response record the object is built from
-     * @param deletion the deletion
+     * @param deletion deletes the reaction from the object it belongs to
      * @throws NullPointerException if an argument is {@code null}
      */
-    public Reaction(final GitHubReaction response, final IoLongConsumer deletion) {
+    public Reaction(final GitHubReaction response, final ReactionDeletion deletion) {
         this.response = requireNonNull(response, "response");
         this.deletion = requireNonNull(deletion, "deletion");
     }
@@ -69,7 +68,7 @@ public final class Reaction {
      * @throws IOException if the transport fails
      */
     public void delete() throws IOException {
-        deletion.accept(id());
+        deletion.delete(id());
     }
 
     /**

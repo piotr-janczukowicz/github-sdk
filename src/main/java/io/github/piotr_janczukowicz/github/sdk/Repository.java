@@ -13,6 +13,7 @@ import io.github.piotr_janczukowicz.github.api.activity.GitHubSetRepoSubscriptio
 import io.github.piotr_janczukowicz.github.api.agents.GitHubActionsSecret;
 import io.github.piotr_janczukowicz.github.api.branches.GitHubListBranchesFilter;
 import io.github.piotr_janczukowicz.github.api.branches.GitHubShortBranch;
+import io.github.piotr_janczukowicz.github.api.codescanning.GitHubCodeScanningAlertItems;
 import io.github.piotr_janczukowicz.github.api.collaborators.GitHubAddCollaboratorPayload;
 import io.github.piotr_janczukowicz.github.api.collaborators.GitHubListCollaboratorsFilter;
 import io.github.piotr_janczukowicz.github.api.collaborators.GitHubRepositoryCollaboratorPermission;
@@ -64,6 +65,7 @@ import io.github.piotr_janczukowicz.github.api.repositories.GitHubUpdatePayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubUpdatePayloadBuilder;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubWebhookConfig;
 import io.github.piotr_janczukowicz.github.api.secretscanning.GitHubListSecretScanningAlertsFilter;
+import io.github.piotr_janczukowicz.github.api.secretscanning.GitHubSecretScanningAlert;
 import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
 import io.github.piotr_janczukowicz.github.pagination.GitHubPageRequest;
 import io.github.piotr_janczukowicz.github.sdk.actions.Artifact;
@@ -1942,9 +1944,7 @@ public final class Repository {
                 .alerts()
                 .listRepoAlerts(owner, name, requireNonNull(filter, FILTER))
                 .stream()
-                .map(listed -> Lookups.require(
-                        () -> secretScanningAlert(listed.number()),
-                        () -> "Secret scanning alert " + listed.number() + IS_GONE));
+                .map(this::loadSecretScanningAlert);
     }
 
     /**
@@ -1973,9 +1973,7 @@ public final class Repository {
      */
     public Stream<CodeScanningAlert> codeScanningAlerts() throws IOException {
         return sdk.github().codeScanning().codeScanning().listAlertsForRepo(owner, name).stream()
-                .map(listed -> Lookups.require(
-                        () -> codeScanningAlert(listed.number()),
-                        () -> "Code scanning alert " + listed.number() + IS_GONE));
+                .map(this::loadCodeScanningAlert);
     }
 
     /**
@@ -2365,7 +2363,18 @@ public final class Repository {
     }
 
     private PullRequest loadPullRequest(final GitHubPullRequestSimple listed) {
-        return Lookups.require(() -> pullRequest(listed.number()), () -> "Pull request " + listed.number() + IS_GONE);
+        final int number = requireNonNull(listed.number(), "number");
+        return Lookups.require(() -> pullRequest(number), () -> "Pull request " + number + IS_GONE);
+    }
+
+    private SecretScanningAlert loadSecretScanningAlert(final GitHubSecretScanningAlert listed) {
+        final int number = requireNonNull(listed.number(), "number");
+        return Lookups.require(() -> secretScanningAlert(number), () -> "Secret scanning alert " + number + IS_GONE);
+    }
+
+    private CodeScanningAlert loadCodeScanningAlert(final GitHubCodeScanningAlertItems listed) {
+        final int number = requireNonNull(listed.number(), "number");
+        return Lookups.require(() -> codeScanningAlert(number), () -> "Code scanning alert " + number + IS_GONE);
     }
 
     private Branch loadBranch(final GitHubShortBranch listed) {
