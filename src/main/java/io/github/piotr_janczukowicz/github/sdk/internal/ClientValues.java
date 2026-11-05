@@ -11,7 +11,8 @@ import io.github.piotr_janczukowicz.github.sdk.organizations.VariableVisibility;
 
 /**
  * Converts the few SDK enums and client values that more than one package needs to the client's enums. Enums that only
- * their own package converts keep a package-private conversion of their own.
+ * their own package converts keep a package-private conversion of their own. Every method throws a
+ * {@link NullPointerException} for a {@code null} argument.
  */
 public final class ClientValues {
 

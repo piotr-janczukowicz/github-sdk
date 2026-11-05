@@ -1,5 +1,6 @@
 package io.github.piotr_janczukowicz.github.sdk.content;
 
+import static io.github.piotr_janczukowicz.util.ValidationUtils.requireAtLeast;
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 
@@ -227,12 +228,12 @@ public final class Commit {
      * @param line the line of the file
      * @return the new comment
      * @throws NullPointerException if {@code body} or {@code path} is {@code null}
-     * @throws IllegalArgumentException if {@code body} or {@code path} is blank
+     * @throws IllegalArgumentException if {@code body} or {@code path} is blank, or {@code line} is less than 1
      * @throws IOException if the transport fails
      */
     public CommitComment comment(final String body, final String path, final int line) throws IOException {
         return createComment(new GitHubCreateCommitCommentPayload(
-                requireNotBlank(body, "body"), requireNotBlank(path, "path"), null, line));
+                requireNotBlank(body, "body"), requireNotBlank(path, "path"), null, requireAtLeast(line, 1, "line")));
     }
 
     /**

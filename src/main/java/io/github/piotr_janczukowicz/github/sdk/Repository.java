@@ -332,7 +332,7 @@ public final class Repository {
      * /repos/{owner}/{repo}/assignees/{assignee}}).
      *
      * @param login the login of the user
-     * @return {@code true} when GitHub answers HTTP 204
+     * @return {@code true} when GitHub answers HTTP 204, {@code false} when it answers HTTP 404
      * @throws NullPointerException if {@code login} is {@code null}
      * @throws IllegalArgumentException if {@code login} is blank
      * @throws IOException if the transport fails
@@ -720,7 +720,8 @@ public final class Repository {
     }
 
     /**
-     * Deletes an Actions secret ({@code DELETE /repos/{owner}/{repo}/actions/secrets/{secret_name}}).
+     * Deletes an Actions secret ({@code DELETE /repos/{owner}/{repo}/actions/secrets/{secret_name}}). A secret that
+     * does not exist makes GitHub answer HTTP 404, which the client reports as an exception.
      *
      * @param secretName the secret name
      * @throws NullPointerException if {@code secretName} is {@code null}
@@ -797,8 +798,9 @@ public final class Repository {
      * @param message the commit message
      * @param content the new content
      * @return the file as GitHub holds it after the write
-     * @throws NullPointerException if {@code content} is {@code null}
-     * @throws IllegalArgumentException if {@code path} or {@code message} is blank
+     * @throws NullPointerException if {@code path}, {@code message} or {@code content} is {@code null}
+     * @throws IllegalArgumentException if {@code path} or {@code message} is blank, or {@code path} has a control
+     *     character or a {@code .} or {@code ..} segment
      * @throws IOException if the transport fails
      * @throws IllegalStateException if the file is gone after the write
      */
@@ -815,8 +817,9 @@ public final class Repository {
      * @param content the new content
      * @param branch the branch to commit to
      * @return the file as GitHub holds it after the write
-     * @throws NullPointerException if {@code content} is {@code null}
-     * @throws IllegalArgumentException if {@code path}, {@code message} or {@code branch} is blank
+     * @throws NullPointerException if {@code path}, {@code message}, {@code content} or {@code branch} is {@code null}
+     * @throws IllegalArgumentException if {@code path}, {@code message} or {@code branch} is blank, or {@code path} or
+     *     {@code branch} has a control character or a {@code .} or {@code ..} segment
      * @throws IOException if the transport fails
      * @throws IllegalStateException if the file is gone after the write
      */
@@ -1806,7 +1809,8 @@ public final class Repository {
      * @param sha the sha of the object it points to
      * @return the new reference
      * @throws NullPointerException if {@code ref} or {@code sha} is {@code null}
-     * @throws IllegalArgumentException if {@code ref} or {@code sha} is blank
+     * @throws IllegalArgumentException if {@code ref} or {@code sha} is blank, has a control character or has a
+     *     {@code .} or {@code ..} segment
      * @throws IOException if the transport fails
      */
     public Ref createRef(final String ref, final String sha) throws IOException {
@@ -2512,10 +2516,11 @@ public final class Repository {
     }
 
     /**
-     * Lists the autolink references ({@code GET /repos/{owner}/{repo}/autolinks}).
+     * Lists the autolink references ({@code GET /repos/{owner}/{repo}/autolinks}). Pages are fetched only as the stream
+     * is consumed; transport failures during iteration are {@link java.io.UncheckedIOException}.
      *
      * @return the autolinks
-     * @throws IOException if the transport fails
+     * @throws IOException if the first page cannot be loaded
      */
     public Stream<Autolink> autolinks() throws IOException {
         return sdk.github().repositories().autolinks().listAutolinks(owner, name).stream()

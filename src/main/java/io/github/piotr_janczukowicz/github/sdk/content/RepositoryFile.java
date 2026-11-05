@@ -82,7 +82,8 @@ public final class RepositoryFile {
      * Returns the exact content of the file, decoded from the base64 GitHub sends. Every call returns a new array.
      *
      * @return the content
-     * @throws IllegalStateException if GitHub sent no content, as it does for files too large for the contents API
+     * @throws IllegalStateException if GitHub sent no content, as it does for files too large for the contents API, or
+     *     the content is not valid base64
      */
     public byte[] bytes() {
         if (!BASE64.equals(response.encoding())) {

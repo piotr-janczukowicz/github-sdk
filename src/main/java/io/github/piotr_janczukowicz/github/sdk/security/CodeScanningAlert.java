@@ -152,6 +152,7 @@ public final class CodeScanningAlert {
      * @param comment a comment that explains the dismissal
      * @return the alert as GitHub holds it afterwards
      * @throws NullPointerException if {@code reason} or {@code comment} is {@code null}
+     * @throws IllegalArgumentException if {@code comment} is longer than 280 characters
      * @throws IOException if the transport fails
      */
     public CodeScanningAlert dismiss(final GitHubCodeScanningAlertDismissedReason reason, final String comment)

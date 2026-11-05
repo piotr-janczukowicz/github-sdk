@@ -52,7 +52,8 @@ public final class Search {
      *
      * @param query the search query, in GitHub's search syntax
      * @return the repository handles
-     * @throws IllegalArgumentException if {@code query} is blank
+     * @throws IllegalArgumentException if {@code query} is blank, or, while consuming the stream, if a hit has a
+     *     repository name without an owner
      * @throws NullPointerException if {@code query} is {@code null}
      * @throws IOException if the first page cannot be loaded
      */

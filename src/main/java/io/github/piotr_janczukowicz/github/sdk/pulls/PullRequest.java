@@ -356,6 +356,7 @@ public final class PullRequest {
      * @return the pull request as GitHub holds it after the request
      * @throws IllegalArgumentException if no login is given or a login is blank
      * @throws NullPointerException if a login is {@code null}
+     * @throws IllegalStateException if the pull request is gone after the request
      * @throws IOException if the transport fails
      */
     public PullRequest requestReviewers(final String... logins) throws IOException {
@@ -377,6 +378,7 @@ public final class PullRequest {
      * @return the pull request as GitHub holds it after the change
      * @throws IllegalArgumentException if no login is given or a login is blank
      * @throws NullPointerException if a login is {@code null}
+     * @throws IllegalStateException if the pull request is gone after the change
      * @throws IOException if the transport fails
      */
     public PullRequest removeReviewers(final String... logins) throws IOException {

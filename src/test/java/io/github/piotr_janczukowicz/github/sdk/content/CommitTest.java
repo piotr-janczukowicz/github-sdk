@@ -1,6 +1,7 @@
 package io.github.piotr_janczukowicz.github.sdk.content;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.mockito.Mockito.mock;
 
@@ -48,5 +49,12 @@ class CommitTest {
         final Optional<GitHubSimpleUser> author = withAuthor.author();
 
         assertThat(author).containsSame(user);
+    }
+
+    @Test
+    void comment_shouldThrowIllegalArgumentException_whenTheLineIsLessThanOne() {
+        final Throwable thrown = catchThrowable(() -> sut.comment("Note", "a.txt", 0));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("line");
     }
 }
