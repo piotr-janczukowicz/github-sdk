@@ -77,7 +77,7 @@ public final class Artifact {
      * @throws IllegalStateException if the artifact is gone
      */
     public Artifact refresh() throws IOException {
-        final GitHub github = Internals.github(repository);
+        final GitHub github = github();
         return github.actions()
                 .artifacts()
                 .getArtifact(repository.owner(), repository.name(), id())
@@ -94,7 +94,7 @@ public final class Artifact {
      * @throws IOException if the transport fails
      */
     public URI downloadUrl() throws IOException {
-        final GitHub github = Internals.github(repository);
+        final GitHub github = github();
         return github.actions().artifacts().downloadArtifact(repository.owner(), repository.name(), id());
     }
 
@@ -104,7 +104,7 @@ public final class Artifact {
      * @throws IOException if the transport fails
      */
     public void delete() throws IOException {
-        final GitHub github = Internals.github(repository);
+        final GitHub github = github();
         github.actions().artifacts().deleteArtifact(repository.owner(), repository.name(), id());
     }
 
@@ -115,5 +115,9 @@ public final class Artifact {
      */
     public GitHubArtifact response() {
         return response;
+    }
+
+    private GitHub github() {
+        return Internals.github(repository);
     }
 }

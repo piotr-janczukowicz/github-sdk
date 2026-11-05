@@ -22,7 +22,7 @@ public final class IssueUpdate {
     private final UpdateState state = new UpdateState();
 
     public IssueUpdate(final Issue issue) {
-        this.issue = issue;
+        this.issue = requireNonNull(issue, "issue");
     }
 
     /**

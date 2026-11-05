@@ -2,6 +2,7 @@ package io.github.piotr_janczukowicz.github.sdk.content;
 
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
 
+import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.releases.GitHubRelease;
 import io.github.piotr_janczukowicz.github.api.releases.GitHubUpdateReleasePayload;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
@@ -76,8 +77,7 @@ public final class Release {
      * @throws IllegalStateException if the release is gone
      */
     public Release refresh() throws IOException {
-        return Internals.github(repository)
-                .releases()
+        return github().releases()
                 .release()
                 .getRelease(repository.owner(), repository.name(), response.id())
                 .map(reloaded -> new Release(repository, reloaded))
@@ -90,10 +90,7 @@ public final class Release {
      * @throws IOException if the transport fails
      */
     public void delete() throws IOException {
-        Internals.github(repository)
-                .releases()
-                .release()
-                .deleteRelease(repository.owner(), repository.name(), response.id());
+        github().releases().release().deleteRelease(repository.owner(), repository.name(), response.id());
     }
 
     /**
@@ -117,9 +114,12 @@ public final class Release {
     Release apply(final GitHubUpdateReleasePayload payload) throws IOException {
         return new Release(
                 repository,
-                Internals.github(repository)
-                        .releases()
+                github().releases()
                         .release()
                         .updateRelease(repository.owner(), repository.name(), response.id(), payload));
+    }
+
+    private GitHub github() {
+        return Internals.github(repository);
     }
 }

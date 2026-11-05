@@ -59,7 +59,7 @@ public final class Variable {
      * @throws IllegalStateException if the variable is gone
      */
     public Variable refresh() throws IOException {
-        final GitHub github = Internals.github(repository);
+        final GitHub github = github();
         return github.actions()
                 .variables()
                 .getRepoVariable(repository.owner(), repository.name(), name())
@@ -77,7 +77,7 @@ public final class Variable {
      * @throws IllegalStateException if the variable is gone
      */
     public Variable update(final String value) throws IOException {
-        final GitHub github = Internals.github(repository);
+        final GitHub github = github();
         github.actions()
                 .variables()
                 .updateRepoVariable(
@@ -94,7 +94,7 @@ public final class Variable {
      * @throws IOException if the transport fails
      */
     public void delete() throws IOException {
-        final GitHub github = Internals.github(repository);
+        final GitHub github = github();
         github.actions().variables().deleteRepoVariable(repository.owner(), repository.name(), name());
     }
 
@@ -105,5 +105,9 @@ public final class Variable {
      */
     public GitHubActionsVariable response() {
         return response;
+    }
+
+    private GitHub github() {
+        return Internals.github(repository);
     }
 }

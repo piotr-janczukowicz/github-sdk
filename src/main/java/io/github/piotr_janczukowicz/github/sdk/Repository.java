@@ -174,7 +174,8 @@ public final class Repository {
     }
 
     /**
-     * Loads the repository ({@code GET /repos/{owner}/{repo}}). This object is not changed.
+     * Loads the repository ({@code GET /repos/{owner}/{repo}}). This object is not changed. The result carries the
+     * owner and name as GitHub spells them, which differ from this handle after a rename or in letter case.
      *
      * @return the loaded repository, or empty when GitHub answers HTTP 404
      * @throws IOException if the transport fails
@@ -184,7 +185,7 @@ public final class Repository {
                 .repositories()
                 .repository()
                 .get(owner, name)
-                .map(loaded -> new Repository(sdk, owner, name, loaded));
+                .map(loaded -> new Repository(sdk, loaded.owner().login(), loaded.name(), loaded));
     }
 
     /**

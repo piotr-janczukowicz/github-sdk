@@ -83,11 +83,7 @@ public final class Commit {
      * @throws IOException if the first page cannot be loaded
      */
     public Stream<CheckRun> checkRuns() throws IOException {
-        return Internals.github(repository)
-                .checks()
-                .runs()
-                .listForRef(repository.owner(), repository.name(), sha())
-                .stream()
+        return github().checks().runs().listForRef(repository.owner(), repository.name(), sha()).stream()
                 .map(listed -> new CheckRun(repository, listed));
     }
 
@@ -105,7 +101,7 @@ public final class Commit {
         final GitHubListForRefFilter filter = GitHubListForRefFilterBuilder.builder()
                 .checkName(requireNotBlank(name, "name"))
                 .build();
-        return Internals.github(repository)
+        return github()
                 .checks()
                 .runs()
                 .listForRef(repository.owner(), repository.name(), sha(), filter, GitHubPageRequest.byPage())
@@ -122,7 +118,7 @@ public final class Commit {
      * @throws IOException if the first page cannot be loaded
      */
     public Stream<CommitStatus> statuses() throws IOException {
-        return Internals.github(repository)
+        return github()
                 .commits()
                 .statuses()
                 .listCommitStatusesForRef(repository.owner(), repository.name(), sha())
@@ -137,8 +133,7 @@ public final class Commit {
      * @throws IOException if the transport fails
      */
     public Optional<CombinedStatus> combinedStatus() throws IOException {
-        return Internals.github(repository)
-                .commits()
+        return github().commits()
                 .statuses()
                 .getCombinedStatusForRef(repository.owner(), repository.name(), sha())
                 .map(loaded -> new CombinedStatus(this, loaded));
@@ -179,8 +174,7 @@ public final class Commit {
                 ClientValues.statusStateToClient(requireNonNull(state, "state")), targetUrl, description, context);
         return new CommitStatus(
                 this,
-                Internals.github(repository)
-                        .commits()
+                github().commits()
                         .statuses()
                         .createCommitStatus(repository.owner(), repository.name(), sha(), payload));
     }
@@ -194,7 +188,7 @@ public final class Commit {
      * @throws IOException if the first page cannot be loaded
      */
     public Stream<CommitComment> comments() throws IOException {
-        final GitHub github = Internals.github(repository);
+        final GitHub github = github();
         return github
                 .commits()
                 .comments()
@@ -241,7 +235,7 @@ public final class Commit {
      * @throws IOException if the first page cannot be loaded
      */
     public Stream<CheckSuite> checkSuites() throws IOException {
-        final GitHub github = Internals.github(repository);
+        final GitHub github = github();
         return github.checks().suites().listSuitesForRef(repository.owner(), repository.name(), sha()).stream()
                 .map(listed -> new CheckSuite(repository, listed));
     }
@@ -256,9 +250,13 @@ public final class Commit {
     }
 
     private CommitComment createComment(final GitHubCreateCommitCommentPayload payload) throws IOException {
-        final GitHub github = Internals.github(repository);
+        final GitHub github = github();
         return new CommitComment(
                 repository,
                 github.commits().comments().createCommitComment(repository.owner(), repository.name(), sha(), payload));
+    }
+
+    private GitHub github() {
+        return Internals.github(repository);
     }
 }

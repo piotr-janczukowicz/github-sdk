@@ -21,6 +21,7 @@ import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubListPullReques
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubPullRequest;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubFullRepository;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubPullRequestSimple;
+import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
 import io.github.piotr_janczukowicz.github.pagination.GitHubPageRequest;
 import io.github.piotr_janczukowicz.github.sdk.fixtures.IssuesFixtures;
 import io.github.piotr_janczukowicz.github.sdk.fixtures.PullRequestsFixtures;
@@ -46,15 +47,19 @@ class RepositoryTest {
 
     @Test
     void fetch_shouldReturnLoadedRepository_whenGitHubHasIt() throws IOException {
+        final GitHubSimpleUser owner = mock(GitHubSimpleUser.class);
+        when(owner.login()).thenReturn("Octocat");
         final GitHubFullRepository response = mock(GitHubFullRepository.class);
+        when(response.owner()).thenReturn(owner);
+        when(response.name()).thenReturn("Hello-World");
         when(github.repositories().repository().get(OWNER, NAME)).thenReturn(Optional.of(response));
 
         final Optional<Repository> loaded = sut.fetch();
 
         assertThat(loaded).isPresent();
         assertSoftly(softly -> {
-            softly.assertThat(loaded.orElseThrow().owner()).isEqualTo(OWNER);
-            softly.assertThat(loaded.orElseThrow().name()).isEqualTo(NAME);
+            softly.assertThat(loaded.orElseThrow().owner()).isEqualTo("Octocat");
+            softly.assertThat(loaded.orElseThrow().name()).isEqualTo("Hello-World");
             softly.assertThat(loaded.orElseThrow().response()).isSameAs(response);
         });
     }

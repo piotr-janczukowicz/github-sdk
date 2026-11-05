@@ -1,6 +1,5 @@
 package io.github.piotr_janczukowicz.github.sdk.issues;
 
-import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonEmpty;
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 
@@ -24,6 +23,7 @@ import io.github.piotr_janczukowicz.github.api.reactions.GitHubCreateForCommitCo
 import io.github.piotr_janczukowicz.github.api.reactions.GitHubReaction;
 import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
+import io.github.piotr_janczukowicz.github.sdk.internal.Arguments;
 import io.github.piotr_janczukowicz.github.sdk.internal.ClientValues;
 import io.github.piotr_janczukowicz.github.sdk.internal.Internals;
 import io.github.piotr_janczukowicz.github.sdk.reactions.Reaction;
@@ -117,15 +117,15 @@ public final class Issue {
      *
      * @param names the label names
      * @return the issue as GitHub holds it after the change
-     * @throws IllegalArgumentException if no name is given
+     * @throws IllegalArgumentException if no name is given or a name is blank
+     * @throws NullPointerException if a name is {@code null}
      * @throws IOException if the transport fails
      */
     public Issue addLabels(final String... names) throws IOException {
-        final List<GitHubAddLabelsLabel> labels = Stream.of(requireNonEmpty(names, "names"))
+        final List<GitHubAddLabelsLabel> labels = Arguments.requireNotBlankValues(names, "names").stream()
                 .map(GitHubAddLabelsLabel::ofName)
                 .toList();
-        Internals.github(repository)
-                .issues()
+        github().issues()
                 .labels()
                 .addLabels(repository.owner(), repository.name(), number(), new GitHubAddLabelsPayload(labels));
         return refresh();
@@ -144,8 +144,7 @@ public final class Issue {
         final List<GitHubSetLabelsLabel> labels = requireNonNull(names, "names").stream()
                 .map(GitHubSetLabelsLabel::ofName)
                 .toList();
-        Internals.github(repository)
-                .issues()
+        github().issues()
                 .labels()
                 .setLabels(repository.owner(), repository.name(), number(), new GitHubSetLabelsPayload(labels));
         return refresh();
@@ -161,8 +160,7 @@ public final class Issue {
      * @throws IOException if the transport fails
      */
     public Issue removeLabel(final String name) throws IOException {
-        Internals.github(repository)
-                .issues()
+        github().issues()
                 .labels()
                 .removeLabel(repository.owner(), repository.name(), number(), requireNotBlank(name, "name"));
         return refresh();
@@ -173,17 +171,17 @@ public final class Issue {
      *
      * @param logins the user logins
      * @return the issue as GitHub returned it after the change
-     * @throws IllegalArgumentException if no login is given
+     * @throws IllegalArgumentException if no login is given or a login is blank
+     * @throws NullPointerException if a login is {@code null}
      * @throws IOException if the transport fails
      */
     public Issue assign(final String... logins) throws IOException {
-        final List<GitHubAddAssigneesAssignee> assignees = Stream.of(requireNonEmpty(logins, "logins"))
+        final List<GitHubAddAssigneesAssignee> assignees = Arguments.requireNotBlankValues(logins, "logins").stream()
                 .map(GitHubAddAssigneesAssignee::ofLogin)
                 .toList();
         return new Issue(
                 repository,
-                Internals.github(repository)
-                        .issues()
+                github().issues()
                         .assignees()
                         .addAssignees(
                                 repository.owner(),
@@ -198,15 +196,15 @@ public final class Issue {
      *
      * @param logins the user logins
      * @return the issue as GitHub returned it after the change
-     * @throws IllegalArgumentException if no login is given
+     * @throws IllegalArgumentException if no login is given or a login is blank
+     * @throws NullPointerException if a login is {@code null}
      * @throws IOException if the transport fails
      */
     public Issue unassign(final String... logins) throws IOException {
-        final List<String> removed = List.of(requireNonEmpty(logins, "logins"));
+        final List<String> removed = Arguments.requireNotBlankValues(logins, "logins");
         return new Issue(
                 repository,
-                Internals.github(repository)
-                        .issues()
+                github().issues()
                         .assignees()
                         .removeAssignees(
                                 repository.owner(),
@@ -223,7 +221,7 @@ public final class Issue {
      * @throws IOException if the transport fails
      */
     public Issue lock() throws IOException {
-        Internals.github(repository).issues().issue().lock(repository.owner(), repository.name(), number());
+        github().issues().issue().lock(repository.owner(), repository.name(), number());
         return refresh();
     }
 
@@ -235,7 +233,7 @@ public final class Issue {
      * @throws IOException if the transport fails
      */
     public Issue unlock() throws IOException {
-        Internals.github(repository).issues().issue().unlock(repository.owner(), repository.name(), number());
+        github().issues().issue().unlock(repository.owner(), repository.name(), number());
         return refresh();
     }
 
@@ -282,7 +280,7 @@ public final class Issue {
      */
     public IssueComment comment(final String body) throws IOException {
         final GitHubCreateCommentPayload payload = new GitHubCreateCommentPayload(requireNonNull(body, "body"));
-        final GitHub github = Internals.github(repository);
+        final GitHub github = github();
         return new IssueComment(
                 this,
                 github.issues().comments().createComment(repository.owner(), repository.name(), number(), payload));
@@ -297,7 +295,7 @@ public final class Issue {
      * @throws IOException if the first page cannot be loaded
      */
     public Stream<IssueComment> comments() throws IOException {
-        final GitHub github = Internals.github(repository);
+        final GitHub github = github();
         return github.issues().comments().listComments(repository.owner(), repository.name(), number()).stream()
                 .map(response -> new IssueComment(this, response));
     }
@@ -336,9 +334,7 @@ public final class Issue {
     public Reaction react(final ReactionContent content) throws IOException {
         final GitHubCreateForCommitCommentPayload payload = new GitHubCreateForCommitCommentPayload(
                 ClientValues.reactionToClient(requireNonNull(content, "content")));
-        return reaction(Internals.github(repository)
-                .reactions()
-                .createForIssue(repository.owner(), repository.name(), number(), payload));
+        return reaction(github().reactions().createForIssue(repository.owner(), repository.name(), number(), payload));
     }
 
     /**
@@ -350,10 +346,7 @@ public final class Issue {
      * @throws IOException if the first page cannot be loaded
      */
     public Stream<Reaction> reactions() throws IOException {
-        return Internals.github(repository)
-                .reactions()
-                .listForIssue(repository.owner(), repository.name(), number())
-                .stream()
+        return github().reactions().listForIssue(repository.owner(), repository.name(), number()).stream()
                 .map(this::reaction);
     }
 
@@ -366,11 +359,7 @@ public final class Issue {
      * @throws IOException if the first page cannot be loaded
      */
     public Stream<GitHubIssueEvent> events() throws IOException {
-        return Internals.github(repository)
-                .issues()
-                .events()
-                .listEvents(repository.owner(), repository.name(), number())
-                .stream();
+        return github().issues().events().listEvents(repository.owner(), repository.name(), number()).stream();
     }
 
     /**
@@ -383,7 +372,7 @@ public final class Issue {
      * @throws IOException if the first page cannot be loaded
      */
     public Stream<GitHubTimelineEvent> timeline() throws IOException {
-        return Internals.github(repository)
+        return github()
                 .issues()
                 .timeline()
                 .listEventsForTimeline(repository.owner(), repository.name(), number())
@@ -400,19 +389,22 @@ public final class Issue {
     }
 
     Issue apply(final GitHubUpdatePayload payload) throws IOException {
-        Internals.github(repository).issues().issue().update(repository.owner(), repository.name(), number(), payload);
+        github().issues().issue().update(repository.owner(), repository.name(), number(), payload);
         return refresh();
     }
 
     private Reaction reaction(final GitHubReaction listed) {
         return new Reaction(
                 listed,
-                reactionId -> Internals.github(repository)
-                        .reactions()
+                reactionId -> github().reactions()
                         .deleteForIssue(repository.owner(), repository.name(), number(), reactionId));
     }
 
     private Issue changeState(final GitHubIssueUpdateState state) throws IOException {
         return apply(GitHubUpdatePayloadBuilder.builder().state(state).build());
+    }
+
+    private GitHub github() {
+        return Internals.github(repository);
     }
 }

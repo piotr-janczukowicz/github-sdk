@@ -1,8 +1,9 @@
 package io.github.piotr_janczukowicz.github.sdk.pulls;
 
-import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonEmpty;
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
+import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 
+import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubCreateReviewCommentPayload;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubCreateReviewPayload;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubMergePullRequestPayload;
@@ -16,10 +17,10 @@ import io.github.piotr_janczukowicz.github.api.repositories.GitHubCommit;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubDiffEntry;
 import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
+import io.github.piotr_janczukowicz.github.sdk.internal.Arguments;
 import io.github.piotr_janczukowicz.github.sdk.internal.Internals;
 import io.github.piotr_janczukowicz.github.sdk.issues.Issue;
 import java.io.IOException;
-import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
@@ -30,6 +31,8 @@ import org.jspecify.annotations.Nullable;
  * cover.
  */
 public final class PullRequest {
+
+    private static final int MINIMUM_LINE = 1;
 
     private final Repository repository;
     private final GitHubPullRequest response;
@@ -123,7 +126,7 @@ public final class PullRequest {
      * @throws IOException if the first page cannot be loaded
      */
     public Stream<GitHubDiffEntry> files() throws IOException {
-        return Internals.github(repository)
+        return github()
                 .pullRequests()
                 .pullRequest()
                 .listFiles(repository.owner(), repository.name(), number())
@@ -138,7 +141,7 @@ public final class PullRequest {
      * @throws IOException if the first page cannot be loaded
      */
     public Stream<GitHubCommit> commits() throws IOException {
-        return Internals.github(repository)
+        return github()
                 .pullRequests()
                 .pullRequest()
                 .listCommits(repository.owner(), repository.name(), number())
@@ -216,11 +219,7 @@ public final class PullRequest {
      * @throws IOException if the first page cannot be loaded
      */
     public Stream<PullRequestReview> reviews() throws IOException {
-        return Internals.github(repository)
-                .pullRequests()
-                .reviews()
-                .list(repository.owner(), repository.name(), number())
-                .stream()
+        return github().pullRequests().reviews().list(repository.owner(), repository.name(), number()).stream()
                 .map(listed -> new PullRequestReview(this, listed));
     }
 
@@ -232,8 +231,7 @@ public final class PullRequest {
      * @throws IOException if the transport fails
      */
     public Optional<PullRequestReview> review(final long id) throws IOException {
-        return Internals.github(repository)
-                .pullRequests()
+        return github().pullRequests()
                 .reviews()
                 .get(repository.owner(), repository.name(), number(), id)
                 .map(loaded -> new PullRequestReview(this, loaded));
@@ -290,11 +288,7 @@ public final class PullRequest {
      * @throws IOException if the first page cannot be loaded
      */
     public Stream<PullRequestReviewComment> reviewComments() throws IOException {
-        return Internals.github(repository)
-                .pullRequests()
-                .comments()
-                .list(repository.owner(), repository.name(), number())
-                .stream()
+        return github().pullRequests().comments().list(repository.owner(), repository.name(), number()).stream()
                 .map(listed -> new PullRequestReviewComment(this, listed));
     }
 
@@ -308,15 +302,19 @@ public final class PullRequest {
      * @param body the comment text in Markdown
      * @return the new comment
      * @throws NullPointerException if an argument is {@code null}
-     * @throws IllegalArgumentException if {@code commitId}, {@code path} or {@code body} is blank
+     * @throws IllegalArgumentException if {@code commitId}, {@code path} or {@code body} is blank, or {@code line} is
+     *     below 1
      * @throws IOException if the transport fails
      */
     public PullRequestReviewComment commentOnLine(
             final String commitId, final String path, final int line, final String body) throws IOException {
+        if (line < MINIMUM_LINE) {
+            throw new IllegalArgumentException("line must be at least " + MINIMUM_LINE + ": " + line);
+        }
         final GitHubCreateReviewCommentPayload payload = new GitHubCreateReviewCommentPayload(
-                requireNonNull(body, "body"),
-                requireNonNull(commitId, "commitId"),
-                requireNonNull(path, "path"),
+                requireNotBlank(body, "body"),
+                requireNotBlank(commitId, "commitId"),
+                requireNotBlank(path, "path"),
                 null,
                 null,
                 line,
@@ -326,10 +324,7 @@ public final class PullRequest {
                 null);
         return new PullRequestReviewComment(
                 this,
-                Internals.github(repository)
-                        .pullRequests()
-                        .comments()
-                        .create(repository.owner(), repository.name(), number(), payload));
+                github().pullRequests().comments().create(repository.owner(), repository.name(), number(), payload));
     }
 
     /**
@@ -340,10 +335,7 @@ public final class PullRequest {
      * @throws IOException if the transport fails
      */
     public GitHubPullRequestReviewRequest reviewRequests() throws IOException {
-        return Internals.github(repository)
-                .pullRequests()
-                .reviewRequests()
-                .list(repository.owner(), repository.name(), number());
+        return github().pullRequests().reviewRequests().list(repository.owner(), repository.name(), number());
     }
 
     /**
@@ -352,18 +344,18 @@ public final class PullRequest {
      *
      * @param logins the user logins
      * @return the pull request as GitHub holds it after the request
-     * @throws IllegalArgumentException if no login is given
+     * @throws IllegalArgumentException if no login is given or a login is blank
+     * @throws NullPointerException if a login is {@code null}
      * @throws IOException if the transport fails
      */
     public PullRequest requestReviewers(final String... logins) throws IOException {
-        Internals.github(repository)
-                .pullRequests()
+        github().pullRequests()
                 .reviewRequests()
                 .request(
                         repository.owner(),
                         repository.name(),
                         number(),
-                        new GitHubRequestReviewersPayload(List.of(requireNonEmpty(logins, "logins")), null));
+                        new GitHubRequestReviewersPayload(Arguments.requireNotBlankValues(logins, "logins"), null));
         return refresh();
     }
 
@@ -373,18 +365,18 @@ public final class PullRequest {
      *
      * @param logins the user logins
      * @return the pull request as GitHub holds it after the change
-     * @throws IllegalArgumentException if no login is given
+     * @throws IllegalArgumentException if no login is given or a login is blank
+     * @throws NullPointerException if a login is {@code null}
      * @throws IOException if the transport fails
      */
     public PullRequest removeReviewers(final String... logins) throws IOException {
-        Internals.github(repository)
-                .pullRequests()
+        github().pullRequests()
                 .reviewRequests()
                 .remove(
                         repository.owner(),
                         repository.name(),
                         number(),
-                        new GitHubRemoveReviewersPayload(List.of(requireNonEmpty(logins, "logins")), null));
+                        new GitHubRemoveReviewersPayload(Arguments.requireNotBlankValues(logins, "logins"), null));
         return refresh();
     }
 
@@ -414,26 +406,21 @@ public final class PullRequest {
     PullRequest apply(final GitHubUpdatePullRequestPayload payload) throws IOException {
         return new PullRequest(
                 repository,
-                Internals.github(repository)
-                        .pullRequests()
-                        .pullRequest()
-                        .update(repository.owner(), repository.name(), number(), payload));
+                github().pullRequests().pullRequest().update(repository.owner(), repository.name(), number(), payload));
     }
 
     private PullRequestReview createReview(final GitHubCreateReviewPayload payload) throws IOException {
         return new PullRequestReview(
                 this,
-                Internals.github(repository)
-                        .pullRequests()
-                        .reviews()
-                        .create(repository.owner(), repository.name(), number(), payload));
+                github().pullRequests().reviews().create(repository.owner(), repository.name(), number(), payload));
     }
 
     private PullRequest sendMerge(final GitHubMergePullRequestPayload payload) throws IOException {
-        Internals.github(repository)
-                .pullRequests()
-                .pullRequest()
-                .merge(repository.owner(), repository.name(), number(), payload);
+        github().pullRequests().pullRequest().merge(repository.owner(), repository.name(), number(), payload);
         return refresh();
+    }
+
+    private GitHub github() {
+        return Internals.github(repository);
     }
 }

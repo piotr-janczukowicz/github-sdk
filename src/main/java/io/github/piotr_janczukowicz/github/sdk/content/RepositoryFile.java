@@ -143,14 +143,7 @@ public final class RepositoryFile {
     }
 
     private static String withoutLineBreaks(final String text) {
-        final StringBuilder joined = new StringBuilder(text.length());
-        for (int index = 0; index < text.length(); index++) {
-            final char character = text.charAt(index);
-            if (character != '\n' && character != '\r') {
-                joined.append(character);
-            }
-        }
-        return joined.toString();
+        return text.replace("\n", "").replace("\r", "");
     }
 
     private void remove(final String message, final @Nullable String branch) throws IOException {

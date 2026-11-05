@@ -43,4 +43,18 @@ class InternalsTest {
 
         assertThat(thrown).hasCauseInstanceOf(UnsupportedOperationException.class);
     }
+
+    @Test
+    void register_shouldKeepTheFirstAccess_whenAnotherOneIsRegisteredLater() {
+        final GitHub github = mock(GitHub.class);
+        final GitHub other = mock(GitHub.class);
+        final GitHubSdk sdk = GitHubSdk.of(github);
+        final Repository repository = sdk.repository("octocat", "hello-world");
+
+        Internals.registerRepositoryAccess(ignored -> other);
+        Internals.registerSdkAccess(ignored -> other);
+
+        assertThat(Internals.github(repository)).isSameAs(github);
+        assertThat(Internals.github(sdk)).isSameAs(github);
+    }
 }

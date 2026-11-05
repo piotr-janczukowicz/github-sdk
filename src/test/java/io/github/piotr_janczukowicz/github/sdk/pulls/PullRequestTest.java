@@ -439,4 +439,44 @@ class PullRequestTest {
 
         assertThat(commits).containsExactly(commit);
     }
+
+    @Test
+    void commentOnLine_shouldThrowIllegalArgumentException_whenAnArgumentIsBlank() {
+        final Throwable blankBody = catchThrowable(() -> sut.commentOnLine("abc123", "a.txt", 1, " "));
+        final Throwable blankCommit = catchThrowable(() -> sut.commentOnLine(" ", "a.txt", 1, "text"));
+        final Throwable blankPath = catchThrowable(() -> sut.commentOnLine("abc123", " ", 1, "text"));
+
+        assertSoftly(softly -> {
+            softly.assertThat(blankBody)
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("body");
+            softly.assertThat(blankCommit)
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("commitId");
+            softly.assertThat(blankPath)
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("path");
+        });
+    }
+
+    @Test
+    void commentOnLine_shouldThrowIllegalArgumentException_whenLineIsBelowOne() {
+        final Throwable thrown = catchThrowable(() -> sut.commentOnLine("abc123", "a.txt", 0, "text"));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("line");
+    }
+
+    @Test
+    void requestReviewers_shouldThrowIllegalArgumentException_whenALoginIsBlank() {
+        final Throwable thrown = catchThrowable(() -> sut.requestReviewers("hubot", " "));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("logins");
+    }
+
+    @Test
+    void removeReviewers_shouldThrowIllegalArgumentException_whenALoginIsBlank() {
+        final Throwable thrown = catchThrowable(() -> sut.removeReviewers(" "));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("logins");
+    }
 }

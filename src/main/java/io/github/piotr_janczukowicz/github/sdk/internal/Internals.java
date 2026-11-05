@@ -24,21 +24,23 @@ public final class Internals {
     }
 
     /**
-     * Registers how to reach the client of a repository. Called by {@link Repository} when it is initialized.
+     * Registers how to reach the client of a repository. Called by {@link Repository} when it is initialized. Only the
+     * first registration counts, so code that calls this later cannot redirect the objects to another client.
      *
      * @param access the function that returns the client of a repository
      */
     public static void registerRepositoryAccess(final Function<Repository, GitHub> access) {
-        REPOSITORY_ACCESS.set(access);
+        REPOSITORY_ACCESS.compareAndSet(null, access);
     }
 
     /**
-     * Registers how to reach the client of an SDK. Called by {@link GitHubSdk} when it is initialized.
+     * Registers how to reach the client of an SDK. Called by {@link GitHubSdk} when it is initialized. Only the first
+     * registration counts, so code that calls this later cannot redirect the objects to another client.
      *
      * @param access the function that returns the client of an SDK
      */
     public static void registerSdkAccess(final Function<GitHubSdk, GitHub> access) {
-        SDK_ACCESS.set(access);
+        SDK_ACCESS.compareAndSet(null, access);
     }
 
     /**

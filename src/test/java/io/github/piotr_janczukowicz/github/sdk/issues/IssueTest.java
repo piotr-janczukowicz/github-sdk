@@ -373,4 +373,30 @@ class IssueTest {
             softly.assertThat(comments.getFirst().issue()).isSameAs(sut);
         });
     }
+
+    @Test
+    void varargs_shouldThrowIllegalArgumentException_whenAValueIsBlank() {
+        final Throwable label = catchThrowable(() -> sut.addLabels("bug", " "));
+        final Throwable assignee = catchThrowable(() -> sut.assign(" "));
+        final Throwable unassignee = catchThrowable(() -> sut.unassign("hubot", " "));
+
+        assertSoftly(softly -> {
+            softly.assertThat(label)
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("names");
+            softly.assertThat(assignee)
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("logins");
+            softly.assertThat(unassignee)
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("logins");
+        });
+    }
+
+    @Test
+    void varargs_shouldThrowNullPointerException_whenAValueIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.assign("hubot", null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("logins");
+    }
 }

@@ -118,4 +118,11 @@ class IssueUpdateTest {
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("title");
     }
+
+    @Test
+    void constructor_shouldThrowNullPointerException_whenIssueIsNull() {
+        final Throwable thrown = catchThrowable(() -> new IssueUpdate(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("issue");
+    }
 }
