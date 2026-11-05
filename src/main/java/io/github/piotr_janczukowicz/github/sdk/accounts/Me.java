@@ -7,6 +7,7 @@ import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.activity.GitHubEvent;
 import io.github.piotr_janczukowicz.github.api.apps.GitHubUserMarketplacePurchase;
 import io.github.piotr_janczukowicz.github.api.packages.GitHubPackageType;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubListForAuthenticatedUserFilter;
 import io.github.piotr_janczukowicz.github.api.users.GitHubCreateGpgKeyPayload;
 import io.github.piotr_janczukowicz.github.api.users.GitHubCreatePublicSshKeyPayload;
 import io.github.piotr_janczukowicz.github.api.users.GitHubCreateSshSigningKeyPayload;
@@ -19,6 +20,7 @@ import io.github.piotr_janczukowicz.github.api.users.GitHubUpdateEmailsPayload;
 import io.github.piotr_janczukowicz.github.api.users.GitHubUpdateSocialAccountsPayload;
 import io.github.piotr_janczukowicz.github.pagination.GitHubPageRequest;
 import io.github.piotr_janczukowicz.github.sdk.GitHubSdk;
+import io.github.piotr_janczukowicz.github.sdk.Repository;
 import io.github.piotr_janczukowicz.github.sdk.User;
 import io.github.piotr_janczukowicz.github.sdk.internal.Arguments;
 import io.github.piotr_janczukowicz.github.sdk.internal.Internals;
@@ -71,6 +73,37 @@ public final class Me {
      */
     public MeUpdate update() {
         return new MeUpdate(this);
+    }
+
+    /**
+     * Lists the repositories the account can access ({@code GET /user/repos}), including private ones and those of
+     * organizations. The repositories are handles built from GitHub's list and hold no data; call
+     * {@link Repository#fetch()} to load one. Pages are fetched only as the stream is consumed; transport failures
+     * during iteration are {@link java.io.UncheckedIOException}.
+     *
+     * @return the repository handles
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<Repository> repositories() throws IOException {
+        return repositories(GitHubListForAuthenticatedUserFilter.empty());
+    }
+
+    /**
+     * Lists the repositories the account can access with a filter, such as visibility or affiliation ({@code GET
+     * /user/repos}). See {@link #repositories()}.
+     *
+     * @param filter the client filter
+     * @return the repository handles
+     * @throws NullPointerException if {@code filter} is {@code null}
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<Repository> repositories(final GitHubListForAuthenticatedUserFilter filter) throws IOException {
+        return github()
+                .repositories()
+                .repository()
+                .listForAuthenticatedUser(requireNonNull(filter, "filter"), GitHubPageRequest.byPage())
+                .stream()
+                .map(listed -> sdk.repository(listed.owner().login(), listed.name()));
     }
 
     /**

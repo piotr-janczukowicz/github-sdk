@@ -30,7 +30,10 @@ import io.github.piotr_janczukowicz.github.api.deployments.GitHubCreateOrUpdateE
 import io.github.piotr_janczukowicz.github.api.deployments.GitHubListDeploymentsFilter;
 import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubBlob;
 import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubCreateRefPayload;
+import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubCreateTagPayload;
+import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubCreateTagType;
 import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubGetTreeFilter;
+import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubGitTag;
 import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubGitTree;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubCreateLabelPayload;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubCreateMilestonePayload;
@@ -48,6 +51,7 @@ import io.github.piotr_janczukowicz.github.api.releases.GitHubCreateReleasePaylo
 import io.github.piotr_janczukowicz.github.api.releases.GitHubCreateReleasePayloadBuilder;
 import io.github.piotr_janczukowicz.github.api.releases.GitHubGenerateReleaseNotesPayload;
 import io.github.piotr_janczukowicz.github.api.releases.GitHubReleaseNotesContent;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubCodeownersErrors;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubContentDirectory;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubContentFile;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubContentSubmodule;
@@ -61,10 +65,12 @@ import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateUsingTem
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateWebhookPayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubFullRepository;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubGetContentFilter;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubListActivitiesFilter;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubListForksFilter;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubMinimalRepository;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubPullRequestSimple;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubReplaceAllTopicsPayload;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryActivity;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositorySubscription;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryTag;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRuleSuite;
@@ -75,6 +81,7 @@ import io.github.piotr_janczukowicz.github.api.repositories.GitHubUpdatePayloadB
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubWebhookConfig;
 import io.github.piotr_janczukowicz.github.api.secretscanning.GitHubListSecretScanningAlertsFilter;
 import io.github.piotr_janczukowicz.github.api.secretscanning.GitHubSecretScanningAlert;
+import io.github.piotr_janczukowicz.github.api.teams.GitHubTeam;
 import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
 import io.github.piotr_janczukowicz.github.pagination.GitHubPageRequest;
 import io.github.piotr_janczukowicz.github.sdk.actions.Artifact;
@@ -1593,6 +1600,154 @@ public final class Repository {
                 .refs()
                 .getRef(owner, name, Arguments.requireSafePath(ref, REF))
                 .map(loaded -> new Ref(this, loaded));
+    }
+
+    /**
+     * Creates an annotated tag object that points at a commit ({@code POST /repos/{owner}/{repo}/git/tags}). The object
+     * is not yet a tag of the repository: it needs a reference, which {@link #createRef(String, String)} makes from
+     * {@code refs/tags/<tag>} and the sha of the returned object. {@link #createAnnotatedTag(String, String, String)}
+     * does both.
+     *
+     * @param tag the tag name
+     * @param message the tag message
+     * @param commitSha the sha of the commit the tag points at
+     * @return the tag object as GitHub returned it
+     * @throws NullPointerException if an argument is {@code null}
+     * @throws IllegalArgumentException if an argument is blank
+     * @throws IOException if the transport fails
+     */
+    public GitHubGitTag createTag(final String tag, final String message, final String commitSha) throws IOException {
+        return sdk.github()
+                .gitDatabase()
+                .tags()
+                .createTag(
+                        owner,
+                        name,
+                        new GitHubCreateTagPayload(
+                                requireNotBlank(tag, "tag"),
+                                requireNotBlank(message, "message"),
+                                Arguments.requireSafePath(commitSha, SHA),
+                                GitHubCreateTagType.COMMIT,
+                                null));
+    }
+
+    /**
+     * Creates an annotated tag on a commit: a tag object ({@code POST /repos/{owner}/{repo}/git/tags}) and then the
+     * reference {@code refs/tags/<tag>} ({@code POST /repos/{owner}/{repo}/git/refs}). The two requests are not atomic:
+     * when the second fails, the tag object stays in the repository without a reference, which is harmless.
+     *
+     * @param tag the tag name
+     * @param message the tag message
+     * @param commitSha the sha of the commit the tag points at
+     * @return the new reference {@code tags/<tag>}
+     * @throws NullPointerException if an argument is {@code null}
+     * @throws IllegalArgumentException if an argument is blank, or {@code tag} has a control character or a {@code .}
+     *     or {@code ..} segment
+     * @throws IOException if the transport fails
+     */
+    public Ref createAnnotatedTag(final String tag, final String message, final String commitSha) throws IOException {
+        final String validTag = Arguments.requireSafePath(tag, "tag");
+        return createRef(
+                "refs/tags/" + validTag, createTag(validTag, message, commitSha).sha());
+    }
+
+    /**
+     * Loads an annotated tag object by its sha ({@code GET /repos/{owner}/{repo}/git/tags/{tag_sha}}). The sha is that
+     * of the tag object, not of the commit it points at.
+     *
+     * @param sha the sha of the tag object
+     * @return the tag object, or empty when GitHub answers HTTP 404
+     * @throws NullPointerException if {@code sha} is {@code null}
+     * @throws IllegalArgumentException if {@code sha} is blank
+     * @throws IOException if the transport fails
+     */
+    public Optional<GitHubGitTag> tagObject(final String sha) throws IOException {
+        return sdk.github().gitDatabase().tags().getTag(owner, name, Arguments.requireSafePath(sha, SHA));
+    }
+
+    /**
+     * Loads the README of the repository ({@code GET /repos/{owner}/{repo}/readme}) from the default branch.
+     *
+     * @return the README, or empty when the repository has none
+     * @throws IOException if the transport fails
+     */
+    public Optional<RepositoryFile> readme() throws IOException {
+        return sdk.github()
+                .repositories()
+                .contents()
+                .getReadme(owner, name)
+                .map(loaded -> new RepositoryFile(this, loaded, null));
+    }
+
+    /**
+     * Loads the README of a directory ({@code GET /repos/{owner}/{repo}/readme/{dir}}) from the default branch.
+     *
+     * @param directory the directory path
+     * @return the README, or empty when the directory has none
+     * @throws NullPointerException if {@code directory} is {@code null}
+     * @throws IllegalArgumentException if {@code directory} is blank, has a control character or has a {@code .} or
+     *     {@code ..} segment
+     * @throws IOException if the transport fails
+     */
+    public Optional<RepositoryFile> readme(final String directory) throws IOException {
+        return sdk.github()
+                .repositories()
+                .contents()
+                .getReadmeInDirectory(owner, name, Arguments.requireSafePath(directory, "directory"))
+                .map(loaded -> new RepositoryFile(this, loaded, null));
+    }
+
+    /**
+     * Lists the teams that have access to the repository ({@code GET /repos/{owner}/{repo}/teams}) as GitHub returns
+     * them. The records are summaries; use {@code organization.team(slug)} for a full {@link Team}. Pages are fetched
+     * only as the stream is consumed; transport failures during iteration are {@link java.io.UncheckedIOException}.
+     *
+     * @return the teams
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<GitHubTeam> teams() throws IOException {
+        return sdk.github().repositories().repository().listTeams(owner, name).stream();
+    }
+
+    /**
+     * Lists the push, merge and branch activity of the repository ({@code GET /repos/{owner}/{repo}/activity}), newest
+     * first, as GitHub returns it. Pages are fetched only as the stream is consumed; transport failures during
+     * iteration are {@link java.io.UncheckedIOException}.
+     *
+     * @return the activities
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<GitHubRepositoryActivity> activities() throws IOException {
+        return sdk.github().repositories().repository().listActivities(owner, name).stream();
+    }
+
+    /**
+     * Lists the activity of the repository with a filter, such as a branch or an activity type ({@code GET
+     * /repos/{owner}/{repo}/activity}). See {@link #activities()}.
+     *
+     * @param filter the client filter
+     * @return the activities
+     * @throws NullPointerException if {@code filter} is {@code null}
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<GitHubRepositoryActivity> activities(final GitHubListActivitiesFilter filter) throws IOException {
+        return sdk
+                .github()
+                .repositories()
+                .repository()
+                .listActivities(owner, name, requireNonNull(filter, FILTER), GitHubPageRequest.byCursor())
+                .stream();
+    }
+
+    /**
+     * Lists the errors GitHub found in the CODEOWNERS file ({@code GET /repos/{owner}/{repo}/codeowners/errors}) as the
+     * client record.
+     *
+     * @return the errors, or empty when GitHub answers HTTP 404
+     * @throws IOException if the transport fails
+     */
+    public Optional<GitHubCodeownersErrors> codeownersErrors() throws IOException {
+        return sdk.github().repositories().repository().codeownersErrors(owner, name);
     }
 
     /**
