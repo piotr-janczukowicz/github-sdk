@@ -42,6 +42,7 @@ Without `SMOKE_GITHUB_TOKEN` every smoke class is skipped.
 | `PullRequestWriteSmokeIT` | update, close, reopen, comment through the issue, squash merge into a throwaway branch |
 | `PullRequestReviewsSmokeIT` | comment review, draft review (edit, submit, delete), inline comment (reply, edit, list, delete), review comments. Approve, request changes and dismiss need a second user, because GitHub refuses them on one's own pull request |
 | `ChecksSmokeIT` | commit status: create, list, combined state; check runs of the head commit when there are any; 404 on a missing check run. Check runs cannot be created, because GitHub accepts that only from GitHub Apps |
+| `ReactionsSmokeIT` | react, list and delete a reaction on an issue, an issue comment and a pull request review comment; issue events and timeline |
 | `ContentSmokeIT` | default branch, its head commit, branch and commit lists, 404 on a missing branch |
 | `FilesSmokeIT` | write, update, read, delete a file on a throwaway branch (binary and UTF-8 text), directory and missing paths |
 | `ReleasesSmokeIT` | draft release: create, update, list, refresh, delete; latest release; tags |
@@ -60,7 +61,7 @@ nothing behind. Two exceptions: GitHub's REST API cannot delete issues, so close
 and a merged pull request stays in its history.
 
 Not covered: Actions, creating check runs, Git data objects beyond what the tests need, gists, projects, packages, deploy keys,
-reactions, reviewer requests on a pull request (they need a second user), GitHub Enterprise Server, and the organization
+reactions on releases and commit comments, reviewer requests on a pull request (they need a second user), GitHub Enterprise Server, and the organization
 operations on a personal-account sandbox.
 
 ## Reading a failure

@@ -60,7 +60,8 @@ try (GitHubClient client = GitHubClients.create(AuthenticationProviders.bearer(S
 | Entry point | Objects and what they do |
 |---|---|
 | `sdk.repository(owner, name)` | `Repository`: `fetch()`, issues, pull requests, branches, commits, files (`file(path)`, `writeFile(...)`), releases, tags, labels, milestones, webhooks |
-| `Issue` | `update()`, `refresh()`, `close()`, `reopen()`, `lock()`, `unlock()`, labels, assignees, `comment(...)`, `comments()` |
+| `Issue` | `update()`, `refresh()`, `close()`, `reopen()`, `lock()`, `unlock()`, labels, assignees, `comment(...)`, `comments()`, `react(...)`, `reactions()`, `events()`, `timeline()` |
+| `Reaction` | `content()`, `user()`, `delete()`; made on an issue, an `IssueComment` or a `PullRequestReviewComment` with `react(...)` |
 | `PullRequest` | `update()`, `refresh()`, `close()`, `reopen()`, `merge(...)`, `reviews()`, `review(...)`, `draftReview(...)`, `reviewComments()`, `commentOnLine(...)`, reviewers, files, commits, `issue()` |
 | `PullRequestReview` | `edit(...)`, `submit(...)`, `dismiss(...)`, `deletePending()`, `comments()`, `refresh()` |
 | `PullRequestReviewComment` | `edit(...)`, `reply(...)`, `delete()`, `refresh()` |

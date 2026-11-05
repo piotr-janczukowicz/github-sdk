@@ -6,11 +6,14 @@ import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubCreateReviewCommentReplyPayload;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubPullRequestReviewComment;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubUpdateReviewCommentPayload;
+import io.github.piotr_janczukowicz.github.api.reactions.GitHubCreateForCommitCommentPayload;
+import io.github.piotr_janczukowicz.github.api.reactions.GitHubReaction;
 import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
 import io.github.piotr_janczukowicz.json.OptionalNull;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.stream.Stream;
 
 /**
  * An inline comment on the diff of a {@link PullRequest}, as GitHub returned it. The object is immutable, and
@@ -155,11 +158,61 @@ public final class PullRequestReviewComment {
     }
 
     /**
+     * Reacts to the comment ({@code POST /repos/{owner}/{repo}/pulls/comments/{comment_id}/reactions}). If the current
+     * user already reacted with the same emoji, GitHub returns that reaction. This object is not changed.
+     *
+     * @param content the emoji
+     * @return the reaction
+     * @throws NullPointerException if {@code content} is {@code null}
+     * @throws IOException if the transport fails
+     */
+    public Reaction react(final ReactionContent content) throws IOException {
+        final GitHubCreateForCommitCommentPayload payload = new GitHubCreateForCommitCommentPayload(
+                requireNonNull(content, "content").toClient());
+        final Repository repository = pullRequest.repository();
+        return reaction(repository
+                .sdk()
+                .github()
+                .reactions()
+                .createForPullRequestReviewComment(repository.owner(), repository.name(), id(), payload));
+    }
+
+    /**
+     * Lists the reactions to the comment ({@code GET /repos/{owner}/{repo}/pulls/comments/{comment_id}/reactions}).
+     * Pages are fetched only as the stream is consumed; transport failures during iteration are
+     * {@link java.io.UncheckedIOException}.
+     *
+     * @return the reactions
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<Reaction> reactions() throws IOException {
+        final Repository repository = pullRequest.repository();
+        return repository
+                .sdk()
+                .github()
+                .reactions()
+                .listForPullRequestReviewComment(repository.owner(), repository.name(), id())
+                .stream()
+                .map(this::reaction);
+    }
+
+    /**
      * Returns the complete response this object was built from.
      *
      * @return the response record
      */
     public GitHubPullRequestReviewComment response() {
         return response;
+    }
+
+    private Reaction reaction(final GitHubReaction listed) {
+        final Repository repository = pullRequest.repository();
+        return new Reaction(
+                listed,
+                reactionId -> repository
+                        .sdk()
+                        .github()
+                        .reactions()
+                        .deleteForPullRequestComment(repository.owner(), repository.name(), id(), reactionId));
     }
 }

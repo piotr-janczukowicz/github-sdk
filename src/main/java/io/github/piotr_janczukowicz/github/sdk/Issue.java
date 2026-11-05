@@ -11,13 +11,17 @@ import io.github.piotr_janczukowicz.github.api.issues.GitHubAddLabelsLabel;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubAddLabelsPayload;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubCreateCommentPayload;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubIssue;
+import io.github.piotr_janczukowicz.github.api.issues.GitHubIssueEvent;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubIssueLabel;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubIssueUpdateState;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubRemoveAssigneesPayload;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubSetLabelsLabel;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubSetLabelsPayload;
+import io.github.piotr_janczukowicz.github.api.issues.GitHubTimelineEvent;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubUpdatePayload;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubUpdatePayloadBuilder;
+import io.github.piotr_janczukowicz.github.api.reactions.GitHubCreateForCommitCommentPayload;
+import io.github.piotr_janczukowicz.github.api.reactions.GitHubReaction;
 import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
 import java.io.IOException;
 import java.util.List;
@@ -326,6 +330,80 @@ public final class Issue {
     }
 
     /**
+     * Reacts to the issue ({@code POST /repos/{owner}/{repo}/issues/{issue_number}/reactions}). If the current user
+     * already reacted with the same emoji, GitHub returns that reaction. This object is not changed.
+     *
+     * @param content the emoji
+     * @return the reaction
+     * @throws NullPointerException if {@code content} is {@code null}
+     * @throws IOException if the transport fails
+     */
+    public Reaction react(final ReactionContent content) throws IOException {
+        final GitHubCreateForCommitCommentPayload payload = new GitHubCreateForCommitCommentPayload(
+                requireNonNull(content, "content").toClient());
+        return reaction(repository
+                .sdk()
+                .github()
+                .reactions()
+                .createForIssue(repository.owner(), repository.name(), number(), payload));
+    }
+
+    /**
+     * Lists the reactions to the issue ({@code GET /repos/{owner}/{repo}/issues/{issue_number}/reactions}). Pages are
+     * fetched only as the stream is consumed; transport failures during iteration are
+     * {@link java.io.UncheckedIOException}.
+     *
+     * @return the reactions
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<Reaction> reactions() throws IOException {
+        return repository
+                .sdk()
+                .github()
+                .reactions()
+                .listForIssue(repository.owner(), repository.name(), number())
+                .stream()
+                .map(this::reaction);
+    }
+
+    /**
+     * Lists the events of the issue, such as labeled, assigned or closed ({@code GET
+     * /repos/{owner}/{repo}/issues/{issue_number}/events}). The client's records are passed through. Pages are fetched
+     * only as the stream is consumed; transport failures during iteration are {@link java.io.UncheckedIOException}.
+     *
+     * @return the events, oldest first
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<GitHubIssueEvent> events() throws IOException {
+        return repository
+                .sdk()
+                .github()
+                .issues()
+                .events()
+                .listEvents(repository.owner(), repository.name(), number())
+                .stream();
+    }
+
+    /**
+     * Lists the timeline of the issue: its events plus comments, commits and cross-references ({@code GET
+     * /repos/{owner}/{repo}/issues/{issue_number}/timeline}). The client's records are passed through. Pages are
+     * fetched only as the stream is consumed; transport failures during iteration are
+     * {@link java.io.UncheckedIOException}.
+     *
+     * @return the timeline entries, oldest first
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<GitHubTimelineEvent> timeline() throws IOException {
+        return repository
+                .sdk()
+                .github()
+                .issues()
+                .timeline()
+                .listEventsForTimeline(repository.owner(), repository.name(), number())
+                .stream();
+    }
+
+    /**
      * Returns the complete response this object was built from.
      *
      * @return the response record
@@ -337,6 +415,16 @@ public final class Issue {
     Issue apply(final GitHubUpdatePayload payload) throws IOException {
         repository.sdk().github().issues().issue().update(repository.owner(), repository.name(), number(), payload);
         return refresh();
+    }
+
+    private Reaction reaction(final GitHubReaction listed) {
+        return new Reaction(
+                listed,
+                reactionId -> repository
+                        .sdk()
+                        .github()
+                        .reactions()
+                        .deleteForIssue(repository.owner(), repository.name(), number(), reactionId));
     }
 
     private Issue changeState(final GitHubIssueUpdateState state) throws IOException {

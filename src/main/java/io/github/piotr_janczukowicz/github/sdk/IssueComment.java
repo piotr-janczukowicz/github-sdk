@@ -4,10 +4,13 @@ import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
 
 import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubUpdateCommentPayload;
+import io.github.piotr_janczukowicz.github.api.reactions.GitHubCreateForCommitCommentPayload;
+import io.github.piotr_janczukowicz.github.api.reactions.GitHubReaction;
 import io.github.piotr_janczukowicz.github.api.search.GitHubIssueComment;
 import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
 import java.io.IOException;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 /**
  * A comment on an {@link Issue}, as GitHub returned it. The object is immutable, and {@link #response()} gives the
@@ -108,11 +111,61 @@ public final class IssueComment {
     }
 
     /**
+     * Reacts to the comment ({@code POST /repos/{owner}/{repo}/issues/comments/{comment_id}/reactions}). If the current
+     * user already reacted with the same emoji, GitHub returns that reaction. This object is not changed.
+     *
+     * @param content the emoji
+     * @return the reaction
+     * @throws NullPointerException if {@code content} is {@code null}
+     * @throws IOException if the transport fails
+     */
+    public Reaction react(final ReactionContent content) throws IOException {
+        final GitHubCreateForCommitCommentPayload payload = new GitHubCreateForCommitCommentPayload(
+                requireNonNull(content, "content").toClient());
+        final Repository repository = issue.repository();
+        return reaction(repository
+                .sdk()
+                .github()
+                .reactions()
+                .createForIssueComment(repository.owner(), repository.name(), id(), payload));
+    }
+
+    /**
+     * Lists the reactions to the comment ({@code GET /repos/{owner}/{repo}/issues/comments/{comment_id}/reactions}).
+     * Pages are fetched only as the stream is consumed; transport failures during iteration are
+     * {@link java.io.UncheckedIOException}.
+     *
+     * @return the reactions
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<Reaction> reactions() throws IOException {
+        final Repository repository = issue.repository();
+        return repository
+                .sdk()
+                .github()
+                .reactions()
+                .listForIssueComment(repository.owner(), repository.name(), id())
+                .stream()
+                .map(this::reaction);
+    }
+
+    /**
      * Returns the complete response this object was built from.
      *
      * @return the response record
      */
     public GitHubIssueComment response() {
         return response;
+    }
+
+    private Reaction reaction(final GitHubReaction listed) {
+        final Repository repository = issue.repository();
+        return new Reaction(
+                listed,
+                reactionId -> repository
+                        .sdk()
+                        .github()
+                        .reactions()
+                        .deleteForIssueComment(repository.owner(), repository.name(), id(), reactionId));
     }
 }
