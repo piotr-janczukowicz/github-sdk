@@ -4,10 +4,12 @@ import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
 
 import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.branches.GitHubBranchWithProtection;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRuleDetailed;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
 import io.github.piotr_janczukowicz.github.sdk.internal.Internals;
 import java.io.IOException;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 /**
  * A branch of a {@link Repository}, as GitHub returned it. The object is immutable, and {@link #response()} gives the
@@ -81,6 +83,18 @@ public final class Branch {
      */
     public BranchProtectionUpdate protect() {
         return new BranchProtectionUpdate(this);
+    }
+
+    /**
+     * Lists the rules of rulesets that apply to the branch ({@code GET /repos/{owner}/{repo}/rules/branches/{branch}}).
+     * Branch protection is not part of it. The stream is lazy and can be used once.
+     *
+     * @return the rules, each with the ruleset it comes from
+     * @throws IOException if the transport fails
+     */
+    public Stream<GitHubRepositoryRuleDetailed> rules() throws IOException {
+        final GitHub github = Internals.github(repository);
+        return github.repositories().rules().getBranchRules(repository.owner(), repository.name(), name()).stream();
     }
 
     /**

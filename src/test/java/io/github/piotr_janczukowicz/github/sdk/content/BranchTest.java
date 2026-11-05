@@ -13,13 +13,18 @@ import io.github.piotr_janczukowicz.github.api.branches.GitHubBranchProtection;
 import io.github.piotr_janczukowicz.github.api.branches.GitHubBranchWithProtection;
 import io.github.piotr_janczukowicz.github.api.branches.GitHubBranchWithProtectionBuilder;
 import io.github.piotr_janczukowicz.github.api.branches.GitHubBranchesBranchProtectionApi;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRuleCreationDetailed;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRuleCreationType;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRuleDetailed;
 import io.github.piotr_janczukowicz.github.sdk.GitHubSdk;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
 import io.github.piotr_janczukowicz.github.sdk.fixtures.ProtectionFixtures;
 import io.github.piotr_janczukowicz.github.sdk.fixtures.RepositoryContentFixtures;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 @UnitTest
@@ -104,6 +109,18 @@ class BranchTest {
         final Optional<BranchProtection> protection = sut.protection();
 
         assertThat(protection).isEmpty();
+    }
+
+    @Test
+    void rules_shouldStreamTheRulesOfTheRulesets_whenTheyApply() throws IOException {
+        final GitHubRepositoryRuleDetailed rule =
+                new GitHubRepositoryRuleCreationDetailed(GitHubRepositoryRuleCreationType.CREATION, null, null, null);
+        when(github.repositories().rules().getBranchRules("octocat", "hello-world", "main").stream())
+                .thenReturn(Stream.of(rule));
+
+        final List<GitHubRepositoryRuleDetailed> rules = sut.rules().toList();
+
+        assertThat(rules).containsExactly(rule);
     }
 
     @Test

@@ -51,6 +51,7 @@ Without `SMOKE_GITHUB_TOKEN` every smoke class is skipped.
 | `ActivitySmokeIT` | star, check, list stargazers and starred repositories, unstar; watch, ignore and unwatch; list watchers and forks. The tests restore your original star and subscription. Forking is not run live, because a user cannot fork their own repository |
 | `ActionsSmokeIT` | create, list, update, delete an Actions variable; list workflows and runs, reload runs, list their jobs and log links; 404 on a missing run. Dispatching a workflow and cancelling the run runs only when `SMOKE_GITHUB_WORKFLOW` names the file of a `workflow_dispatch` workflow already on the sandbox default branch, so the tests never commit workflow files |
 | `RepositoryManagementSmokeIT` | change and restore the description and homepage, replace and restore the topics, list languages and contributors. Create, rename, transfer, archive and delete are not run live: fine-grained tokens cannot create repositories, and GitHub's API cannot unarchive one |
+| `RulesetsSmokeIT` | create an active ruleset for a ref pattern that no branch matches, rename and disable it, add and remove rules, reload it, list it, read its history, delete it, read the rule suites. It never touches an existing branch. The evaluate (dry run) enforcement is not covered, because GitHub offers it only on the Enterprise plan. Skipped when GitHub answers 403 |
 | `BranchProtectionSmokeIT` | protect a throwaway branch, replace the rule, read and refresh it, remove it. The default branch is never touched. Skipped when GitHub answers 403, which a private repository on a plan without branch protection does |
 | `GitDataSmokeIT` | create a throwaway branch, commit two files and then delete one as separate commits, compare with the default branch, force the ref back, delete it; list refs and load a tree |
 | `GistsSmokeIT` | create a secret gist, update and rename a file, comment (edit, delete), star and unstar, list its revisions and your gists, delete it; 404 on a missing gist. Forking is not run live, because GitHub does not let you fork your own gist. Skipped when GitHub answers 403 |
@@ -90,7 +91,6 @@ sandbox repository. Their behavior against the real GitHub API has not been chec
 | Gists | the token has no Gists permission |
 | Deployments and Pages | the token has no Deployments or Pages permission; Pages also needs a plan that offers it for private repositories |
 | Security alerts and switches | the token has no Dependabot, secret scanning or code scanning permission, or the feature is off |
-| Branch protection | the private repository is on a plan without branch protection |
 | Notifications | GitHub does not support fine-grained tokens for them |
 | Check runs | fine-grained tokens have no Checks permission |
 | Stars and watching | the token form does not offer the permissions |

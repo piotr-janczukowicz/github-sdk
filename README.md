@@ -127,7 +127,7 @@ is synced with GitHub's descriptions.
 The entry points (`GitHubSdk`, `Repository`, `User`, `Organization`, `Team`, `Search`, `RateLimit`) are in
 `io.github.piotr_janczukowicz.github.sdk`. The other objects are grouped by area in sub-packages: `issues`, `pulls`,
 `content` (branches, commits, files, releases), `git` (refs, comparisons, multi-file commits), `gists`,
-`accounts`, `organizations`, `notifications`, `metrics`, `utilities`, `deploykeys`, `deployments`, `pages`, `security`, `actions`, `checks`, `collaborators`, `reactions` and
+`accounts`, `organizations`, `notifications`, `metrics`, `utilities`, `deploykeys`, `deployments`, `pages`, `security`, `rulesets`, `actions`, `checks`, `collaborators`, `reactions` and
 `webhooks`. The `internal` package is not exported by the module and is not part of the API.
 
 ## What is covered
@@ -155,6 +155,7 @@ The entry points (`GitHubSdk`, `Repository`, `User`, `Organization`, `Team`, `Se
 | `Repository` (deploy keys) | `deployKeys()`, `deployKey(id)`, `addDeployKey(title, key[, isReadOnly])`; a `DeployKey` has `refresh()` and `delete()` |
 | `Repository` (git data) | `commitTo(branch)` collects `write(...)` and `delete(...)` and `send(message)` makes one commit; `compare(base, head)` gives a `Comparison` (status, ahead and behind, commits, files, `diff()`, `patch()`); `refs(prefix)`, `ref(name)`, `createRef(...)` and `createBranch(...)` give `Ref` objects with `update(...)` and `delete()`; `tree(sha)` and `blob(sha)` read git objects |
 | `Branch` (protection) | `protection()` reads the rule (`BranchProtection`: `refresh()`, `remove()`); `protect()` collects status checks, review requirements, admin enforcement, push restrictions and the other options, and `send()` sets the rule. GitHub replaces the whole rule, so anything not chosen is switched off |
+| `Ruleset`, `RulesetDraft`, `RulesetUpdate`, `Rules` | `repository.rulesets()`, `ruleset(id)`, `newRuleset(name, target, enforcement)` collecting rules (`Rules.requirePullRequest(...)`, `requireStatusChecks(...)`, `requireLinearHistory()`, `restrictDeletion()` and more, or any client rule through `rule(...)`), ref patterns and bypass actors, then `create()`; a ruleset has `edit()` (`name`, `enforcement`, `refs`, `addRule`, `removeRule`, `send()`), `refresh()`, `history()` and `delete()`. `repository.ruleSuites()` and `ruleSuite(id)` return how rulesets judged pushes and merges, and `branch.rules()` lists the rules of rulesets that apply to a branch (not branch protection). Rulesets are the newer replacement of branch protection. GitHub replaces the whole list of rules on update, so `addRule` and `removeRule` read the current rules first. The evaluate (dry run) enforcement needs the Enterprise plan |
 | `Branch`, `Commit`, `RepositoryFile` | read; a file gives `text()` and `bytes()`, and writes with `writeFile(...)` and `delete(...)` |
 | `Commit` (CI) | `checkRuns()`, `checkRuns(name)`, `statuses()`, `combinedStatus()`, `createStatus(...)` |
 | `CheckRun`, `CommitStatus`, `CombinedStatus` | read-only views of CI results; `CheckRun` also has `annotations()` and `refresh()` |

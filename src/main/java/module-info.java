@@ -22,5 +22,6 @@ module io.github.piotr_janczukowicz.githubsdk {
     exports io.github.piotr_janczukowicz.github.sdk.security;
     exports io.github.piotr_janczukowicz.github.sdk.utilities;
     exports io.github.piotr_janczukowicz.github.sdk.reactions;
+    exports io.github.piotr_janczukowicz.github.sdk.rulesets;
     exports io.github.piotr_janczukowicz.github.sdk.webhooks;
 }

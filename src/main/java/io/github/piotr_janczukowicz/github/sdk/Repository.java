@@ -54,6 +54,8 @@ import io.github.piotr_janczukowicz.github.api.repositories.GitHubPullRequestSim
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubReplaceAllTopicsPayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositorySubscription;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryTag;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubRuleSuite;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubRuleSuiteListItem;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubTransferPayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubUpdatePayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubUpdatePayloadBuilder;
@@ -93,6 +95,10 @@ import io.github.piotr_janczukowicz.github.sdk.metrics.RepositoryTraffic;
 import io.github.piotr_janczukowicz.github.sdk.notifications.Notification;
 import io.github.piotr_janczukowicz.github.sdk.pages.PagesSite;
 import io.github.piotr_janczukowicz.github.sdk.pulls.PullRequest;
+import io.github.piotr_janczukowicz.github.sdk.rulesets.Ruleset;
+import io.github.piotr_janczukowicz.github.sdk.rulesets.RulesetDraft;
+import io.github.piotr_janczukowicz.github.sdk.rulesets.RulesetEnforcement;
+import io.github.piotr_janczukowicz.github.sdk.rulesets.RulesetTarget;
 import io.github.piotr_janczukowicz.github.sdk.security.CodeScanningAlert;
 import io.github.piotr_janczukowicz.github.sdk.security.DependabotAlert;
 import io.github.piotr_janczukowicz.github.sdk.security.RepositorySecurity;
@@ -2059,6 +2065,74 @@ public final class Repository {
                                         requireNotBlank(keyPrefix, "keyPrefix"),
                                         requireNotBlank(urlTemplate, "urlTemplate"),
                                         null)));
+    }
+
+    /**
+     * Lists the rulesets that apply to the repository, including those inherited from the organization ({@code GET
+     * /repos/{owner}/{repo}/rulesets}). GitHub lists them without their rules, so each ruleset is loaded again as the
+     * stream reaches it; the stream is lazy and can be used once.
+     *
+     * @return the rulesets
+     * @throws IOException if the transport fails
+     * @throws java.io.UncheckedIOException while consuming the stream, if loading a ruleset fails
+     * @throws IllegalStateException while consuming the stream, if a listed ruleset was deleted meanwhile
+     */
+    public Stream<Ruleset> rulesets() throws IOException {
+        return sdk.github().repositories().rules().getRepoRulesets(owner, name).stream()
+                .map(listed -> Lookups.require(() -> ruleset(listed.id()), () -> "Ruleset " + listed.id() + IS_GONE));
+    }
+
+    /**
+     * Loads one ruleset ({@code GET /repos/{owner}/{repo}/rulesets/{ruleset_id}}).
+     *
+     * @param id the ruleset id
+     * @return the ruleset, or empty when GitHub answers HTTP 404
+     * @throws IOException if the transport fails
+     */
+    public Optional<Ruleset> ruleset(final long id) throws IOException {
+        return sdk.github()
+                .repositories()
+                .rules()
+                .getRepoRuleset(owner, name, id)
+                .map(loaded -> new Ruleset(this, loaded));
+    }
+
+    /**
+     * Starts a new ruleset; nothing is sent until {@link RulesetDraft#create()}.
+     *
+     * @param rulesetName the name of the ruleset
+     * @param target what the ruleset applies to
+     * @param enforcement whether the ruleset is enforced, only evaluated, or disabled
+     * @return a new draft
+     * @throws NullPointerException if an argument is {@code null}
+     * @throws IllegalArgumentException if {@code rulesetName} is blank
+     */
+    public RulesetDraft newRuleset(
+            final String rulesetName, final RulesetTarget target, final RulesetEnforcement enforcement) {
+        return new RulesetDraft(this, rulesetName, target, enforcement);
+    }
+
+    /**
+     * Lists the rule suites, which record how the rulesets judged each push and merge, newest first ({@code GET
+     * /repos/{owner}/{repo}/rulesets/rule-suites}). The stream is lazy and can be used once.
+     *
+     * @return the rule suites as GitHub returns them
+     * @throws IOException if the transport fails
+     */
+    public Stream<GitHubRuleSuiteListItem> ruleSuites() throws IOException {
+        return sdk.github().repositories().ruleSuites().getRepoRuleSuites(owner, name).stream();
+    }
+
+    /**
+     * Loads one rule suite with the evaluation of each rule ({@code GET
+     * /repos/{owner}/{repo}/rulesets/rule-suites/{rule_suite_id}}).
+     *
+     * @param id the rule suite id
+     * @return the rule suite as GitHub returns it, or empty when GitHub answers HTTP 404
+     * @throws IOException if the transport fails
+     */
+    public Optional<GitHubRuleSuite> ruleSuite(final long id) throws IOException {
+        return sdk.github().repositories().ruleSuites().getRepoRuleSuite(owner, name, id);
     }
 
     /**
