@@ -11,11 +11,14 @@ import io.github.piotr_janczukowicz.github.api.dependencygraph.GitHubCreateRepos
 import io.github.piotr_janczukowicz.github.api.dependencygraph.GitHubCreateRepositorySnapshotResponse;
 import io.github.piotr_janczukowicz.github.api.dependencygraph.GitHubDependencyGraphDiffEntry;
 import io.github.piotr_janczukowicz.github.api.dependencygraph.GitHubDependencyGraphSpdxSbom;
+import io.github.piotr_janczukowicz.github.api.dependencygraph.GitHubGenerateSbomReportResponse;
 import io.github.piotr_janczukowicz.github.sdk.GitHubSdk;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.io.IOException;
+import java.net.URI;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 @UnitTest
@@ -29,6 +32,7 @@ class RepositoryDependenciesTest {
     private final RepositoryDependencies sut = repository.dependencies();
 
     @Test
+    @SuppressWarnings("deprecation") // the test covers the deprecated method until GitHub removes it
     void sbom_shouldReturnTheSbom_whenCalled() throws IOException {
         final GitHubDependencyGraphSpdxSbom sbom = mock(GitHubDependencyGraphSpdxSbom.class);
         when(github.dependencyGraph().sboms().exportSbom(OWNER, NAME)).thenReturn(sbom);
@@ -36,6 +40,31 @@ class RepositoryDependenciesTest {
         final GitHubDependencyGraphSpdxSbom result = sut.sbom();
 
         assertThat(result).isSameAs(sbom);
+    }
+
+    @Test
+    void requestSbomReport_shouldReturnTheResponse_whenCalled() throws IOException {
+        final GitHubGenerateSbomReportResponse response =
+                new GitHubGenerateSbomReportResponse("https://api.github.com/x");
+        when(github.dependencyGraph().sboms().generateSbomReport(OWNER, NAME)).thenReturn(response);
+
+        assertThat(sut.requestSbomReport()).isSameAs(response);
+    }
+
+    @Test
+    void sbomReport_shouldReturnTheLocation_whenTheReportIsReady() throws IOException {
+        final URI location = URI.create("https://example.com/sbom.json");
+        when(github.dependencyGraph().sboms().fetchSbomReport(OWNER, NAME, "uuid-1"))
+                .thenReturn(Optional.of(location));
+
+        assertThat(sut.sbomReport("uuid-1")).contains(location);
+    }
+
+    @Test
+    void sbomReport_shouldThrowIllegalArgumentException_whenReportIdIsBlank() {
+        final Throwable thrown = catchThrowable(() -> sut.sbomReport(" "));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("reportId");
     }
 
     @Test

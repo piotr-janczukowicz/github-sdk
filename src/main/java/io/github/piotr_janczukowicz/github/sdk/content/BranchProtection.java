@@ -8,6 +8,7 @@ import io.github.piotr_janczukowicz.github.api.branches.GitHubBranchProtectionSe
 import io.github.piotr_janczukowicz.github.sdk.internal.Internals;
 import java.io.IOException;
 import java.util.OptionalInt;
+import org.jspecify.annotations.Nullable;
 
 /**
  * The protection rule of a {@link Branch}, as GitHub returned it. The object is immutable, and {@link #response()}
@@ -125,7 +126,7 @@ public final class BranchProtection {
         return response;
     }
 
-    private static boolean isEnabled(final GitHubBranchProtectionSetting setting) {
+    private static boolean isEnabled(@Nullable final GitHubBranchProtectionSetting setting) {
         return setting != null && Boolean.TRUE.equals(setting.enabled());
     }
 }

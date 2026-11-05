@@ -1299,7 +1299,7 @@ public final class Repository {
     /**
      * Lists the languages of the repository ({@code GET /repos/{owner}/{repo}/languages}).
      *
-     * @return the number of bytes of code per language
+     * @return a map from each language name to the number of bytes of code written in it
      * @throws IOException if the transport fails
      */
     public Map<String, Integer> languages() throws IOException {

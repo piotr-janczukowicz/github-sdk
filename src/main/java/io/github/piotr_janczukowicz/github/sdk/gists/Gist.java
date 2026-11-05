@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A gist, as GitHub returned it. The object is immutable, and {@link #response()} gives the complete response for every
@@ -92,7 +93,7 @@ public final class Gist {
      * @return the files, empty when GitHub reports none
      */
     public Map<String, GitHubGistSimpleFile> files() {
-        final Map<String, GitHubGistSimpleFile> files = response.files();
+        final Map<String, @Nullable GitHubGistSimpleFile> files = response.files();
         return files == null ? Map.of() : files;
     }
 

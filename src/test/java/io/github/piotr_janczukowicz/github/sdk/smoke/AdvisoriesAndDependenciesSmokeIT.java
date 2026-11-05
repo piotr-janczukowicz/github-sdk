@@ -43,13 +43,13 @@ class AdvisoriesAndDependenciesSmokeIT {
     }
 
     @Test
-    void sbom_shouldBeExported_whenTheDependencyGraphIsAvailable() throws IOException {
+    void sbom_shouldBeRequested_whenTheDependencyGraphIsAvailable() throws IOException {
         final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
 
         try {
-            assertThat(repository.dependencies().sbom().sbom()).isNotNull();
-        } catch (final GitHubApiException e) {
-            Assumptions.abort("GitHub refuses the SBOM export here (" + e.getMessage() + ")");
+            assertThat(repository.dependencies().requestSbomReport().sbomUrl()).isNotBlank();
+        } catch (final GitHubApiException | UnsupportedOperationException e) {
+            Assumptions.abort("GitHub refuses the SBOM report here (" + e.getMessage() + ")");
         }
     }
 

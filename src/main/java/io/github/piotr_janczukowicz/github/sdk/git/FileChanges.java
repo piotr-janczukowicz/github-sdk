@@ -166,7 +166,7 @@ public final class FileChanges {
             }
             final GitHubCreateTreeEntryMode mode =
                     existingMode(github, baseTree, change.getKey().split("/"), 0, trees);
-            final @Nullable String text = inlineText(content);
+            final String text = inlineText(content);
             entries.add(
                     text == null
                             ? entry(change.getKey(), mode, OptionalNull.of(blob(github, content)), null)

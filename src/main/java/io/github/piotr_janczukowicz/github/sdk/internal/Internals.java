@@ -7,6 +7,7 @@ import io.github.piotr_janczukowicz.github.sdk.GitHubSdk;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Gives the object packages of the SDK access to the wrapped {@link GitHub} client without exposing it in the public
@@ -17,8 +18,9 @@ import java.util.function.Function;
  */
 public final class Internals {
 
-    private static final AtomicReference<Function<Repository, GitHub>> REPOSITORY_ACCESS = new AtomicReference<>();
-    private static final AtomicReference<Function<GitHubSdk, GitHub>> SDK_ACCESS = new AtomicReference<>();
+    private static final AtomicReference<@Nullable Function<Repository, GitHub>> REPOSITORY_ACCESS =
+            new AtomicReference<>();
+    private static final AtomicReference<@Nullable Function<GitHubSdk, GitHub>> SDK_ACCESS = new AtomicReference<>();
 
     private Internals() {
         throw new UnsupportedOperationException("Utility class");
