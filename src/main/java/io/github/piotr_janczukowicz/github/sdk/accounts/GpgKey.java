@@ -50,7 +50,7 @@ public final class GpgKey {
     }
 
     /**
-     * Returns the long id of the key as GPG shows it.
+     * Returns the key id as GPG shows it, a hexadecimal string.
      *
      * @return the key id
      */

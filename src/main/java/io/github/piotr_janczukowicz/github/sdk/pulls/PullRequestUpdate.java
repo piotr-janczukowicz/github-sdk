@@ -63,9 +63,10 @@ public final class PullRequestUpdate {
      * @param base the name of the branch to merge into
      * @return this update
      * @throws NullPointerException if {@code base} is {@code null}
+     * @throws IllegalArgumentException if {@code base} is blank
      */
     public PullRequestUpdate base(final String base) {
-        this.base = requireNonNull(base, "base");
+        this.base = requireNotBlank(base, "base");
         return changed();
     }
 

@@ -161,4 +161,11 @@ class RepositoryUpdateTest {
 
         assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("defaultBranch");
     }
+
+    @Test
+    void constructor_shouldThrowNullPointerException_whenRepositoryIsNull() {
+        final Throwable thrown = catchThrowable(() -> new RepositoryUpdate(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("repository");
+    }
 }

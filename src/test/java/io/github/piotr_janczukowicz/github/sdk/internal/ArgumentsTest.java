@@ -125,4 +125,20 @@ class ArgumentsTest {
 
         assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("ref");
     }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"docs/readme.md", "run.sh"})
+    void requireFilePath_shouldReturnThePath_whenItHasNoEmptySegment(final String value) {
+        final String result = Arguments.requireFilePath(value, "path");
+
+        assertThat(result).isEqualTo(value);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/a", "a/", "a//b"})
+    void requireFilePath_shouldThrowIllegalArgumentException_whenThePathHasAnEmptySegment(final String value) {
+        final Throwable thrown = catchThrowable(() -> Arguments.requireFilePath(value, "path"));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("path");
+    }
 }

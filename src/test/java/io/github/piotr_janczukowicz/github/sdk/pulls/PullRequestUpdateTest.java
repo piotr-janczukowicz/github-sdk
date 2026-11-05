@@ -127,4 +127,13 @@ class PullRequestUpdateTest {
 
         assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("title");
     }
+
+    @Test
+    void base_shouldThrowIllegalArgumentException_whenBaseIsBlank() {
+        final PullRequestUpdate update = pullRequest.update();
+
+        final Throwable thrown = catchThrowable(() -> update.base(" "));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("base");
+    }
 }

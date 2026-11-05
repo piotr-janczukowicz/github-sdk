@@ -19,7 +19,7 @@ public final class RepositoryUpdate {
     private final UpdateState state = new UpdateState();
 
     RepositoryUpdate(final Repository repository) {
-        this.repository = repository;
+        this.repository = requireNonNull(repository, "repository");
     }
 
     /**

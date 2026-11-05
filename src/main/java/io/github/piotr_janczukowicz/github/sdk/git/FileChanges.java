@@ -42,6 +42,7 @@ public final class FileChanges {
     private static final String IS_GONE = " is gone";
     private static final String EXECUTABLE_MODE = "100755";
     private static final String SYMLINK_MODE = "120000";
+    private static final String SUBMODULE_MODE = "160000";
 
     private final Repository repository;
     private final String branch;
@@ -68,12 +69,12 @@ public final class FileChanges {
      * @param content the new content
      * @return these changes
      * @throws NullPointerException if {@code path} or {@code content} is {@code null}
-     * @throws IllegalArgumentException if {@code path} is blank, has a control character or has a {@code .} or
-     *     {@code ..} segment
+     * @throws IllegalArgumentException if {@code path} is blank, has a control character, has a {@code .} or {@code ..}
+     *     segment or has an empty segment
      */
     public FileChanges write(final String path, final byte[] content) {
         changes.put(
-                Arguments.requireSafePath(path, "path"),
+                Arguments.requireFilePath(path, "path"),
                 requireNonNull(content, "content").clone());
         return this;
     }
@@ -85,8 +86,8 @@ public final class FileChanges {
      * @param text the new content
      * @return these changes
      * @throws NullPointerException if {@code path} or {@code text} is {@code null}
-     * @throws IllegalArgumentException if {@code path} is blank, has a control character or has a {@code .} or
-     *     {@code ..} segment
+     * @throws IllegalArgumentException if {@code path} is blank, has a control character, has a {@code .} or {@code ..}
+     *     segment or has an empty segment
      */
     public FileChanges write(final String path, final String text) {
         return write(path, requireNonNull(text, "text").getBytes(StandardCharsets.UTF_8));
@@ -98,11 +99,11 @@ public final class FileChanges {
      * @param path the path in the repository
      * @return these changes
      * @throws NullPointerException if {@code path} is {@code null}
-     * @throws IllegalArgumentException if {@code path} is blank, has a control character or has a {@code .} or
-     *     {@code ..} segment
+     * @throws IllegalArgumentException if {@code path} is blank, has a control character, has a {@code .} or {@code ..}
+     *     segment or has an empty segment
      */
     public FileChanges delete(final String path) {
-        changes.put(Arguments.requireSafePath(path, "path"), null);
+        changes.put(Arguments.requireFilePath(path, "path"), null);
         return this;
     }
 
@@ -229,7 +230,7 @@ public final class FileChanges {
             return GitHubCreateTreeEntryMode.FILE;
         }
         if (index == segments.length - 1) {
-            return modeOf(found.mode());
+            return modeOf(found.mode(), segment);
         }
         if (!TREE.equals(found.type())) {
             return GitHubCreateTreeEntryMode.FILE;
@@ -256,8 +257,10 @@ public final class FileChanges {
         return loaded;
     }
 
-    private static GitHubCreateTreeEntryMode modeOf(final String mode) {
+    private static GitHubCreateTreeEntryMode modeOf(final String mode, final String segment) {
         return switch (mode) {
+            case SUBMODULE_MODE ->
+                throw new IllegalStateException("A submodule cannot be rewritten as a file: " + segment);
             case EXECUTABLE_MODE -> GitHubCreateTreeEntryMode.EXECUTABLE;
             case SYMLINK_MODE -> GitHubCreateTreeEntryMode.SYMLINK;
             default -> GitHubCreateTreeEntryMode.FILE;

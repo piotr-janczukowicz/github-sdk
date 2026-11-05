@@ -43,6 +43,8 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 
 @UnitTest
@@ -319,5 +321,34 @@ class FileChangesTest {
         final Throwable thrown = catchThrowable(() -> changes.send("Big"));
 
         assertThat(thrown).isInstanceOf(IllegalStateException.class).hasMessageContaining("too large");
+    }
+
+    @Test
+    void send_shouldThrowIllegalStateException_whenASubmoduleIsRewrittenAsAFile() throws IOException {
+        arrangeHead();
+        final GitHubGitTreeEntry vendor = new GitHubGitTreeEntry("vendor", "160000", "commit", BLOB, null, URL);
+        doReturn(Optional.of(new GitHubGitTree(TREE, URL, false, List.of(vendor))))
+                .when(trees)
+                .getTree(OWNER, NAME, TREE);
+        final FileChanges changes = sut.write("vendor", "text");
+
+        final Throwable thrown = catchThrowable(() -> changes.send("Rewrite"));
+
+        assertThat(thrown).isInstanceOf(IllegalStateException.class).hasMessageContaining("vendor");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/a.txt", "a/", "a//b.txt"})
+    void write_shouldThrowIllegalArgumentException_whenThePathHasAnEmptySegment(final String path) {
+        final Throwable thrown = catchThrowable(() -> sut.write(path, "text"));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("path");
+    }
+
+    @Test
+    void delete_shouldThrowIllegalArgumentException_whenThePathHasAnEmptySegment() {
+        final Throwable thrown = catchThrowable(() -> sut.delete("a//b.txt"));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("path");
     }
 }

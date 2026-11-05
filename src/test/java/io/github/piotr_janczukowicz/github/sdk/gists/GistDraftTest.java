@@ -96,4 +96,13 @@ class GistDraftTest {
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("content");
     }
+
+    @Test
+    void file_shouldThrowIllegalArgumentException_whenContentIsEmpty() {
+        final GistDraft draft = sdk.createGist();
+
+        final Throwable thrown = catchThrowable(() -> draft.file("a.txt", ""));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("content");
+    }
 }

@@ -11,7 +11,7 @@ import java.util.List;
 public final class Arguments {
 
     private static final char FIRST_PRINTABLE = ' ';
-    private static final char DELETE = '';
+    private static final char DELETE = 127;
     private static final String CURRENT = ".";
     private static final String PARENT = "..";
 
@@ -66,6 +66,25 @@ public final class Arguments {
             checked.add(requireNotBlank(value, name));
         }
         return List.copyOf(checked);
+    }
+
+    /**
+     * Checks the path of a file in a repository: a safe path (see {@link #requireSafePath(String, String)}) without a
+     * leading or trailing slash and without an empty segment such as {@code a//b}, which GitHub refuses in a tree.
+     *
+     * @param value the path
+     * @param name the argument name used in the exception message
+     * @return the path
+     * @throws IllegalArgumentException if the path is blank, has a control character, a {@code .} or {@code ..} segment
+     *     or an empty segment
+     * @throws NullPointerException if the path is {@code null}
+     */
+    public static String requireFilePath(final String value, final String name) {
+        final String checked = requireSafePath(value, name);
+        if (checked.startsWith("/") || checked.endsWith("/") || checked.contains("//")) {
+            throw new IllegalArgumentException(name + " must not have an empty segment: " + checked);
+        }
+        return checked;
     }
 
     /**

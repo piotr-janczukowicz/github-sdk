@@ -91,7 +91,7 @@ public final class IssueUpdate {
     }
 
     /**
-     * Replaces the labels.
+     * Replaces the labels. An empty list removes all labels.
      *
      * @param names the label names
      * @return this update

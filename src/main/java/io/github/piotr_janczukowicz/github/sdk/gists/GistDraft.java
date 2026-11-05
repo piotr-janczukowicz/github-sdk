@@ -1,5 +1,6 @@
 package io.github.piotr_janczukowicz.github.sdk.gists;
 
+import static io.github.piotr_janczukowicz.util.ValidationUtils.requireMinLength;
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 
@@ -53,10 +54,12 @@ public final class GistDraft {
      * @param content the file content, which GitHub does not accept empty
      * @return this draft
      * @throws NullPointerException if {@code name} or {@code content} is {@code null}
-     * @throws IllegalArgumentException if {@code name} is blank
+     * @throws IllegalArgumentException if {@code name} is blank or {@code content} is empty
      */
     public GistDraft file(final String name, final String content) {
-        files.put(requireNotBlank(name, "name"), new GitHubCreateGistFile(requireNonNull(content, "content")));
+        files.put(
+                requireNotBlank(name, "name"),
+                new GitHubCreateGistFile(requireMinLength(requireNonNull(content, "content"), 1, "content")));
         return this;
     }
 
