@@ -3,12 +3,27 @@ package io.github.piotr_janczukowicz.github.sdk;
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 
+import io.github.piotr_janczukowicz.github.api.actions.GitHubCreateOrgVariablePayload;
+import io.github.piotr_janczukowicz.github.api.organizations.GitHubCreateOrgWebhookPayload;
+import io.github.piotr_janczukowicz.github.api.organizations.GitHubCreateOrganizationInvitationPayload;
+import io.github.piotr_janczukowicz.github.api.organizations.GitHubOrgMembership;
+import io.github.piotr_janczukowicz.github.api.organizations.GitHubOrganizationActionsSecret;
 import io.github.piotr_janczukowicz.github.api.organizations.GitHubOrganizationFull;
+import io.github.piotr_janczukowicz.github.api.organizations.GitHubSetOrganizationMembershipPayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateInOrgPayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubFullRepository;
+import io.github.piotr_janczukowicz.github.api.teams.GitHubCreateTeamPayload;
 import io.github.piotr_janczukowicz.github.api.teams.GitHubTeam;
 import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
+import io.github.piotr_janczukowicz.github.pagination.GitHubPageRequest;
+import io.github.piotr_janczukowicz.github.sdk.internal.ClientValues;
 import io.github.piotr_janczukowicz.github.sdk.internal.Lookups;
+import io.github.piotr_janczukowicz.github.sdk.organizations.InvitationRole;
+import io.github.piotr_janczukowicz.github.sdk.organizations.OrganizationInvitation;
+import io.github.piotr_janczukowicz.github.sdk.organizations.OrganizationRole;
+import io.github.piotr_janczukowicz.github.sdk.organizations.OrganizationVariable;
+import io.github.piotr_janczukowicz.github.sdk.organizations.OrganizationWebhook;
+import io.github.piotr_janczukowicz.github.sdk.organizations.VariableVisibility;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -18,6 +33,10 @@ import java.util.stream.Stream;
  * response for every field the accessors here do not cover.
  */
 public final class Organization {
+
+    private static final String LOGIN = "login";
+    private static final String ROLE = "role";
+    private static final String VARIABLE_NAME = "variableName";
 
     private final GitHubSdk sdk;
     private final GitHubOrganizationFull response;
@@ -114,6 +133,279 @@ public final class Organization {
     }
 
     /**
+     * Tells whether a user is a member ({@code GET /orgs/{org}/members/{username}}).
+     *
+     * @param login the login of the user
+     * @return {@code true} when the user is a member
+     * @throws NullPointerException if {@code login} is {@code null}
+     * @throws IllegalArgumentException if {@code login} is blank
+     * @throws IOException if the transport fails
+     */
+    public boolean isMember(final String login) throws IOException {
+        return sdk.github().organizations().members().isMember(this.login(), requireNotBlank(login, LOGIN));
+    }
+
+    /**
+     * Loads the membership of a user ({@code GET /orgs/{org}/memberships/{username}}) as GitHub returns it.
+     *
+     * @param login the login of the user
+     * @return the membership, or empty when the user has none or GitHub answers HTTP 404
+     * @throws NullPointerException if {@code login} is {@code null}
+     * @throws IllegalArgumentException if {@code login} is blank
+     * @throws IOException if the transport fails
+     */
+    public Optional<GitHubOrgMembership> membership(final String login) throws IOException {
+        return sdk.github().organizations().members().getMembership(this.login(), requireNotBlank(login, LOGIN));
+    }
+
+    /**
+     * Adds a user to the organization or changes their role ({@code PUT /orgs/{org}/memberships/{username}}). A user
+     * who is not a member yet receives an invitation, and the membership is pending until they accept.
+     *
+     * @param login the login of the user
+     * @param role the role of the user
+     * @return the membership as GitHub holds it afterwards
+     * @throws NullPointerException if {@code login} or {@code role} is {@code null}
+     * @throws IllegalArgumentException if {@code login} is blank
+     * @throws IOException if the transport fails
+     */
+    public GitHubOrgMembership changeMembership(final String login, final OrganizationRole role) throws IOException {
+        return sdk.github()
+                .organizations()
+                .members()
+                .setMembership(
+                        this.login(),
+                        requireNotBlank(login, LOGIN),
+                        new GitHubSetOrganizationMembershipPayload(
+                                ClientValues.organizationRoleToClient(requireNonNull(role, "role"))));
+    }
+
+    /**
+     * Removes a user from the organization ({@code DELETE /orgs/{org}/members/{username}}).
+     *
+     * @param login the login of the user
+     * @throws NullPointerException if {@code login} is {@code null}
+     * @throws IllegalArgumentException if {@code login} is blank
+     * @throws IOException if the transport fails
+     */
+    public void removeMember(final String login) throws IOException {
+        sdk.github().organizations().members().removeMember(this.login(), requireNotBlank(login, LOGIN));
+    }
+
+    /**
+     * Lists the outside collaborators ({@code GET /orgs/{org}/outside_collaborators}), people who can access some
+     * repositories of the organization without being members, as GitHub returns them. Pages are fetched only as the
+     * stream is consumed; transport failures during iteration are {@link java.io.UncheckedIOException}.
+     *
+     * @return the outside collaborators
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<GitHubSimpleUser> outsideCollaborators() throws IOException {
+        return sdk
+                .github()
+                .organizations()
+                .outsideCollaborators()
+                .listOutsideCollaborators(login(), GitHubPageRequest.byPage())
+                .stream();
+    }
+
+    /**
+     * Invites a person by email address ({@code POST /orgs/{org}/invitations}).
+     *
+     * @param email the email address
+     * @param role the role the invitation offers
+     * @return the invitation
+     * @throws NullPointerException if {@code email} or {@code role} is {@code null}
+     * @throws IllegalArgumentException if {@code email} is blank
+     * @throws IOException if the transport fails
+     */
+    public OrganizationInvitation inviteByEmail(final String email, final InvitationRole role) throws IOException {
+        return invite(new GitHubCreateOrganizationInvitationPayload(
+                null,
+                requireNotBlank(email, "email"),
+                ClientValues.invitationRoleToClient(requireNonNull(role, ROLE)),
+                null));
+    }
+
+    /**
+     * Invites a user by their numeric id ({@code POST /orgs/{org}/invitations}).
+     *
+     * @param userId the id of the user
+     * @param role the role the invitation offers
+     * @return the invitation
+     * @throws NullPointerException if {@code role} is {@code null}
+     * @throws IOException if the transport fails
+     */
+    public OrganizationInvitation inviteUser(final long userId, final InvitationRole role) throws IOException {
+        return invite(new GitHubCreateOrganizationInvitationPayload(
+                userId, null, ClientValues.invitationRoleToClient(requireNonNull(role, ROLE)), null));
+    }
+
+    /**
+     * Lists the pending invitations ({@code GET /orgs/{org}/invitations}). Pages are fetched only as the stream is
+     * consumed; transport failures during iteration are {@link java.io.UncheckedIOException}.
+     *
+     * @return the invitations
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<OrganizationInvitation> invitations() throws IOException {
+        return sdk.github().organizations().members().listPendingInvitations(login()).stream()
+                .map(listed -> new OrganizationInvitation(sdk, login(), listed));
+    }
+
+    /**
+     * Creates a team with a name only ({@code POST /orgs/{org}/teams}). See
+     * {@link #createTeam(GitHubCreateTeamPayload)} for the other options.
+     *
+     * @param name the name of the team
+     * @return the new team
+     * @throws NullPointerException if {@code name} is {@code null}
+     * @throws IllegalArgumentException if {@code name} is blank
+     * @throws IOException if the transport fails
+     */
+    public Team createTeam(final String name) throws IOException {
+        return createTeam(new GitHubCreateTeamPayload(
+                requireNotBlank(name, "name"), null, null, null, null, null, null, null, null));
+    }
+
+    /**
+     * Creates a team with every option the client offers ({@code POST /orgs/{org}/teams}).
+     *
+     * @param payload the name and options of the team
+     * @return the new team
+     * @throws NullPointerException if {@code payload} is {@code null}
+     * @throws IOException if the transport fails
+     */
+    public Team createTeam(final GitHubCreateTeamPayload payload) throws IOException {
+        return new Team(this, sdk.github().teams().team().create(login(), requireNonNull(payload, "payload")));
+    }
+
+    /**
+     * Lists the webhooks of the organization ({@code GET /orgs/{org}/hooks}). Pages are fetched only as the stream is
+     * consumed; transport failures during iteration are {@link java.io.UncheckedIOException}.
+     *
+     * @return the webhooks
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<OrganizationWebhook> webhooks() throws IOException {
+        return sdk.github().organizations().webhooks().listWebhooks(login(), GitHubPageRequest.byPage()).stream()
+                .map(listed -> new OrganizationWebhook(sdk, login(), listed));
+    }
+
+    /**
+     * Loads one webhook of the organization ({@code GET /orgs/{org}/hooks/{hook_id}}).
+     *
+     * @param id the webhook id
+     * @return the webhook, or empty when GitHub answers HTTP 404
+     * @throws IOException if the transport fails
+     */
+    public Optional<OrganizationWebhook> webhook(final long id) throws IOException {
+        return sdk.github()
+                .organizations()
+                .webhooks()
+                .getWebhook(login(), id)
+                .map(loaded -> new OrganizationWebhook(sdk, login(), loaded));
+    }
+
+    /**
+     * Creates a webhook of the organization ({@code POST /orgs/{org}/hooks}).
+     *
+     * @param payload the name, delivery configuration, events and state of the webhook
+     * @return the new webhook
+     * @throws NullPointerException if {@code payload} is {@code null}
+     * @throws IOException if the transport fails
+     */
+    public OrganizationWebhook createWebhook(final GitHubCreateOrgWebhookPayload payload) throws IOException {
+        return new OrganizationWebhook(
+                sdk,
+                login(),
+                sdk.github().organizations().webhooks().createWebhook(login(), requireNonNull(payload, "payload")));
+    }
+
+    /**
+     * Lists the Actions variables of the organization ({@code GET /orgs/{org}/actions/variables}). Pages are fetched
+     * only as the stream is consumed; transport failures during iteration are {@link java.io.UncheckedIOException}.
+     *
+     * @return the variables
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<OrganizationVariable> variables() throws IOException {
+        return sdk.github().actions().variables().listOrgVariables(login(), GitHubPageRequest.byPage()).stream()
+                .map(listed -> new OrganizationVariable(sdk, login(), listed));
+    }
+
+    /**
+     * Loads one Actions variable of the organization ({@code GET /orgs/{org}/actions/variables/{name}}).
+     *
+     * @param variableName the variable name
+     * @return the variable, or empty when GitHub answers HTTP 404
+     * @throws NullPointerException if {@code variableName} is {@code null}
+     * @throws IllegalArgumentException if {@code variableName} is blank
+     * @throws IOException if the transport fails
+     */
+    public Optional<OrganizationVariable> variable(final String variableName) throws IOException {
+        return sdk.github()
+                .actions()
+                .variables()
+                .getOrgVariable(login(), requireNotBlank(variableName, VARIABLE_NAME))
+                .map(loaded -> new OrganizationVariable(sdk, login(), loaded));
+    }
+
+    /**
+     * Creates an Actions variable of the organization ({@code POST /orgs/{org}/actions/variables}).
+     *
+     * @param variableName the variable name
+     * @param value the value
+     * @param visibility which repositories can read the variable
+     * @return the variable as GitHub holds it afterwards
+     * @throws NullPointerException if {@code variableName}, {@code value} or {@code visibility} is {@code null}
+     * @throws IllegalArgumentException if {@code variableName} is blank
+     * @throws IOException if the transport fails
+     * @throws IllegalStateException if GitHub does not have the variable it just created
+     */
+    public OrganizationVariable createVariable(
+            final String variableName, final String value, final VariableVisibility visibility) throws IOException {
+        final String validName = requireNotBlank(variableName, VARIABLE_NAME);
+        sdk.github()
+                .actions()
+                .variables()
+                .createOrgVariable(
+                        login(),
+                        new GitHubCreateOrgVariablePayload(
+                                validName,
+                                requireNonNull(value, "value"),
+                                ClientValues.variableVisibilityToClient(requireNonNull(visibility, "visibility")),
+                                null));
+        return variable(validName)
+                .orElseThrow(() -> new IllegalStateException("Organization variable " + validName + " is gone"));
+    }
+
+    /**
+     * Lists the Actions secrets of the organization ({@code GET /orgs/{org}/actions/secrets}) as GitHub returns them.
+     * GitHub never returns a secret value, only the name and the dates. Creating a secret needs the value encrypted
+     * with the organization public key, which this library does not do; use the client for that. Pages are fetched only
+     * as the stream is consumed; transport failures during iteration are {@link java.io.UncheckedIOException}.
+     *
+     * @return the secrets
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<GitHubOrganizationActionsSecret> secrets() throws IOException {
+        return sdk.github().actions().secrets().listOrgSecrets(login(), GitHubPageRequest.byPage()).stream();
+    }
+
+    /**
+     * Deletes an Actions secret of the organization ({@code DELETE /orgs/{org}/actions/secrets/{secret_name}}).
+     *
+     * @param secretName the secret name
+     * @throws NullPointerException if {@code secretName} is {@code null}
+     * @throws IllegalArgumentException if {@code secretName} is blank
+     * @throws IOException if the transport fails
+     */
+    public void deleteSecret(final String secretName) throws IOException {
+        sdk.github().actions().secrets().deleteOrgSecret(login(), requireNotBlank(secretName, "secretName"));
+    }
+
+    /**
      * Returns the complete response this object was built from.
      *
      * @return the response record
@@ -126,7 +418,12 @@ public final class Organization {
         return sdk;
     }
 
-    private Team loadTeam(final GitHubTeam listed) {
+    Team loadTeam(final GitHubTeam listed) {
         return Lookups.require(() -> team(listed.slug()), () -> "Team " + listed.slug() + " is gone");
+    }
+
+    private OrganizationInvitation invite(final GitHubCreateOrganizationInvitationPayload payload) throws IOException {
+        return new OrganizationInvitation(
+                sdk, login(), sdk.github().organizations().members().createInvitation(login(), payload));
     }
 }

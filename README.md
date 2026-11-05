@@ -102,7 +102,7 @@ client. `ConfiguredClientTest` builds this configuration, so a change in the cli
 The entry points (`GitHubSdk`, `Repository`, `User`, `Organization`, `Team`, `Search`, `RateLimit`) are in
 `io.github.piotr_janczukowicz.github.sdk`. The other objects are grouped by area in sub-packages: `issues`, `pulls`,
 `content` (branches, commits, files, releases), `git` (refs, comparisons, multi-file commits), `gists`,
-`accounts`, `notifications`, `metrics`, `utilities`, `deploykeys`, `deployments`, `pages`, `security`, `actions`, `checks`, `collaborators`, `reactions` and
+`accounts`, `organizations`, `notifications`, `metrics`, `utilities`, `deploykeys`, `deployments`, `pages`, `security`, `actions`, `checks`, `collaborators`, `reactions` and
 `webhooks`. The `internal` package is not exported by the module and is not part of the API.
 
 ## What is covered
@@ -136,7 +136,8 @@ The entry points (`GitHubSdk`, `Repository`, `User`, `Organization`, `Team`, `Se
 | `Release`, `Label`, `Milestone`, `Webhook` | `update()`, `refresh()`, `delete()` |
 | `sdk.currentUser()`, `sdk.user(login)` | `User`: `repositories()`, `organizations()`, `gists()`, `followers()`, `following()`, `sshKeys()`, `gpgKeys()`, `signingKeys()`, `socialAccounts()` |
 | `sdk.me()` | `Me`, for the account the client authenticates as: `update()` the profile, `emails()`, `addEmail(...)`, `changeEmailVisibility(...)`; SSH, GPG and signing keys (`SshKey`, `GpgKey` and `SigningKey` have `refresh()` and `delete()`); `follow(...)`, `block(...)` and their lists; social accounts |
-| `sdk.organization(login)` | `Organization`: `repositories()`, `createRepository(...)`, `members()`, `teams()`, `team(slug)`; `Team`: `members()`, `repositories()` |
+| `sdk.organization(login)` | `Organization`: `repositories()`, `createRepository(...)`, `members()`, `isMember(...)`, `membership(...)`, `changeMembership(login, role)`, `removeMember(...)`, `outsideCollaborators()`, `inviteByEmail(...)`, `inviteUser(...)`, `invitations()`, `teams()`, `team(slug)`, `createTeam(...)`, `webhooks()`, `createWebhook(...)`, `variables()`, `createVariable(...)`, `secrets()` (names only), `deleteSecret(...)` |
+| `Team`, `OrganizationInvitation`, `OrganizationWebhook`, `OrganizationVariable` | `Team`: `members()`, `repositories()`, `childTeams()`, `update(...)`, `delete()`, `addMember(...)`, `removeMember(...)`, `membership(...)`, `addRepository(...)`, `removeRepository(...)`; an invitation has `cancel()`; a webhook has `update(...)`, `ping()`, `deliveries()`, `refresh()` and `delete()`; a variable has `update(value)`, `refresh()` and `delete()` |
 | `sdk.search()` | issues, repositories, users, code and commits |
 | `sdk.rateLimit()` | `RateLimit` |
 

@@ -95,7 +95,7 @@ sandbox repository. Their behavior against the real GitHub API has not been chec
 | Check runs | fine-grained tokens have no Checks permission |
 | Stars and watching | the token form does not offer the permissions |
 | Workflow dispatch | `SMOKE_GITHUB_WORKFLOW` is not set |
-| Organizations and teams | the account has no organization |
+| Organizations and teams, including membership, invitations, team management, organization webhooks and variables | the account has no organization, so these are covered by unit tests only |
 
 A classic token or a public sandbox repository would cover most of them.
 

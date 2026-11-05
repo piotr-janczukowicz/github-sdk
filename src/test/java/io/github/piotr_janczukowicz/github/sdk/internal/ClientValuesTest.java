@@ -4,9 +4,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
 import io.github.piotr_janczukowicz.github.api.commits.GitHubCommitStatusState;
+import io.github.piotr_janczukowicz.github.api.organizations.GitHubOrganizationMembershipRole;
 import io.github.piotr_janczukowicz.github.api.reactions.GitHubReactionContent;
+import io.github.piotr_janczukowicz.github.api.teams.GitHubTeamRole;
 import io.github.piotr_janczukowicz.github.sdk.checks.CommitStatusState;
 import io.github.piotr_janczukowicz.github.sdk.collaborators.RepositoryPermission;
+import io.github.piotr_janczukowicz.github.sdk.organizations.InvitationRole;
+import io.github.piotr_janczukowicz.github.sdk.organizations.OrganizationRole;
+import io.github.piotr_janczukowicz.github.sdk.organizations.TeamRole;
+import io.github.piotr_janczukowicz.github.sdk.organizations.VariableVisibility;
 import io.github.piotr_janczukowicz.github.sdk.reactions.ReactionContent;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.lang.reflect.Constructor;
@@ -54,6 +60,44 @@ class ClientValuesTest {
         final boolean isEveryNameKept = Arrays.stream(RepositoryPermission.values())
                 .allMatch(permission ->
                         ClientValues.permissionToClient(permission).name().equals(permission.name()));
+
+        assertThat(isEveryNameKept).isTrue();
+    }
+
+    @Test
+    void organizationRoleToClient_shouldMapEveryRoleToTheClientValueOfTheSameName_whenCalled() {
+        final boolean isEveryNameKept = Arrays.stream(OrganizationRole.values())
+                .allMatch(role ->
+                        ClientValues.organizationRoleToClient(role).name().equals(role.name()));
+
+        assertThat(isEveryNameKept).isTrue();
+        assertThat(OrganizationRole.values()).hasSameSizeAs(GitHubOrganizationMembershipRole.values());
+    }
+
+    @Test
+    void invitationRoleToClient_shouldMapEveryRoleToTheClientValueOfTheSameName_whenCalled() {
+        final boolean isEveryNameKept = Arrays.stream(InvitationRole.values())
+                .allMatch(
+                        role -> ClientValues.invitationRoleToClient(role).name().equals(role.name()));
+
+        assertThat(isEveryNameKept).isTrue();
+    }
+
+    @Test
+    void teamRoleToClient_shouldMapEveryRoleToTheClientValueOfTheSameName_whenCalled() {
+        final boolean isEveryNameKept = Arrays.stream(TeamRole.values())
+                .allMatch(role -> ClientValues.teamRoleToClient(role).name().equals(role.name()));
+
+        assertThat(isEveryNameKept).isTrue();
+        assertThat(TeamRole.values()).hasSameSizeAs(GitHubTeamRole.values());
+    }
+
+    @Test
+    void variableVisibilityToClient_shouldMapEveryVisibilityToTheClientValueOfTheSameName_whenCalled() {
+        final boolean isEveryNameKept = Arrays.stream(VariableVisibility.values())
+                .allMatch(visibility -> ClientValues.variableVisibilityToClient(visibility)
+                        .name()
+                        .equals(visibility.name()));
 
         assertThat(isEveryNameKept).isTrue();
     }

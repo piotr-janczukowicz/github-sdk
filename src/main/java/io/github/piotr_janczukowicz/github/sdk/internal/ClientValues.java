@@ -1,10 +1,18 @@
 package io.github.piotr_janczukowicz.github.sdk.internal;
 
+import io.github.piotr_janczukowicz.github.api.actions.GitHubOrgVariableVisibility;
 import io.github.piotr_janczukowicz.github.api.collaborators.GitHubCollaboratorPermission;
 import io.github.piotr_janczukowicz.github.api.commits.GitHubCommitStatusState;
+import io.github.piotr_janczukowicz.github.api.organizations.GitHubOrganizationInvitationRole;
+import io.github.piotr_janczukowicz.github.api.organizations.GitHubOrganizationMembershipRole;
 import io.github.piotr_janczukowicz.github.api.reactions.GitHubReactionContent;
+import io.github.piotr_janczukowicz.github.api.teams.GitHubTeamRole;
 import io.github.piotr_janczukowicz.github.sdk.checks.CommitStatusState;
 import io.github.piotr_janczukowicz.github.sdk.collaborators.RepositoryPermission;
+import io.github.piotr_janczukowicz.github.sdk.organizations.InvitationRole;
+import io.github.piotr_janczukowicz.github.sdk.organizations.OrganizationRole;
+import io.github.piotr_janczukowicz.github.sdk.organizations.TeamRole;
+import io.github.piotr_janczukowicz.github.sdk.organizations.VariableVisibility;
 import io.github.piotr_janczukowicz.github.sdk.reactions.ReactionContent;
 
 /**
@@ -83,6 +91,59 @@ public final class ClientValues {
             case PUSH -> GitHubCollaboratorPermission.PUSH;
             case MAINTAIN -> GitHubCollaboratorPermission.MAINTAIN;
             case ADMIN -> GitHubCollaboratorPermission.ADMIN;
+        };
+    }
+
+    /**
+     * Converts an organization role to the client's membership role.
+     *
+     * @param role the SDK value
+     * @return the client value of the same name
+     */
+    public static GitHubOrganizationMembershipRole organizationRoleToClient(final OrganizationRole role) {
+        return switch (role) {
+            case MEMBER -> GitHubOrganizationMembershipRole.MEMBER;
+            case ADMIN -> GitHubOrganizationMembershipRole.ADMIN;
+        };
+    }
+
+    /**
+     * Converts an invitation role to the client's invitation role.
+     *
+     * @param role the SDK value
+     * @return the client value of the same name
+     */
+    public static GitHubOrganizationInvitationRole invitationRoleToClient(final InvitationRole role) {
+        return switch (role) {
+            case DIRECT_MEMBER -> GitHubOrganizationInvitationRole.DIRECT_MEMBER;
+            case ADMIN -> GitHubOrganizationInvitationRole.ADMIN;
+            case BILLING_MANAGER -> GitHubOrganizationInvitationRole.BILLING_MANAGER;
+        };
+    }
+
+    /**
+     * Converts a team role to the client's team role.
+     *
+     * @param role the SDK value
+     * @return the client value of the same name
+     */
+    public static GitHubTeamRole teamRoleToClient(final TeamRole role) {
+        return switch (role) {
+            case MEMBER -> GitHubTeamRole.MEMBER;
+            case MAINTAINER -> GitHubTeamRole.MAINTAINER;
+        };
+    }
+
+    /**
+     * Converts a variable visibility to the client's value.
+     *
+     * @param visibility the SDK value
+     * @return the client value of the same name
+     */
+    public static GitHubOrgVariableVisibility variableVisibilityToClient(final VariableVisibility visibility) {
+        return switch (visibility) {
+            case ALL -> GitHubOrgVariableVisibility.ALL;
+            case PRIVATE -> GitHubOrgVariableVisibility.PRIVATE;
         };
     }
 }
