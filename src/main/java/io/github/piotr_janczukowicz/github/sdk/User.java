@@ -7,7 +7,6 @@ import io.github.piotr_janczukowicz.github.api.users.GitHubAuthenticatedUser;
 import io.github.piotr_janczukowicz.github.api.users.GitHubUser;
 import io.github.piotr_janczukowicz.github.api.users.GitHubUserView;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -88,11 +87,7 @@ public final class User {
     }
 
     private Organization loadOrganization(final GitHubOrganizationSimple listed) {
-        try {
-            return sdk.organization(listed.login())
-                    .orElseThrow(() -> new IllegalStateException("Organization " + listed.login() + " is gone"));
-        } catch (final IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        return Lookups.require(
+                () -> sdk.organization(listed.login()), () -> "Organization " + listed.login() + " is gone");
     }
 }

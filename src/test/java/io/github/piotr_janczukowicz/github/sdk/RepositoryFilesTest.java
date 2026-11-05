@@ -15,6 +15,7 @@ import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubContentDirectory;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubContentFile;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateOrUpdateFileContentsPayload;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubDeleteFilePayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubGetContentFilter;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.io.IOException;
@@ -65,6 +66,20 @@ class RepositoryFilesTest {
 
         verify(github.repositories().contents()).getContent(eq(OWNER), eq(NAME), eq(PATH), filter.capture());
         assertThat(filter.getValue().ref()).isEqualTo("feature");
+    }
+
+    @Test
+    void file_shouldRememberTheRef_whenReadAtARef() throws IOException {
+        when(github.repositories()
+                        .contents()
+                        .getContent(eq(OWNER), eq(NAME), eq(PATH), any(GitHubGetContentFilter.class)))
+                .thenReturn(Optional.of(response));
+        final ArgumentCaptor<GitHubDeleteFilePayload> payload = ArgumentCaptor.forClass(GitHubDeleteFilePayload.class);
+
+        sut.file(PATH, "feature").orElseThrow().delete("Remove the file");
+
+        verify(github.repositories().contents()).deleteFile(eq(OWNER), eq(NAME), eq(PATH), payload.capture());
+        assertThat(payload.getValue().branch()).isEqualTo("feature");
     }
 
     @Test

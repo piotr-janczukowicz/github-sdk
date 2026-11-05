@@ -25,7 +25,6 @@ import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryTag;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubWebhookConfig;
 import io.github.piotr_janczukowicz.github.pagination.GitHubPageRequest;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
@@ -636,21 +635,12 @@ public final class Repository {
     }
 
     private PullRequest loadPullRequest(final GitHubPullRequestSimple listed) {
-        try {
-            return pullRequest(listed.number())
-                    .orElseThrow(() -> new IllegalStateException("Pull request " + listed.number() + " is gone"));
-        } catch (final IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        return Lookups.require(
+                () -> pullRequest(listed.number()), () -> "Pull request " + listed.number() + " is gone");
     }
 
     private Branch loadBranch(final GitHubShortBranch listed) {
-        try {
-            return branch(listed.name())
-                    .orElseThrow(() -> new IllegalStateException("Branch " + listed.name() + " is gone"));
-        } catch (final IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        return Lookups.require(() -> branch(listed.name()), () -> "Branch " + listed.name() + " is gone");
     }
 
     private Optional<RepositoryFile> read(final String path, final @Nullable String ref) throws IOException {
@@ -659,7 +649,7 @@ public final class Repository {
                 .contents()
                 .getContent(owner, name, path, new GitHubGetContentFilter(ref))
                 .flatMap(result -> result instanceof final GitHubContentFile file
-                        ? Optional.of(new RepositoryFile(this, file))
+                        ? Optional.of(new RepositoryFile(this, file, ref))
                         : Optional.empty());
     }
 

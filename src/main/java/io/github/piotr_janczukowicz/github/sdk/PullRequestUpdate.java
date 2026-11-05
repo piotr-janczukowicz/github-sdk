@@ -17,7 +17,7 @@ public final class PullRequestUpdate {
     private @Nullable String body;
     private @Nullable String base;
     private @Nullable Boolean maintainerCanModify;
-    private boolean isEmpty = true;
+    private final UpdateState state = new UpdateState();
 
     PullRequestUpdate(final PullRequest pullRequest) {
         this.pullRequest = pullRequest;
@@ -79,14 +79,12 @@ public final class PullRequestUpdate {
      * @throws IOException if the transport fails
      */
     public PullRequest send() throws IOException {
-        if (isEmpty) {
-            throw new IllegalStateException("There is nothing to update");
-        }
+        state.requireChange();
         return pullRequest.apply(new GitHubUpdatePullRequestPayload(title, body, null, base, maintainerCanModify));
     }
 
     private PullRequestUpdate changed() {
-        isEmpty = false;
+        state.mark();
         return this;
     }
 }

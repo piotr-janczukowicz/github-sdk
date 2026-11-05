@@ -8,7 +8,6 @@ import io.github.piotr_janczukowicz.github.api.search.GitHubCommitSearchResultIt
 import io.github.piotr_janczukowicz.github.api.search.GitHubIssueSearchResultItem;
 import io.github.piotr_janczukowicz.github.api.search.GitHubUserSearchResultItem;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.stream.Stream;
 
 /**
@@ -55,6 +54,9 @@ public final class Search {
                 .map(hit -> {
                     final String fullName = hit.fullName();
                     final int slash = fullName.indexOf('/');
+                    if (slash <= 0) {
+                        throw new IllegalArgumentException("Unexpected repository name in a search hit: " + fullName);
+                    }
                     return sdk.repository(fullName.substring(0, slash), fullName.substring(slash + 1));
                 });
     }
@@ -99,23 +101,25 @@ public final class Search {
     }
 
     private Issue loadIssue(final GitHubIssueSearchResultItem hit) {
-        final String[] segments = hit.repositoryUrl().replaceAll("/+$", "").split("/");
-        final Repository repository = sdk.repository(segments[segments.length - 2], segments[segments.length - 1]);
-        try {
-            return repository
-                    .issue(hit.number())
-                    .orElseThrow(() -> new IllegalStateException("Issue " + hit.number() + " is gone"));
-        } catch (final IOException e) {
-            throw new UncheckedIOException(e);
+        return Lookups.require(
+                () -> repositoryOf(hit.repositoryUrl()).issue(hit.number()),
+                () -> "Issue " + hit.number() + " is gone");
+    }
+
+    private Repository repositoryOf(final String url) {
+        int end = url.length();
+        while (end > 0 && url.charAt(end - 1) == '/') {
+            end--;
         }
+        final int nameStart = url.lastIndexOf('/', end - 1) + 1;
+        if (nameStart == 0) {
+            throw new IllegalArgumentException("Unexpected repository URL in a search hit: " + url);
+        }
+        final int ownerStart = url.lastIndexOf('/', nameStart - 2) + 1;
+        return sdk.repository(url.substring(ownerStart, nameStart - 1), url.substring(nameStart, end));
     }
 
     private User loadUser(final GitHubUserSearchResultItem hit) {
-        try {
-            return sdk.user(hit.login())
-                    .orElseThrow(() -> new IllegalStateException("User " + hit.login() + " is gone"));
-        } catch (final IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        return Lookups.require(() -> sdk.user(hit.login()), () -> "User " + hit.login() + " is gone");
     }
 }

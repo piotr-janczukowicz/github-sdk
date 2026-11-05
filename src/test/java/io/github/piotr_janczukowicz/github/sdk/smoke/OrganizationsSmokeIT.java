@@ -34,6 +34,7 @@ class OrganizationsSmokeIT {
         final List<Organization> organizations =
                 ENV.sdk().currentUser().organizations().limit(3).toList();
 
+        Assumptions.assumeFalse(organizations.isEmpty(), "the current user belongs to no public organization");
         assertThat(organizations).hasSizeLessThanOrEqualTo(3);
         assertThat(organizations)
                 .allSatisfy(organization -> assertThat(organization.login()).isNotBlank());

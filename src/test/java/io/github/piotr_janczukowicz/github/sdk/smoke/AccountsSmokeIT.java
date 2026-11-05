@@ -7,6 +7,7 @@ import io.github.piotr_janczukowicz.github.sdk.User;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -53,6 +54,7 @@ class AccountsSmokeIT {
 
         final List<Repository> repositories = current.repositories().limit(3).toList();
 
+        Assumptions.assumeFalse(repositories.isEmpty(), current.login() + " has no public repositories");
         assertThat(repositories).hasSizeLessThanOrEqualTo(3);
         assertThat(repositories)
                 .allSatisfy(repository -> assertThat(repository.owner()).isEqualToIgnoringCase(current.login()));

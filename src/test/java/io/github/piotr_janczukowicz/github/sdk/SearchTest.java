@@ -108,6 +108,30 @@ class SearchTest {
     }
 
     @Test
+    void issues_shouldThrowIllegalArgumentException_whenTheRepositoryUrlHasNoOwner() throws IOException {
+        final GitHubIssueSearchResultItem item = mock(GitHubIssueSearchResultItem.class);
+        when(item.repositoryUrl()).thenReturn("octocat");
+        when(github.search().searchIssues("bug").stream()).thenReturn(Stream.of(item));
+        final Stream<Issue> issues = sut.issues("bug");
+
+        final Throwable thrown = catchThrowable(issues::toList);
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("octocat");
+    }
+
+    @Test
+    void repositories_shouldThrowIllegalArgumentException_whenTheFullNameHasNoSlash() throws IOException {
+        final GitHubRepoSearchResultItem item = mock(GitHubRepoSearchResultItem.class);
+        when(item.fullName()).thenReturn("hello");
+        when(github.search().searchRepos("hello").stream()).thenReturn(Stream.of(item));
+        final Stream<Repository> repositories = sut.repositories("hello");
+
+        final Throwable thrown = catchThrowable(repositories::toList);
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("hello");
+    }
+
+    @Test
     void users_shouldLoadEachFoundUser_whenTheQueryMatches() throws IOException {
         final GitHubUserSearchResultItem item = mock(GitHubUserSearchResultItem.class);
         when(item.login()).thenReturn("octocat");

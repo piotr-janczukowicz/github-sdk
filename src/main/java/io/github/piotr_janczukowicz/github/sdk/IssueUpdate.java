@@ -18,7 +18,7 @@ public final class IssueUpdate {
 
     private final Issue issue;
     private final GitHubUpdatePayloadBuilder payload = GitHubUpdatePayloadBuilder.builder();
-    private boolean isEmpty = true;
+    private final UpdateState state = new UpdateState();
 
     IssueUpdate(final Issue issue) {
         this.issue = issue;
@@ -116,14 +116,12 @@ public final class IssueUpdate {
      * @throws IOException if the transport fails
      */
     public Issue send() throws IOException {
-        if (isEmpty) {
-            throw new IllegalStateException("There is nothing to update");
-        }
+        state.requireChange();
         return issue.apply(payload.build());
     }
 
     private IssueUpdate changed() {
-        isEmpty = false;
+        state.mark();
         return this;
     }
 }

@@ -9,7 +9,6 @@ import io.github.piotr_janczukowicz.github.api.repositories.GitHubFullRepository
 import io.github.piotr_janczukowicz.github.api.teams.GitHubTeam;
 import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -127,11 +126,6 @@ public final class Organization {
     }
 
     private Team loadTeam(final GitHubTeam listed) {
-        try {
-            return team(listed.slug())
-                    .orElseThrow(() -> new IllegalStateException("Team " + listed.slug() + " is gone"));
-        } catch (final IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        return Lookups.require(() -> team(listed.slug()), () -> "Team " + listed.slug() + " is gone");
     }
 }

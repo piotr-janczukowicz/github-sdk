@@ -23,10 +23,12 @@ public final class RepositoryFile {
 
     private final Repository repository;
     private final GitHubContentFile response;
+    private final @Nullable String ref;
 
-    RepositoryFile(final Repository repository, final GitHubContentFile response) {
+    RepositoryFile(final Repository repository, final GitHubContentFile response, final @Nullable String ref) {
         this.repository = requireNonNull(repository, "repository");
         this.response = requireNonNull(response, "response");
+        this.ref = ref;
     }
 
     /**
@@ -76,7 +78,11 @@ public final class RepositoryFile {
             throw new IllegalStateException("GitHub sent no content for " + response.path() + " (encoding "
                     + response.encoding() + "); the file is too large for the contents API");
         }
-        return Base64.getMimeDecoder().decode(response.content());
+        try {
+            return Base64.getDecoder().decode(withoutLineBreaks(response.content()));
+        } catch (final IllegalArgumentException e) {
+            throw new IllegalStateException(response.path() + " has content that is not valid base64", e);
+        }
     }
 
     /**
@@ -99,15 +105,17 @@ public final class RepositoryFile {
     }
 
     /**
-     * Deletes the file on the default branch ({@code DELETE /repos/{owner}/{repo}/contents/{path}}), with the blob hash
-     * this object holds, so GitHub refuses the delete if the file changed since it was loaded.
+     * Deletes the file ({@code DELETE /repos/{owner}/{repo}/contents/{path}}) where it was read: on the ref given to
+     * {@link Repository#file(String, String)}, which GitHub accepts only when it is a branch, or on the default branch
+     * when the file was read without a ref. It uses the blob hash this object holds, so GitHub refuses the delete if
+     * the file changed since it was loaded.
      *
      * @param message the commit message
      * @throws IllegalArgumentException if {@code message} is blank
      * @throws IOException if the transport fails
      */
     public void delete(final String message) throws IOException {
-        remove(requireNotBlank(message, "message"), null);
+        remove(requireNotBlank(message, "message"), ref);
     }
 
     /**
@@ -130,6 +138,17 @@ public final class RepositoryFile {
      */
     public GitHubContentFile response() {
         return response;
+    }
+
+    private static String withoutLineBreaks(final String text) {
+        final StringBuilder joined = new StringBuilder(text.length());
+        for (int index = 0; index < text.length(); index++) {
+            final char character = text.charAt(index);
+            if (character != '\n' && character != '\r') {
+                joined.append(character);
+            }
+        }
+        return joined.toString();
     }
 
     private void remove(final String message, final @Nullable String branch) throws IOException {

@@ -16,7 +16,7 @@ public final class LabelUpdate {
     private @Nullable String name;
     private @Nullable String color;
     private @Nullable String description;
-    private boolean isEmpty = true;
+    private final UpdateState state = new UpdateState();
 
     LabelUpdate(final Label label) {
         this.label = label;
@@ -66,14 +66,12 @@ public final class LabelUpdate {
      * @throws IOException if the transport fails
      */
     public Label send() throws IOException {
-        if (isEmpty) {
-            throw new IllegalStateException("There is nothing to update");
-        }
+        state.requireChange();
         return label.apply(new GitHubUpdateLabelPayload(name, color, description, null));
     }
 
     private LabelUpdate changed() {
-        isEmpty = false;
+        state.mark();
         return this;
     }
 }

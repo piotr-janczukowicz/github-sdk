@@ -18,7 +18,7 @@ public final class ReleaseUpdate {
     private @Nullable String body;
     private @Nullable Boolean draft;
     private @Nullable Boolean prerelease;
-    private boolean isEmpty = true;
+    private final UpdateState state = new UpdateState();
 
     ReleaseUpdate(final Release release) {
         this.release = release;
@@ -90,14 +90,12 @@ public final class ReleaseUpdate {
      * @throws IOException if the transport fails
      */
     public Release send() throws IOException {
-        if (isEmpty) {
-            throw new IllegalStateException("There is nothing to update");
-        }
+        state.requireChange();
         return release.apply(new GitHubUpdateReleasePayload(tagName, null, name, body, draft, prerelease, null, null));
     }
 
     private ReleaseUpdate changed() {
-        isEmpty = false;
+        state.mark();
         return this;
     }
 }

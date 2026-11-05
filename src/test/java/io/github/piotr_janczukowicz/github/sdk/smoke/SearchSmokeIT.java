@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.github.piotr_janczukowicz.github.api.search.GitHubCommitSearchResultItem;
 import io.github.piotr_janczukowicz.github.sdk.Issue;
 import io.github.piotr_janczukowicz.github.sdk.RateLimit;
+import io.github.piotr_janczukowicz.github.sdk.User;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
@@ -31,7 +32,7 @@ class SearchSmokeIT {
                 .limit(3)
                 .toList();
 
-        assertThat(issues).hasSizeLessThanOrEqualTo(3);
+        assertThat(issues).isNotEmpty().hasSizeLessThanOrEqualTo(3);
         assertThat(issues)
                 .allSatisfy(issue -> assertThat(issue.repository().name()).isEqualToIgnoringCase(ENV.repo()));
     }
@@ -45,6 +46,15 @@ class SearchSmokeIT {
                 .anyMatch(repository -> repository.name().equalsIgnoreCase(ENV.repo()));
 
         assertThat(isFound).isTrue();
+    }
+
+    @Test
+    void users_shouldLoadOrganizationHits_whenTheQueryAsksForOrganizations() throws IOException {
+        final List<User> users =
+                ENV.sdk().search().users("github in:login type:org").limit(3).toList();
+
+        assertThat(users).isNotEmpty();
+        assertThat(users).allSatisfy(user -> assertThat(user.login()).isNotBlank());
     }
 
     @Test
@@ -66,7 +76,7 @@ class SearchSmokeIT {
                 .limit(3)
                 .toList();
 
-        assertThat(commits).hasSizeLessThanOrEqualTo(3);
+        assertThat(commits).isNotEmpty().hasSizeLessThanOrEqualTo(3);
     }
 
     @Test

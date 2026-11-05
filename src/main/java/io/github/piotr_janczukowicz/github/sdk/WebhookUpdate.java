@@ -21,7 +21,7 @@ public final class WebhookUpdate {
     private @Nullable List<String> addEvents;
     private @Nullable List<String> removeEvents;
     private @Nullable Boolean active;
-    private boolean isEmpty = true;
+    private final UpdateState state = new UpdateState();
 
     WebhookUpdate(final Webhook webhook) {
         this.webhook = webhook;
@@ -83,14 +83,12 @@ public final class WebhookUpdate {
      * @throws IOException if the transport fails
      */
     public Webhook send() throws IOException {
-        if (isEmpty) {
-            throw new IllegalStateException("There is nothing to update");
-        }
+        state.requireChange();
         return webhook.apply(new GitHubUpdateWebhookPayload(null, events, addEvents, removeEvents, active));
     }
 
     private WebhookUpdate changed() {
-        isEmpty = false;
+        state.mark();
         return this;
     }
 }

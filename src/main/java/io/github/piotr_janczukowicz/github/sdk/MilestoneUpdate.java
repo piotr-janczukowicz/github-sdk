@@ -17,7 +17,7 @@ public final class MilestoneUpdate {
     private @Nullable String title;
     private @Nullable String description;
     private @Nullable Instant dueOn;
-    private boolean isEmpty = true;
+    private final UpdateState state = new UpdateState();
 
     MilestoneUpdate(final Milestone milestone) {
         this.milestone = milestone;
@@ -67,14 +67,12 @@ public final class MilestoneUpdate {
      * @throws IOException if the transport fails
      */
     public Milestone send() throws IOException {
-        if (isEmpty) {
-            throw new IllegalStateException("There is nothing to update");
-        }
+        state.requireChange();
         return milestone.apply(new GitHubUpdateMilestonePayload(title, null, description, dueOn));
     }
 
     private MilestoneUpdate changed() {
-        isEmpty = false;
+        state.mark();
         return this;
     }
 }

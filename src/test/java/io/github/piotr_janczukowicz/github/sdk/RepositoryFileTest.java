@@ -29,13 +29,13 @@ class RepositoryFileTest {
 
     private RepositoryFile fileOf(final byte[] content) {
         final String encoded = Base64.getMimeEncoder(4, new byte[] {'\n'}).encodeToString(content);
-        return new RepositoryFile(repository, RepositoryContentFixtures.contentFile("base64", encoded));
+        return new RepositoryFile(repository, RepositoryContentFixtures.contentFile("base64", encoded), null);
     }
 
     @Test
     void accessors_shouldExposeTheResponse_whenFileIsLoaded() {
         final GitHubContentFile response = RepositoryContentFixtures.contentFile("base64", "SGVsbG8=");
-        final RepositoryFile sut = new RepositoryFile(repository, response);
+        final RepositoryFile sut = new RepositoryFile(repository, response, null);
 
         assertSoftly(softly -> {
             softly.assertThat(sut.repository()).isSameAs(repository);
@@ -77,11 +77,22 @@ class RepositoryFileTest {
 
     @Test
     void bytes_shouldThrowIllegalStateException_whenGitHubSendsNoContent() {
-        final RepositoryFile sut = new RepositoryFile(repository, RepositoryContentFixtures.contentFile("none", ""));
+        final RepositoryFile sut =
+                new RepositoryFile(repository, RepositoryContentFixtures.contentFile("none", ""), null);
 
         final Throwable thrown = catchThrowable(sut::bytes);
 
         assertThat(thrown).isInstanceOf(IllegalStateException.class).hasMessageContaining("none");
+    }
+
+    @Test
+    void bytes_shouldThrowIllegalStateException_whenTheContentIsNotValidBase64() {
+        final RepositoryFile sut =
+                new RepositoryFile(repository, RepositoryContentFixtures.contentFile("base64", "SGVs*bG8="), null);
+
+        final Throwable thrown = catchThrowable(sut::bytes);
+
+        assertThat(thrown).isInstanceOf(IllegalStateException.class).hasMessageContaining("base64");
     }
 
     @Test
@@ -128,6 +139,32 @@ class RepositoryFileTest {
         verify(github.repositories().contents())
                 .deleteFile(eq(OWNER), eq(NAME), eq("docs/README.md"), payload.capture());
         assertThat(payload.getValue().branch()).isEqualTo("feature");
+    }
+
+    @Test
+    void delete_shouldSendTheRefAsTheBranch_whenTheFileWasReadAtARef() throws IOException {
+        final RepositoryFile sut =
+                new RepositoryFile(repository, RepositoryContentFixtures.contentFile("base64", "SGVsbG8="), "feature");
+        final ArgumentCaptor<GitHubDeleteFilePayload> payload = ArgumentCaptor.forClass(GitHubDeleteFilePayload.class);
+
+        sut.delete("Remove the file");
+
+        verify(github.repositories().contents())
+                .deleteFile(eq(OWNER), eq(NAME), eq("docs/README.md"), payload.capture());
+        assertThat(payload.getValue().branch()).isEqualTo("feature");
+    }
+
+    @Test
+    void delete_shouldPreferTheGivenBranch_whenTheFileWasReadAtARef() throws IOException {
+        final RepositoryFile sut =
+                new RepositoryFile(repository, RepositoryContentFixtures.contentFile("base64", "SGVsbG8="), "feature");
+        final ArgumentCaptor<GitHubDeleteFilePayload> payload = ArgumentCaptor.forClass(GitHubDeleteFilePayload.class);
+
+        sut.delete("Remove the file", "other");
+
+        verify(github.repositories().contents())
+                .deleteFile(eq(OWNER), eq(NAME), eq("docs/README.md"), payload.capture());
+        assertThat(payload.getValue().branch()).isEqualTo("other");
     }
 
     @Test
