@@ -3,9 +3,12 @@
 Java 21 object layer over [github-rest-client](https://github.com/piotr-janczukowicz/github-rest-client): objects that
 carry methods which call the GitHub REST API, such as `repo.createIssue(...)` and `issue.close()`.
 
-[![Build](https://github.com/piotr-janczukowicz/github-sdk/actions/workflows/main.yml/badge.svg)](https://github.com/piotr-janczukowicz/github-sdk/actions/workflows/main.yml)
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.piotr-janczukowicz/github-sdk)](https://central.sonatype.com/artifact/io.github.piotr-janczukowicz/github-sdk)
 ![Java 21](https://img.shields.io/badge/Java-21-orange.svg)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Build](https://github.com/piotr-janczukowicz/github-sdk/actions/workflows/main.yml/badge.svg)](https://github.com/piotr-janczukowicz/github-sdk/actions/workflows/main.yml)
+[![Codacy Coverage](https://app.codacy.com/project/badge/Coverage/4db2d5c4297c4124b0675df471afbdb1)](https://app.codacy.com/gh/piotr-janczukowicz/github-sdk/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/4db2d5c4297c4124b0675df471afbdb1)](https://app.codacy.com/gh/piotr-janczukowicz/github-sdk/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 
 ## Why this library
 
@@ -55,35 +58,55 @@ try (GitHubClient client = GitHubClients.create(AuthenticationProviders.bearer(S
 }
 ```
 
+## What you can do
+
+Each area below is an object you reach from `sdk`, a `Repository`, an `Organization` or a `User`. The
+[full list of objects and methods](docs/guide/coverage.md) names every call.
+
+| Area | What it covers |
+|---|---|
+| **Repositories** | create, update, archive, transfer, fork, star and watch; topics and languages; collaborators and invitations; webhooks and deploy keys; Pages |
+| **Code** | branches and branch protection, rulesets, commits, comparisons, files, multi-file commits, refs, tags, releases |
+| **Issues and pull requests** | issues, comments, labels, milestones, reactions, events; pull requests, reviews, review comments, merging |
+| **Actions and CI** | workflows, runs, jobs, artifacts, variables, caches, self-hosted runners, check runs, commit statuses, deployments and environments |
+| **Security** | Dependabot, secret scanning and code scanning alerts, code quality, security advisories, dependency graph and SBOM, interaction limits |
+| **People and organizations** | users, the signed-in account, organizations, teams, members and invitations, SSH, GPG and signing keys, notifications, gists |
+| **Projects and packages** | Projects v2 (read and edit items and fields), GitHub Packages |
+| **Platform** | search, rate limit, events, GitHub Apps and Marketplace, licenses, Markdown rendering |
+
+Not covered: Copilot, codespaces, billing, Enterprise Server administration and everything that needs GraphQL, such as
+discussions. Use `github-rest-client` for the REST ones. Which areas ran against the real GitHub API is listed in
+[Live smoke tests](docs/guide/smoke-tests.md).
+
+## Conventions
+
+All objects behave the same way, so you learn them once:
+
+- Objects are **immutable**. An operation returns a new object; the old one keeps its old state.
+- A **lookup** (`repository.issue(42)`, `sdk.user("octocat")`) returns an `Optional`, empty when GitHub answers 404.
+- A **list** is a lazy, single-use `Stream`. Pages are fetched as you consume it, so `limit(...)` stops further requests;
+  a transport failure during iteration is an `UncheckedIOException`.
+- **Several fields at once** go through `update()`: `issue.update().title("New").labels(List.of("bug")).send()` sends one
+  request with only the fields you set. `send()` with nothing set throws `IllegalStateException`.
+- **State changes** that are not fields are methods on the object: `close()`, `reopen()`, `merge(...)`, `lock()`.
+- `refresh()` reloads an object and throws `IllegalStateException` when it is gone.
+- Where GitHub's list returns a smaller record than a single lookup (pull requests, branches, teams, search hits for
+  issues and users), the SDK loads each item with one more request as the stream reaches it. The Javadoc says so, and
+  `limit(...)` bounds the cost. An item that is gone before it is loaded is skipped.
+- A field that GitHub may leave out is an `Optional` (`issue.milestone()`, `issue.author()`).
+- `IOException` and the client's `GitHubApiException` pass through unchanged.
+
 ## Configure the client
 
-Retries, caching and page size are the client's job, not the SDK's: every object calls the `GitHub` client you pass to
-`GitHubSdk.of(...)`, so one configuration covers all of them. `GitHubClientConfiguration` offers:
-
-- **Retry and backoff.** `retry(...)` sets how often a rate-limited call, a server error or an I/O failure is retried,
-  the backoff and its jitter, the longest wait, and a total deadline. A rate-limited call waits for the reset time GitHub
-  reports, within the configured limits, instead of failing at once.
-- **Conditional cache.** The client sends `If-None-Match` and reuses the body when GitHub answers 304, which does not
-  count against the rate limit. `conditionalCacheMaxEntries(...)`, `conditionalCacheMaxBodyBytes(...)` and
-  `conditionalCacheMaxBytes(...)` bound it.
-- **Rate limit listener.** `rateLimitListener(...)` is called with every snapshot, and `client.lastRateLimit(resource)`
-  returns the latest one.
-- **Paging.** `pagination(...)` sets the page size (up to 100) and the most pages one list walks. A list of the SDK is
-  a lazy `Stream`, so `limit(...)` stops further page requests too.
+Authentication, retries, caching, page size and the GitHub product (github.com, Enterprise Cloud or Enterprise Server)
+are the client's job, not the SDK's: every object calls the `GitHub` client you pass to `GitHubSdk.of(...)`, so one
+configuration covers all of them. The SDK has no configuration of its own, and a call made through an object behaves
+exactly like the same call on the client.
 
 ```java
 GitHubClientConfiguration configuration = GitHubClientConfiguration.builder()
-        .retry(RetryConfiguration.builder()
-                .maxRateLimitAttempts(5)
-                .maxBackoff(Duration.ofSeconds(30))
-                .totalDeadline(Duration.ofMinutes(5))
-                .build())
+        .retry(RetryConfiguration.builder().maxRateLimitAttempts(5).build())
         .conditionalCacheMaxEntries(500)
-        .rateLimitListener(snapshot -> {
-            if (snapshot.isExhausted()) {
-                System.err.println("Rate limit exhausted until " + snapshot.resetAt());
-            }
-        })
         .pagination(PaginationConfiguration.builder().perPage(100).maxPages(5).build())
         .build();
 
@@ -94,8 +117,16 @@ try (GitHubClient client = GitHubClients.create(
 }
 ```
 
-The SDK adds no layer of its own, so a call made through an object behaves exactly like the same call made on the
-client. `ConfiguredClientTest` builds this configuration, so a change in the client's API shows up in the build.
+The options are described in the `github-rest-client` documentation:
+
+- [Configuration](https://github.com/piotr-janczukowicz/github-rest-client/blob/main/docs/guide/configuration.md): retry,
+  backoff, conditional cache and timeouts
+- [Rate limiting](https://github.com/piotr-janczukowicz/github-rest-client/blob/main/docs/guide/rate-limiting.md): waits
+  and the rate limit listener
+- [Pagination](https://github.com/piotr-janczukowicz/github-rest-client/blob/main/docs/guide/pagination.md): page size
+  and the page limit; a list of the SDK is a lazy `Stream`, so `limit(...)` stops further page requests too
+- [Authentication](https://github.com/piotr-janczukowicz/github-rest-client#authentication) and
+  [Flavors and GitHub Enterprise](https://github.com/piotr-janczukowicz/github-rest-client/blob/main/docs/guide/flavors.md)
 
 ## Receive a webhook and act on it
 
@@ -125,83 +156,29 @@ is synced with GitHub's descriptions.
 ## Packages
 
 The entry points (`GitHubSdk`, `Repository`, `User`, `Organization`, `Team`, `Search`, `RateLimit`) are in
-`io.github.piotr_janczukowicz.github.sdk`. The other objects are grouped by area in sub-packages: `issues`, `pulls`,
-`content` (branches, commits, files, releases), `git` (refs, comparisons, multi-file commits), `gists`,
-`accounts`, `organizations`, `notifications`, `metrics`, `utilities`, `deploykeys`, `deployments`, `pages`, `security`, `rulesets`, `projects`, `apps`, `interactions`, `packages`, `advisories`, `dependencies`, `actions`, `checks`, `collaborators`, `reactions` and
-`webhooks`. The `internal` package is not exported by the module and is not part of the API. The module system hides it only on the module path; on the classpath it is a convention and not a security boundary.
+`io.github.piotr_janczukowicz.github.sdk`. The other objects are grouped by area in sub-packages such as `issues`,
+`pulls`, `content`, `git`, `actions`, `security`, `rulesets`, `projects` and `packages`.
 
-## What is covered
+The `internal` package is not exported by the module and is not part of the API. The module system hides it only on the
+module path; on the classpath it is a convention and not a security boundary.
 
-| Entry point | Objects and what they do |
-|---|---|
-| `sdk.repository(owner, name)` | `Repository`: `fetch()`, issues, pull requests, branches, commits, files (`file(path)`, `writeFile(...)`), releases, tags, labels, milestones, webhooks |
-| `Issue` | `update()`, `refresh()`, `close()`, `reopen()`, `lock()`, `unlock()`, labels, assignees, `comment(...)`, `comments()`, `react(...)`, `reactions()`, `events()`, `timeline()` |
-| `Collaborator`, `Invitation` | `repository.collaborators()`, `isCollaborator(...)`, `collaboratorPermission(...)`, `addCollaborator(...)`, `invitations()`; a collaborator has `remove()`, an invitation `changePermission(...)` and `cancel()` |
-| `Repository` (activity) | `star()`, `unstar()`, `isStarred()`, `stargazers()`, `watchers()`, `subscription()`, `watch()`, `ignore()`, `unwatch()`, `forks()`, `fork()`; `User` lists `starredRepositories()` and `watchedRepositories()` |
-| `Repository` (management) | `update()` (name, description, homepage, visibility, default branch, merge settings), `archive()` (not undoable through the API), `delete()`, `transfer(...)`, `topics()`, `replaceTopics(...)`, `languages()`, `contributors()`, `dispatchEvent(...)`, `generate(...)` from a template; `sdk.createRepository(payload)` creates one for the authenticated user |
-| `Workflow`, `WorkflowRun`, `WorkflowJob`, `Artifact`, `Variable` | `repository.workflows()`, `workflowRuns()`, `artifacts()`, `variables()`, `createVariable(...)`; a workflow has `enable()`, `disable()`, `dispatch(ref)` and `runs()`; a run has `cancel()`, `rerun()`, `rerunFailedJobs()`, `delete()`, `jobs()`, `artifacts()` and `logs()` (a short-lived link, nothing is downloaded); `repository.secrets()` lists names only, because creating a secret needs encryption that the client covers |
-| `Reaction` | `content()`, `user()`, `delete()`; made on an issue, an `IssueComment` or a `PullRequestReviewComment` with `react(...)` |
-| `PullRequest` | `update()`, `refresh()`, `close()`, `reopen()`, `merge(...)`, `reviews()`, `review(...)`, `draftReview(...)`, `reviewComments()`, `commentOnLine(...)`, reviewers, files, commits, `issue()` |
-| `PullRequestReview` | `edit(...)`, `submit(...)`, `dismiss(...)`, `deletePending()`, `comments()`, `refresh()` |
-| `PullRequestReviewComment` | `edit(...)`, `reply(...)`, `delete()`, `refresh()` |
-| `sdk.gist(id)`, `sdk.gists()`, `sdk.createGist()` | `Gist`: `update()`, `refresh()`, `delete()`, `star()`, `unstar()`, `isStarred()`, `fork()`, `forks()`, `commits()`, `revision(sha)`, `comments()`, `comment(...)`; `GistComment`: `edit(...)`, `delete()`; `sdk.publicGists()`, `sdk.starredGists()` and `user.gists()` list gists |
-| `sdk.notifications()`, `repository.notifications()` | `Notification`: `markRead()`, `markDone()`, `subscription()`, `subscribe()`, `ignore()`, `unsubscribe()`, `refresh()`; `sdk.markNotificationsRead()` marks all as read. Needs a classic token, because GitHub does not support fine-grained tokens for notifications |
-| `Repository` (deployments) | `deployments()`, `deployment(id)`, `deploy(ref, environment)` (GitHub's auto merge is off), `deploy(payload)`; a `Deployment` has `statuses()`, `latestStatus()`, `createStatus(state)`, `refresh()` and `delete()`; `environments()`, `environment(name)` and `saveEnvironment(name)` give `Environment` objects with `refresh()` and `delete()` |
-| `Repository` (Pages) | `pages()` gives a `PagesSite` with `update(...)`, `delete()`, `builds()`, `latestBuild()` and `requestBuild()`; `enablePages(branch)` turns Pages on |
-| `Repository` (security) | `dependabotAlerts()`, `secretScanningAlerts()`, `codeScanningAlerts()` and a lookup by number for each; every alert has `refresh()`, `dismiss(...)` or `resolve(...)` and `reopen()`. A secret scanning alert never returns the secret from its accessors, only from `response()`. `security()` reads and switches Dependabot alerts, automated security fixes, private vulnerability reporting and immutable releases |
-| `Repository` (metrics) | `traffic()` (views, clones, top paths and referrers, needs push access), `statistics()` (contributors, commit activity, code frequency, participation, punch card; empty while GitHub is still computing them) and `communityProfile()` |
-| `Commit` (comments), `Autolink`, `CheckSuite` | `commit.comments()`, `commit.comment(...)`, `repository.commitComments()` with `CommitComment` (`edit(...)`, `delete()`); `repository.autolinks()`, `addAutolink(...)`; `commit.checkSuites()`, `repository.checkSuite(id)` with `rerequest()` |
-| `sdk.licenses()`, `sdk.utilities()` | licenses (`sdk.license(key)`, `repository.license()`), and `Utilities`: `zen()`, `overview()`, `emojis()`, `renderMarkdown(...)`, `gitignoreTemplates()` |
-| `Repository` (deploy keys) | `deployKeys()`, `deployKey(id)`, `addDeployKey(title, key[, isReadOnly])`; a `DeployKey` has `refresh()` and `delete()` |
-| `Repository` (git data) | `commitTo(branch)` collects `write(...)` and `delete(...)` and `send(message)` makes one commit; `compare(base, head)` gives a `Comparison` (status, ahead and behind, commits, files, `diff()`, `patch()`); `refs(prefix)`, `ref(name)`, `createRef(...)` and `createBranch(...)` give `Ref` objects with `update(...)` and `delete()`; `tree(sha)` and `blob(sha)` read git objects |
-| `Branch` (protection) | `protection()` reads the rule (`BranchProtection`: `refresh()`, `remove()`); `protect()` collects status checks, review requirements, admin enforcement, push restrictions and the other options, and `send()` sets the rule. GitHub replaces the whole rule, so anything not chosen is switched off |
-| `Ruleset`, `RulesetDraft`, `RulesetUpdate`, `Rules` | `repository.rulesets()`, `ruleset(id)`, `newRuleset(name, target, enforcement)` collecting rules (`Rules.requirePullRequest(...)`, `requireStatusChecks(...)`, `requireLinearHistory()`, `restrictDeletion()` and more, or any client rule through `rule(...)`), ref patterns and bypass actors, then `create()`; a ruleset has `edit()` (`name`, `enforcement`, `refs`, `addRule`, `removeRule`, `send()`), `refresh()`, `history()` and `delete()`. `repository.ruleSuites()` and `ruleSuite(id)` return how rulesets judged pushes and merges, and `branch.rules()` lists the rules of rulesets that apply to a branch (not branch protection). Rulesets are the newer replacement of branch protection. GitHub replaces the whole list of rules on update, so `addRule` and `removeRule` read the current rules first. The evaluate (dry run) enforcement needs the Enterprise plan |
-| `Project`, `ProjectItem`, `ProjectField`, `ProjectView` | `organization.projects()`, `project(number)` and the same on `User` read Projects v2. A project has `items()` (or `items(query)`), `item(id)`, `addIssue(...)`, `addPullRequest(...)`, `addDraft(...)`, `fields()`, `field(id)`, `addTextField(...)`, `addNumberField(...)`, `addDateField(...)`, `addSingleSelectField(...)` and `createView(...)`; an item has `setField(...)`, `clearField(...)`, `refresh()` and `delete()`; a view has `items()`. Every object has a `nodeId()` for GraphQL. GitHub's REST API cannot create, edit, close or delete a project, edit or delete a field, delete a view, or write status updates, so those are not here and need GraphQL |
-| `Branch`, `Commit`, `RepositoryFile` | read; a file gives `text()` and `bytes()`, and writes with `writeFile(...)` and `delete(...)` |
-| `Commit` (CI) | `checkRuns()`, `checkRuns(name)`, `statuses()`, `combinedStatus()`, `createStatus(...)` |
-| `CheckRun`, `CommitStatus`, `CombinedStatus` | read-only views of CI results; `CheckRun` also has `annotations()` and `refresh()` |
-| `Release`, `Label`, `Milestone`, `Webhook` | `update()`, `refresh()`, `delete()` |
-| `sdk.currentUser()`, `sdk.user(login)` | `User`: `repositories()`, `organizations()`, `gists()`, `followers()`, `following()`, `sshKeys()`, `gpgKeys()`, `signingKeys()`, `socialAccounts()` |
-| `sdk.me()` | `Me`, for the account the client authenticates as: `update()` the profile, `emails()`, `addEmail(...)`, `changeEmailVisibility(...)`; SSH, GPG and signing keys (`SshKey`, `GpgKey` and `SigningKey` have `refresh()` and `delete()`); `follow(...)`, `block(...)` and their lists; social accounts |
-| `sdk.organization(login)` | `Organization`: `repositories()`, `createRepository(...)`, `members()`, `isMember(...)`, `membership(...)`, `changeMembership(login, role)`, `removeMember(...)`, `outsideCollaborators()`, `inviteByEmail(...)`, `inviteUser(...)`, `invitations()`, `teams()`, `team(slug)`, `createTeam(...)`, `webhooks()`, `createWebhook(...)`, `variables()`, `createVariable(...)`, `secrets()` (names only), `deleteSecret(...)` |
-| `Team`, `OrganizationInvitation`, `OrganizationWebhook`, `OrganizationVariable` | `Team`: `members()`, `repositories()`, `childTeams()`, `update(...)`, `delete()`, `addMember(...)`, `removeMember(...)`, `membership(...)`, `addRepository(...)`, `removeRepository(...)`; an invitation has `cancel()`; a webhook has `update(...)`, `ping()`, `deliveries()`, `refresh()` and `delete()`; a variable has `update(value)`, `refresh()` and `delete()` |
-| `sdk.search()` | issues, repositories, users, code and commits |
-| `sdk.rateLimit()` | `RateLimit` |
-| `RepositoryInteractions`, `RepositoryCodeQuality` | `repository.interactions()` has `current()`, `restrict(group[, expiry])` and `remove()` for the temporary limit on who may comment and open issues and pull requests; `repository.codeQuality()` has `findings()`, `findings(state)`, `finding(number)` and `setup()`, returning the client records. The limit of the owner account or organization is not handled here |
-| `RegistryPackage`, `RegistryPackageVersion` | `organization.registryPackages(type)`, `registryPackage(type, name)` and the same on `User` and `sdk.me()` read GitHub Packages. A package has `versions()`, `version(id)`, `refresh()`, `delete()` and `restore()`; a version has `refresh()`, `delete()` and `restore()`. GitHub's REST API cannot publish packages and needs a classic token with `read:packages` (and `delete:packages`), because it does not support fine-grained tokens |
-| `Advisory`, `RepositoryAdvisories`, global advisories | `sdk.globalAdvisories()` (or with a client filter) and `sdk.globalAdvisory(ghsaId)` read the GitHub Advisory Database as the client's records; `organization.advisories()` lists the repository advisories of an organization. `repository.advisories()` has `all()`, `find(ghsaId)`, `create(payload)` and `report(payload)`; an `Advisory` has `refresh()`, `update(payload)`, `comments()`, `addComment(body)` and `requestCve()`. Creating a temporary private fork for an advisory is not included |
-| `RepositoryDependencies` | `repository.dependencies()` has `requestSbomReport()` and `sbomReport(id)` (the asynchronous SBOM flow; the synchronous export that GitHub closes down on 2026-11-13 is not included), `diff(base, head)` (the dependency review of two refs) and `submit(snapshot)`. A submitted snapshot cannot be removed through the API. The enterprise license policy calls are not included |
-| `RepositoryActionsCache`, `ActionsCache` | `repository.actionsCache()` has `caches()` (or with a client filter), `deleteByKey(key)`, `usage()`, `retentionDays()`, `setRetentionDays(days)`, `storageGigabytes()` and `setStorageGigabytes(gigabytes)`; a cache has `delete()`. `organization.actionsCacheUsage()` and `actionsCacheUsageByRepository()` read the organization usage. Enterprise limits are not included |
-| `RepositoryCodeScanning` | `repository.codeScanning()` has `analyses()` (or with a client filter), `analysis(id)`, `sarif(id)`, `deleteAnalysis(id)`, `uploadSarif(payload)`, `sarifStatus(id)`, `databases()`, `database(language)`, `databaseDownloadLocation(language)`, `deleteDatabase(language)`, `defaultSetup()` and `updateDefaultSetup(update)`, returning the client records. The alerts stay on `repository.codeScanningAlerts()`. Variant analysis and the AI scan settings are not included |
-| `SelfHostedRunners`, `SelfHostedRunner` | `repository.selfHostedRunners()` and `organization.selfHostedRunners()` have `all()`, `named(name)`, `find(id)`, `applications()`, `registrationToken()` and `removeToken()` (secrets, do not log them); a runner has `refresh()`, `addLabels(...)`, `replaceLabels(...)`, `removeLabel(...)`, `removeAllLabels()` and `delete()`. Runner groups, just-in-time configurations and enterprise runners are not included. OIDC: `repository.oidcSubjectClaim()` and `setOidcSubjectClaim(...)`, and on the organization `oidcSubjectTemplate()`, `updateOidcSubjectTemplate(...)`, `oidcCustomProperties()`, `includeOidcCustomProperty(...)` and `excludeOidcCustomProperty(...)` |
-| Events | `repository.events()`, `repository.networkEvents()`, `organization.events()`, `user.events()`, `user.receivedEvents()`, `sdk.publicEvents()` and, for the signed-in account, `sdk.me().events()` and `receivedEvents()`; each is a lazy stream of the client's `GitHubEvent`. GitHub keeps only 90 days and 300 events per feed |
-| `App`, `Installation`, `Marketplace` | `sdk.app()` is the GitHub App the SDK is authenticated as, `sdk.app(slug)` a public app. The installation and webhook calls need an App JWT: `installations()`, `installation(id)`, `organizationInstallation(...)`, `repositoryInstallation(...)`, `userInstallation(...)`, `installationRequests()`, `webhookConfig()`, `webhookDeliveries()`, `webhookDelivery(id)`, `redeliver(id)`; an `Installation` has `suspend()`, `unsuspend()`, `delete()`, `refresh()` and `accessToken(...)`. `sdk.marketplace()` reads the Marketplace plans and purchases of the app, and `sdk.me().marketplaceSubscriptions()` those of the account. Creating an app from a manifest and the OAuth app token calls are not here, because they take client secrets |
+## Comparison with hub4j/github-api
 
-Copilot, packages, codespaces, GitHub Enterprise Server administration, billing, enterprise
-administration, code scanning uploads, CodeQL databases and everything that needs GraphQL, such as discussions, have no
-objects here yet; use `github-rest-client` for the REST ones. Which areas ran against the real GitHub API is listed in
-[Live smoke tests](docs/guide/smoke-tests.md).
+[hub4j/github-api](https://github.com/hub4j/github-api) is the long-established Java library for GitHub and a fine
+choice. It has the same object-oriented style as this SDK, with classes such as `GHRepository` and `GHUser` that carry the
+operations. The differences are in the foundation. The hub4j column is taken from its
+[documentation](https://hub4j.github.io/github-api/) as of November 2026.
 
-## Conventions
+| | github-sdk | hub4j/github-api |
+|---|---|---|
+| Style | Objects with methods, on top of a typed client generated from GitHub's OpenAPI descriptions | Objects with methods |
+| Objects | Immutable; an operation returns a new object built from GitHub's answer, and `response()` gives the full typed record | Its own model classes |
+| Escape hatch | The `github-rest-client` is underneath, so any operation without an object is one call away | Its own API |
+| Java | 21 | 11 |
+| Maturity | Prerelease, see the [Disclaimer](#disclaimer) | Long-established and widely used |
 
-All objects behave the same way, so you learn them once:
-
-- Objects are **immutable**. An operation returns a new object; the old one keeps its old state.
-- A **lookup** (`repository.issue(42)`, `sdk.user("octocat")`) returns an `Optional`, empty when GitHub answers 404.
-- A **list** is a lazy, single-use `Stream`. Pages are fetched as you consume it, so `limit(...)` stops further requests;
-  a transport failure during iteration is an `UncheckedIOException`.
-- **Several fields at once** go through `update()`: `issue.update().title("New").labels(List.of("bug")).send()` sends one
-  request with only the fields you set. `send()` with nothing set throws `IllegalStateException`.
-- **State changes** that are not fields are methods on the object: `close()`, `reopen()`, `merge(...)`, `lock()`.
-- `refresh()` reloads an object and throws `IllegalStateException` when it is gone.
-- Where GitHub's list returns a smaller record than a single lookup (pull requests, branches, teams, search hits for
-  issues and users), the SDK loads each item with one more request as the stream reaches it. The Javadoc says so, and
-  `limit(...)` bounds the cost.
-- `IOException` and the client's `GitHubApiException` pass through unchanged.
-
-## Smoke tests
-
-The smoke tests call the real GitHub API and are opt-in; see [Live smoke tests](docs/guide/smoke-tests.md).
+Choose hub4j/github-api if you need Java 11 or a library with a long track record. Choose this SDK if you want
+immutable objects over a client that follows GitHub's own descriptions, with the full typed response always within reach.
 
 ## Disclaimer
 
