@@ -50,29 +50,29 @@ public final class PagesSite {
     /**
      * Returns the public address of the site.
      *
-     * @return the URL
+     * @return the URL, or empty when the response has none
      */
-    public String htmlUrl() {
-        return response.htmlUrl();
+    public Optional<String> htmlUrl() {
+        return Optional.ofNullable(response.htmlUrl());
     }
 
     /**
      * Returns the build status of the site, as the client decoded it. The client maps a value it does not know to its
      * own {@code UNRECOGNIZED} constant.
      *
-     * @return the status
+     * @return the status, or empty when the response has none
      */
-    public GitHubPagesSiteStatus status() {
-        return response.status();
+    public Optional<GitHubPagesSiteStatus> status() {
+        return Optional.ofNullable(response.status());
     }
 
     /**
      * Returns how the site is built, from a branch or by a workflow.
      *
-     * @return the build type
+     * @return the build type, or empty when the response has none
      */
-    public GitHubPagesBuildType buildType() {
-        return response.buildType();
+    public Optional<GitHubPagesBuildType> buildType() {
+        return Optional.ofNullable(response.buildType());
     }
 
     /**

@@ -13,6 +13,7 @@ import io.github.piotr_janczukowicz.github.api.securityadvisories.GitHubUpdateRe
 import io.github.piotr_janczukowicz.github.sdk.Repository;
 import io.github.piotr_janczukowicz.github.sdk.internal.Internals;
 import java.io.IOException;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
@@ -68,10 +69,10 @@ public final class Advisory {
     /**
      * Returns the severity of the advisory.
      *
-     * @return the severity
+     * @return the severity, or empty when the response has none
      */
-    public GitHubRepositoryAdvisorySeverity severity() {
-        return response.severity();
+    public Optional<GitHubRepositoryAdvisorySeverity> severity() {
+        return Optional.ofNullable(response.severity());
     }
 
     /**

@@ -107,7 +107,7 @@ class DeploymentsSmokeIT {
         assertThat(site)
                 .satisfiesAnyOf(
                         found -> assertThat(found).isEmpty(),
-                        found -> assertThat(found.orElseThrow().htmlUrl()).isNotBlank());
+                        found -> assertThat(found.orElseThrow().htmlUrl()).isPresent());
     }
 
     private static Optional<PagesSite> readPages(final Repository repository) throws IOException {

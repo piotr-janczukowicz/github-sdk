@@ -49,7 +49,7 @@ class AdvisoryTest {
             softly.assertThat(sut.repository()).isSameAs(repository);
             softly.assertThat(sut.ghsaId()).isEqualTo(GHSA);
             softly.assertThat(sut.summary()).isEqualTo("Injection in parser");
-            softly.assertThat(sut.severity()).isEqualTo(GitHubRepositoryAdvisorySeverity.HIGH);
+            softly.assertThat(sut.severity()).contains(GitHubRepositoryAdvisorySeverity.HIGH);
             softly.assertThat(sut.state()).isEqualTo(GitHubRepositoryAdvisoryState.DRAFT);
             softly.assertThat(sut.response()).isSameAs(response);
         });

@@ -56,10 +56,10 @@ class ProjectTest {
     void accessors_shouldExposeTheResponse_whenProjectIsLoaded() {
         assertSoftly(softly -> {
             softly.assertThat(sut.number()).isEqualTo(NUMBER);
-            softly.assertThat(sut.nodeId()).isEqualTo("PVT_1");
+            softly.assertThat(sut.nodeId()).contains("PVT_1");
             softly.assertThat(sut.ownerLogin()).isEqualTo("octocat");
             softly.assertThat(sut.title()).isEqualTo("Roadmap");
-            softly.assertThat(sut.state()).isEqualTo(GitHubProjectState.OPEN);
+            softly.assertThat(sut.state()).contains(GitHubProjectState.OPEN);
             softly.assertThat(sut.isPublic()).isTrue();
             softly.assertThat(sut.response()).isSameAs(response);
         });

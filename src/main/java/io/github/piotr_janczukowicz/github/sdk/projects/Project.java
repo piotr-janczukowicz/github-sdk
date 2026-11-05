@@ -78,10 +78,10 @@ public final class Project {
     /**
      * Returns whether the project is open or closed.
      *
-     * @return the state
+     * @return the state, or empty when the response has none
      */
-    public GitHubProjectState state() {
-        return response.state();
+    public Optional<GitHubProjectState> state() {
+        return Optional.ofNullable(response.state());
     }
 
     /**

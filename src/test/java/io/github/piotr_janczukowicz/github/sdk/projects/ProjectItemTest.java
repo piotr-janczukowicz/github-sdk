@@ -33,11 +33,19 @@ class ProjectItemTest {
     private final ProjectItem sut = new ProjectItem(project, response);
 
     @Test
+    void content_shouldBeEmpty_whenTheResponseHasNone() {
+        final GitHubProjectItem bare = mock(GitHubProjectItem.class);
+        when(bare.content()).thenReturn(null);
+
+        assertThat(new ProjectItem(project, bare).content()).isEmpty();
+    }
+
+    @Test
     void accessors_shouldExposeTheResponse_whenItemIsLoaded() {
         assertSoftly(softly -> {
             softly.assertThat(sut.project()).isSameAs(project);
             softly.assertThat(sut.id()).isEqualTo(ID);
-            softly.assertThat(sut.nodeId()).isEqualTo("PVTI_1");
+            softly.assertThat(sut.nodeId()).contains("PVTI_1");
             softly.assertThat(sut.contentType()).isEqualTo(GitHubProjectItemContentType.ISSUE);
             softly.assertThat(sut.content()).containsEntry("title", "Fix it");
             softly.assertThat(sut.response()).isSameAs(response);

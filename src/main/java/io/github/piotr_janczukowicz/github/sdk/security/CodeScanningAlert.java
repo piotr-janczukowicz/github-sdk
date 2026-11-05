@@ -12,6 +12,7 @@ import io.github.piotr_janczukowicz.github.api.codescanning.GitHubUpdateAlertPay
 import io.github.piotr_janczukowicz.github.sdk.Repository;
 import io.github.piotr_janczukowicz.github.sdk.internal.Internals;
 import java.io.IOException;
+import java.util.Optional;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 
@@ -59,10 +60,10 @@ public final class CodeScanningAlert {
      * Returns the state, as the client decoded it. The client maps a value it does not know to its own
      * {@code UNRECOGNIZED} constant.
      *
-     * @return the state
+     * @return the state, or empty when the response has none
      */
-    public GitHubCodeScanningAlertState state() {
-        return response.state();
+    public Optional<GitHubCodeScanningAlertState> state() {
+        return Optional.ofNullable(response.state());
     }
 
     /**

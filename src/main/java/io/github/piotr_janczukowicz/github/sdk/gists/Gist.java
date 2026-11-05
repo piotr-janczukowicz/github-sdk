@@ -35,20 +35,22 @@ public final class Gist {
      *
      * @param sdk the SDK that makes the calls
      * @param response the response record the object is built from
-     * @throws NullPointerException if an argument is {@code null}
+     * @throws NullPointerException if an argument or the id of the response is {@code null}
      */
     public Gist(final GitHubSdk sdk, final GitHubGistSimple response) {
         this.sdk = requireNonNull(sdk, "sdk");
         this.response = requireNonNull(response, "response");
+        requireNonNull(response.id(), "response.id");
     }
 
     /**
      * Returns the gist id.
      *
      * @return the id
+     * @throws NullPointerException if the response has no id
      */
     public String id() {
-        return response.id();
+        return requireNonNull(response.id(), "id");
     }
 
     /**
@@ -72,10 +74,10 @@ public final class Gist {
     /**
      * Returns the link to the gist on GitHub.
      *
-     * @return the URL
+     * @return the URL, or empty when the response has none
      */
-    public String htmlUrl() {
-        return response.htmlUrl();
+    public Optional<String> htmlUrl() {
+        return Optional.ofNullable(response.htmlUrl());
     }
 
     /**

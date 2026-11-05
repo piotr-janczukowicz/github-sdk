@@ -5,6 +5,7 @@ import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
 import io.github.piotr_janczukowicz.github.api.projects.GitHubProjectField;
 import io.github.piotr_janczukowicz.github.api.projects.GitHubProjectFieldDataType;
 import java.io.IOException;
+import java.util.Optional;
 
 /**
  * A field of a {@link Project}. The REST API can list, read and add fields but not change or delete them, so the object
@@ -41,10 +42,10 @@ public final class ProjectField {
     /**
      * Returns the node id, which GraphQL uses to address the field.
      *
-     * @return the node id
+     * @return the node id, or empty when the response has none
      */
-    public String nodeId() {
-        return response.nodeId();
+    public Optional<String> nodeId() {
+        return Optional.ofNullable(response.nodeId());
     }
 
     /**

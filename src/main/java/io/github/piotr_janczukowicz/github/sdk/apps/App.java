@@ -35,11 +35,12 @@ public final class App {
      *
      * @param sdk the SDK that makes the calls
      * @param response the response record the object is built from
-     * @throws NullPointerException if an argument is {@code null}
+     * @throws NullPointerException if an argument or the slug of the response is {@code null}
      */
     public App(final GitHubSdk sdk, final GitHubIntegration response) {
         this.sdk = requireNonNull(sdk, "sdk");
         this.response = requireNonNull(response, "response");
+        requireNonNull(response.slug(), "response.slug");
     }
 
     /**
@@ -55,9 +56,10 @@ public final class App {
      * Returns the app slug, the name used in URLs.
      *
      * @return the slug
+     * @throws NullPointerException if the response has no slug
      */
     public String slug() {
-        return response.slug();
+        return requireNonNull(response.slug(), "slug");
     }
 
     /**

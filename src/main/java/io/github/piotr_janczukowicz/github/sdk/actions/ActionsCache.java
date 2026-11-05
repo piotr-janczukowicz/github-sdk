@@ -5,6 +5,7 @@ import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
 import io.github.piotr_janczukowicz.github.api.actions.GitHubActionsCache;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
 import java.io.IOException;
+import java.util.Optional;
 
 /**
  * A GitHub Actions cache entry of a {@link Repository}. The object is immutable, and {@link #response()} gives the
@@ -18,33 +19,35 @@ public final class ActionsCache {
     ActionsCache(final RepositoryActionsCache caches, final GitHubActionsCache response) {
         this.caches = requireNonNull(caches, "caches");
         this.response = requireNonNull(response, "response");
+        requireNonNull(response.id(), "response.id");
     }
 
     /**
      * Returns the cache id.
      *
      * @return the id
+     * @throws NullPointerException if the response has no id
      */
     public long id() {
-        return response.id();
+        return requireNonNull(response.id(), "id");
     }
 
     /**
      * Returns the cache key.
      *
-     * @return the key
+     * @return the key, or empty when the response has none
      */
-    public String key() {
-        return response.key();
+    public Optional<String> key() {
+        return Optional.ofNullable(response.key());
     }
 
     /**
      * Returns the Git ref the cache was saved for.
      *
-     * @return the ref
+     * @return the ref, or empty when the response has none
      */
-    public String ref() {
-        return response.ref();
+    public Optional<String> ref() {
+        return Optional.ofNullable(response.ref());
     }
 
     /**

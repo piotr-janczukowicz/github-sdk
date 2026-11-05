@@ -36,7 +36,7 @@ class ProjectFieldAndViewTest {
         assertSoftly(softly -> {
             softly.assertThat(sut.project()).isSameAs(project);
             softly.assertThat(sut.id()).isEqualTo(ProjectFixtures.FIELD_ID);
-            softly.assertThat(sut.nodeId()).isEqualTo("PVTF_1");
+            softly.assertThat(sut.nodeId()).contains("PVTF_1");
             softly.assertThat(sut.name()).isEqualTo("Status");
             softly.assertThat(sut.dataType()).isEqualTo(GitHubProjectFieldDataType.SINGLE_SELECT);
             softly.assertThat(sut.response()).isSameAs(response);
@@ -80,7 +80,7 @@ class ProjectFieldAndViewTest {
         assertSoftly(softly -> {
             softly.assertThat(sut.project()).isSameAs(project);
             softly.assertThat(sut.number()).isEqualTo(ProjectFixtures.VIEW_NUMBER);
-            softly.assertThat(sut.nodeId()).isEqualTo("PVTV_1");
+            softly.assertThat(sut.nodeId()).contains("PVTV_1");
             softly.assertThat(sut.name()).isEqualTo("Board");
             softly.assertThat(sut.layout()).isEqualTo(GitHubProjectViewLayout.BOARD);
             softly.assertThat(sut.response()).isSameAs(response);

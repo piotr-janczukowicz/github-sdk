@@ -45,9 +45,9 @@ class PagesSiteTest {
     void accessors_shouldExposeTheResponse_whenSiteIsLoaded() {
         assertSoftly(softly -> {
             softly.assertThat(sut.repository()).isSameAs(repository);
-            softly.assertThat(sut.htmlUrl()).isEqualTo("https://octocat.github.io/hello-world/");
-            softly.assertThat(sut.status()).isEqualTo(GitHubPagesSiteStatus.BUILT);
-            softly.assertThat(sut.buildType()).isEqualTo(GitHubPagesBuildType.LEGACY);
+            softly.assertThat(sut.htmlUrl()).contains("https://octocat.github.io/hello-world/");
+            softly.assertThat(sut.status()).contains(GitHubPagesSiteStatus.BUILT);
+            softly.assertThat(sut.buildType()).contains(GitHubPagesBuildType.LEGACY);
             softly.assertThat(sut.cname()).hasValue("example.com");
             softly.assertThat(sut.isPublic()).isTrue();
             softly.assertThat(sut.isHttpsEnforced()).isTrue();

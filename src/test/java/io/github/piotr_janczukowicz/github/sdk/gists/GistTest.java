@@ -46,7 +46,8 @@ class GistTest {
             softly.assertThat(sut.id()).isEqualTo(ID);
             softly.assertThat(sut.description()).hasValue("A greeting");
             softly.assertThat(sut.isPublic()).isTrue();
-            softly.assertThat(sut.htmlUrl()).endsWith(ID);
+            softly.assertThat(sut.htmlUrl())
+                    .hasValueSatisfying(url -> assertThat(url).endsWith(ID));
             softly.assertThat(sut.owner()).hasValue("octocat");
             softly.assertThat(sut.files()).containsOnlyKeys(GistFixtures.FILE);
             softly.assertThat(sut.content(GistFixtures.FILE)).hasValue("hello");

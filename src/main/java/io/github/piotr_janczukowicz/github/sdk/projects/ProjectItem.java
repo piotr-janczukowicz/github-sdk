@@ -10,6 +10,7 @@ import io.github.piotr_janczukowicz.json.OptionalNull;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * An item of a {@link Project}: an issue, a pull request or a draft issue. The object is immutable, and
@@ -46,10 +47,10 @@ public final class ProjectItem {
     /**
      * Returns the node id, which GraphQL uses to address the item.
      *
-     * @return the node id
+     * @return the node id, or empty when the response has none
      */
-    public String nodeId() {
-        return response.nodeId();
+    public Optional<String> nodeId() {
+        return Optional.ofNullable(response.nodeId());
     }
 
     /**
@@ -64,10 +65,11 @@ public final class ProjectItem {
     /**
      * Returns the content of the item as GitHub sent it, for example the title and number of an issue.
      *
-     * @return the content properties
+     * @return the content properties, empty when the response has none
      */
     public Map<String, Object> content() {
-        return response.content();
+        final Map<String, Object> value = response.content();
+        return value == null ? Map.of() : value;
     }
 
     /**
