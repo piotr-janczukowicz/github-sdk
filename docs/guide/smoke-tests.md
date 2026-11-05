@@ -13,7 +13,7 @@ Create a fine-grained personal access token. Resource owner: the owner of the sa
 sandbox repository.
 
 - Repository permissions, read and write: Actions, Administration, Commit statuses, Contents, Issues, Pull requests,
-  Variables, Webhooks, Deploy keys, Deployments, Environments, Pages. Repository permissions, read: Dependabot alerts, Secret scanning alerts, Code scanning alerts. The Actions, Administration, Deploy keys, Deployments, Environments, Pages and Variables tests are skipped, not failed, when GitHub answers
+  Variables, Webhooks, Deploy keys, Deployments, Environments, Pages. Account permissions, read and write: Email addresses, Git SSH keys, SSH signing keys. Repository permissions, read: Dependabot alerts, Secret scanning alerts, Code scanning alerts. The Actions, Administration, Deploy keys, Deployments, Environments, Pages and Variables tests are skipped, not failed, when GitHub answers
   403.
 - Repository permissions, read: Metadata.
 - Account permissions, read and write: Gists, and Starring and Watching, when your token form offers them. The gist,
@@ -58,6 +58,7 @@ Without `SMOKE_GITHUB_TOKEN` every smoke class is skipped.
 | `DeploymentsSmokeIT` | create a deployment on the default branch, report statuses, list it, mark it inactive and delete it; save, list, reload and delete an environment; read Pages. Enabling Pages is not run live, because a private repository on a free plan refuses it |
 | `SecuritySmokeIT` | list Dependabot, secret scanning and code scanning alerts and reload them, read the four security switches. Reads only: no alert is dismissed or resolved and no switch is changed. Each test is skipped when GitHub answers 403 or 404, which is the case when the permission is missing or the feature is off |
 | `RepositoryExtrasSmokeIT` | create, list, edit and delete a commit comment; add, list, reload and delete an autolink; read the community profile, statistics, traffic and license of the repository; read licenses, emojis, Markdown rendering and gitignore templates. Traffic needs push access, so that test skips on 403 |
+| `MeSmokeIT` | add, list, reload and delete a throwaway SSH key and a throwaway signing key; read your profile, emails, followers, following, blocked users and social accounts, and the public keys of your own user. Following, blocking and email changes are never run live, because they would affect real accounts. Key tests skip on 403 |
 | `ContentSmokeIT` | default branch, its head commit, branch and commit lists, 404 on a missing branch |
 | `FilesSmokeIT` | write, update, read, delete a file on a throwaway branch (binary and UTF-8 text), directory and missing paths |
 | `ReleasesSmokeIT` | draft release: create, update, list, refresh, delete; latest release; tags |

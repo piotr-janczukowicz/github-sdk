@@ -12,6 +12,7 @@ import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateForAuthe
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateInOrgPayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubFullRepository;
 import io.github.piotr_janczukowicz.github.pagination.GitHubPageRequest;
+import io.github.piotr_janczukowicz.github.sdk.accounts.Me;
 import io.github.piotr_janczukowicz.github.sdk.gists.Gist;
 import io.github.piotr_janczukowicz.github.sdk.gists.GistDraft;
 import io.github.piotr_janczukowicz.github.sdk.internal.Internals;
@@ -86,6 +87,16 @@ public final class GitHubSdk {
         requireNonNull(payload, "payload");
         final GitHubFullRepository created = github.repositories().repository().createForAuthenticatedUser(payload);
         return new Repository(this, created.owner().login(), created.name(), created);
+    }
+
+    /**
+     * Returns the account the client authenticates as, for the operations that only make sense for one's own account,
+     * such as managing emails and keys. Nothing is requested until a method of the result is called.
+     *
+     * @return the authenticated account
+     */
+    public Me me() {
+        return new Me(this);
     }
 
     /**

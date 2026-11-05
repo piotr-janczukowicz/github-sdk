@@ -4,6 +4,11 @@ import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
 
 import io.github.piotr_janczukowicz.github.api.organizations.GitHubOrganizationSimple;
 import io.github.piotr_janczukowicz.github.api.users.GitHubAuthenticatedUser;
+import io.github.piotr_janczukowicz.github.api.users.GitHubGpgKey;
+import io.github.piotr_janczukowicz.github.api.users.GitHubKeySimple;
+import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
+import io.github.piotr_janczukowicz.github.api.users.GitHubSocialAccount;
+import io.github.piotr_janczukowicz.github.api.users.GitHubSshSigningKey;
 import io.github.piotr_janczukowicz.github.api.users.GitHubUser;
 import io.github.piotr_janczukowicz.github.api.users.GitHubUserView;
 import io.github.piotr_janczukowicz.github.pagination.GitHubPageRequest;
@@ -50,6 +55,78 @@ public final class User {
                     case final GitHubUser user -> user.name();
                     case final GitHubAuthenticatedUser user -> user.name();
                 });
+    }
+
+    /**
+     * Lists the accounts that follow the user ({@code GET /users/{username}/followers}) as GitHub returns them. Pages
+     * are fetched only as the stream is consumed; transport failures during iteration are
+     * {@link java.io.UncheckedIOException}.
+     *
+     * @return the followers
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<GitHubSimpleUser> followers() throws IOException {
+        return sdk.github().users().followers().listFollowers(login(), GitHubPageRequest.byPage()).stream();
+    }
+
+    /**
+     * Lists the accounts the user follows ({@code GET /users/{username}/following}) as GitHub returns them. Pages are
+     * fetched only as the stream is consumed; transport failures during iteration are
+     * {@link java.io.UncheckedIOException}.
+     *
+     * @return the followed accounts
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<GitHubSimpleUser> following() throws IOException {
+        return sdk.github().users().followers().listFollowing(login(), GitHubPageRequest.byPage()).stream();
+    }
+
+    /**
+     * Lists the public SSH keys of the user ({@code GET /users/{username}/keys}) as GitHub returns them. Pages are
+     * fetched only as the stream is consumed; transport failures during iteration are
+     * {@link java.io.UncheckedIOException}.
+     *
+     * @return the keys
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<GitHubKeySimple> sshKeys() throws IOException {
+        return sdk.github().users().keys().listPublicKeys(login(), GitHubPageRequest.byPage()).stream();
+    }
+
+    /**
+     * Lists the public GPG keys of the user ({@code GET /users/{username}/gpg_keys}) as GitHub returns them. Pages are
+     * fetched only as the stream is consumed; transport failures during iteration are
+     * {@link java.io.UncheckedIOException}.
+     *
+     * @return the keys
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<GitHubGpgKey> gpgKeys() throws IOException {
+        return sdk.github().users().gpgKeys().listGpgKeys(login(), GitHubPageRequest.byPage()).stream();
+    }
+
+    /**
+     * Lists the SSH signing keys of the user ({@code GET /users/{username}/ssh_signing_keys}) as GitHub returns them.
+     * Pages are fetched only as the stream is consumed; transport failures during iteration are
+     * {@link java.io.UncheckedIOException}.
+     *
+     * @return the keys
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<GitHubSshSigningKey> signingKeys() throws IOException {
+        return sdk.github().users().sshSigningKeys().listSshSigningKeys(login(), GitHubPageRequest.byPage()).stream();
+    }
+
+    /**
+     * Lists the social accounts on the profile of the user ({@code GET /users/{username}/social_accounts}) as GitHub
+     * returns them. Pages are fetched only as the stream is consumed; transport failures during iteration are
+     * {@link java.io.UncheckedIOException}.
+     *
+     * @return the social accounts
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<GitHubSocialAccount> socialAccounts() throws IOException {
+        return sdk.github().users().socialAccounts().listSocialAccounts(login(), GitHubPageRequest.byPage()).stream();
     }
 
     /**

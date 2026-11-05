@@ -8,15 +8,8 @@ import io.github.piotr_janczukowicz.github.client.exception.GitHubNotFoundExcept
 import io.github.piotr_janczukowicz.github.sdk.Repository;
 import io.github.piotr_janczukowicz.github.sdk.deploykeys.DeployKey;
 import io.github.piotr_janczukowicz.github.sdk.notifications.Notification;
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.util.Arrays;
-import java.util.Base64;
 import java.util.List;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
@@ -27,8 +20,6 @@ import org.junit.jupiter.api.Test;
 class DeployKeysAndNotificationsSmokeIT {
 
     private static final SmokeEnvironment ENV = SmokeEnvironment.fromEnv();
-    private static final String KEY_TYPE = "ssh-ed25519";
-    private static final int KEY_LENGTH = 32;
 
     @BeforeAll
     static void requireToken() {
@@ -40,7 +31,7 @@ class DeployKeysAndNotificationsSmokeIT {
             throws IOException, GeneralSecurityException {
         final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
         final String title = ENV.name("key");
-        final DeployKey added = add(repository, title, openSshPublicKey());
+        final DeployKey added = add(repository, title, SmokeKeys.openSshPublicKey());
         try {
             final List<DeployKey> listed = repository.deployKeys().toList();
             final DeployKey reloaded = added.refresh();
@@ -48,7 +39,7 @@ class DeployKeysAndNotificationsSmokeIT {
             assertSoftly(softly -> {
                 softly.assertThat(added.title()).isEqualTo(title);
                 softly.assertThat(added.isReadOnly()).isTrue();
-                softly.assertThat(added.key()).startsWith(KEY_TYPE);
+                softly.assertThat(added.key()).startsWith(SmokeKeys.KEY_TYPE);
                 softly.assertThat(listed).extracting(DeployKey::id).contains(added.id());
                 softly.assertThat(reloaded.id()).isEqualTo(added.id());
             });
@@ -85,20 +76,5 @@ class DeployKeysAndNotificationsSmokeIT {
             Assumptions.abort("GitHub does not support fine-grained tokens for notifications");
             throw e;
         }
-    }
-
-    private static String openSshPublicKey() throws GeneralSecurityException, IOException {
-        final KeyPair pair = KeyPairGenerator.getInstance("Ed25519").generateKeyPair();
-        final byte[] encoded = pair.getPublic().getEncoded();
-        final byte[] raw = Arrays.copyOfRange(encoded, encoded.length - KEY_LENGTH, encoded.length);
-        final ByteArrayOutputStream blob = new ByteArrayOutputStream();
-        try (DataOutputStream out = new DataOutputStream(blob)) {
-            final byte[] type = KEY_TYPE.getBytes(StandardCharsets.US_ASCII);
-            out.writeInt(type.length);
-            out.write(type);
-            out.writeInt(raw.length);
-            out.write(raw);
-        }
-        return KEY_TYPE + " " + Base64.getEncoder().encodeToString(blob.toByteArray());
     }
 }

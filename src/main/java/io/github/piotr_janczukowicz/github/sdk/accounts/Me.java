@@ -1,0 +1,414 @@
+package io.github.piotr_janczukowicz.github.sdk.accounts;
+
+import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
+import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
+
+import io.github.piotr_janczukowicz.github.api.GitHub;
+import io.github.piotr_janczukowicz.github.api.users.GitHubCreateGpgKeyPayload;
+import io.github.piotr_janczukowicz.github.api.users.GitHubCreatePublicSshKeyPayload;
+import io.github.piotr_janczukowicz.github.api.users.GitHubCreateSshSigningKeyPayload;
+import io.github.piotr_janczukowicz.github.api.users.GitHubEmail;
+import io.github.piotr_janczukowicz.github.api.users.GitHubSetPrimaryEmailVisibilityPayload;
+import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
+import io.github.piotr_janczukowicz.github.api.users.GitHubSocialAccount;
+import io.github.piotr_janczukowicz.github.api.users.GitHubUpdateAuthenticatedUserPayload;
+import io.github.piotr_janczukowicz.github.api.users.GitHubUpdateEmailsPayload;
+import io.github.piotr_janczukowicz.github.api.users.GitHubUpdateSocialAccountsPayload;
+import io.github.piotr_janczukowicz.github.pagination.GitHubPageRequest;
+import io.github.piotr_janczukowicz.github.sdk.GitHubSdk;
+import io.github.piotr_janczukowicz.github.sdk.User;
+import io.github.piotr_janczukowicz.github.sdk.internal.Internals;
+import java.io.IOException;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Stream;
+import org.jspecify.annotations.Nullable;
+
+/**
+ * The account the client authenticates as. Operations that only make sense for one's own account, such as managing
+ * emails and keys, live here and nowhere else. The object holds no state and makes no request until a method is called;
+ * every method asks GitHub or changes the account at once.
+ */
+public final class Me {
+
+    private static final String KEY = "key";
+    private static final String TITLE = "title";
+    private static final String LOGIN = "login";
+
+    private final GitHubSdk sdk;
+
+    public Me(final GitHubSdk sdk) {
+        this.sdk = requireNonNull(sdk, "sdk");
+    }
+
+    /**
+     * Loads the profile of the account ({@code GET /user}).
+     *
+     * @return the profile
+     * @throws IOException if the transport fails
+     */
+    public User profile() throws IOException {
+        return sdk.currentUser();
+    }
+
+    /**
+     * Starts a change of several profile fields at once; nothing is sent until {@link MeUpdate#send()}.
+     *
+     * @return a new update
+     */
+    public MeUpdate update() {
+        return new MeUpdate(this);
+    }
+
+    /**
+     * Lists the email addresses of the account ({@code GET /user/emails}) as GitHub returns them. Pages are fetched
+     * only as the stream is consumed; transport failures during iteration are {@link java.io.UncheckedIOException}.
+     *
+     * @return the email addresses
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<GitHubEmail> emails() throws IOException {
+        return github().users().emails().listEmails(GitHubPageRequest.byPage()).stream();
+    }
+
+    /**
+     * Adds an email address ({@code POST /user/emails}). GitHub sends a verification mail to it.
+     *
+     * @param address the address
+     * @return all addresses of the account afterwards
+     * @throws NullPointerException if {@code address} is {@code null}
+     * @throws IllegalArgumentException if {@code address} is blank
+     * @throws IOException if the transport fails
+     */
+    public List<GitHubEmail> addEmail(final String address) throws IOException {
+        return github().users()
+                .emails()
+                .addEmails(new GitHubUpdateEmailsPayload(List.of(requireNotBlank(address, "address"))));
+    }
+
+    /**
+     * Removes an email address ({@code DELETE /user/emails}).
+     *
+     * @param address the address
+     * @throws NullPointerException if {@code address} is {@code null}
+     * @throws IllegalArgumentException if {@code address} is blank
+     * @throws IOException if the transport fails
+     */
+    public void removeEmail(final String address) throws IOException {
+        github().users()
+                .emails()
+                .deleteEmails(new GitHubUpdateEmailsPayload(List.of(requireNotBlank(address, "address"))));
+    }
+
+    /**
+     * Sets who can see the primary email address ({@code PATCH /user/email/visibility}).
+     *
+     * @param visibility the new visibility
+     * @return all addresses of the account afterwards
+     * @throws NullPointerException if {@code visibility} is {@code null}
+     * @throws IOException if the transport fails
+     */
+    public List<GitHubEmail> changeEmailVisibility(final EmailVisibility visibility) throws IOException {
+        return github().users()
+                .emails()
+                .setPrimaryEmailVisibility(new GitHubSetPrimaryEmailVisibilityPayload(
+                        requireNonNull(visibility, "visibility").toClient()));
+    }
+
+    /**
+     * Lists the SSH authentication keys ({@code GET /user/keys}). Pages are fetched only as the stream is consumed;
+     * transport failures during iteration are {@link java.io.UncheckedIOException}.
+     *
+     * @return the keys
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<SshKey> sshKeys() throws IOException {
+        return github().users().keys().listPublicKeys(GitHubPageRequest.byPage()).stream()
+                .map(listed -> new SshKey(sdk, listed));
+    }
+
+    /**
+     * Loads one SSH authentication key ({@code GET /user/keys/{key_id}}).
+     *
+     * @param id the key id
+     * @return the key, or empty when GitHub answers HTTP 404
+     * @throws IOException if the transport fails
+     */
+    public Optional<SshKey> sshKey(final long id) throws IOException {
+        return github().users().keys().getPublicKey(id).map(loaded -> new SshKey(sdk, loaded));
+    }
+
+    /**
+     * Adds an SSH authentication key ({@code POST /user/keys}).
+     *
+     * @param title the title of the key
+     * @param key the public key in OpenSSH format
+     * @return the new key
+     * @throws NullPointerException if {@code title} or {@code key} is {@code null}
+     * @throws IllegalArgumentException if {@code title} or {@code key} is blank
+     * @throws IOException if the transport fails
+     */
+    public SshKey addSshKey(final String title, final String key) throws IOException {
+        return new SshKey(
+                sdk,
+                github().users()
+                        .keys()
+                        .createPublicSshKey(new GitHubCreatePublicSshKeyPayload(
+                                requireNotBlank(title, TITLE), requireNotBlank(key, KEY))));
+    }
+
+    /**
+     * Lists the GPG keys ({@code GET /user/gpg_keys}). Pages are fetched only as the stream is consumed; transport
+     * failures during iteration are {@link java.io.UncheckedIOException}.
+     *
+     * @return the keys
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<GpgKey> gpgKeys() throws IOException {
+        return github().users().gpgKeys().listGpgKeys(GitHubPageRequest.byPage()).stream()
+                .map(listed -> new GpgKey(sdk, listed));
+    }
+
+    /**
+     * Loads one GPG key ({@code GET /user/gpg_keys/{gpg_key_id}}).
+     *
+     * @param id the key id
+     * @return the key, or empty when GitHub answers HTTP 404
+     * @throws IOException if the transport fails
+     */
+    public Optional<GpgKey> gpgKey(final long id) throws IOException {
+        return github().users().gpgKeys().getGpgKey(id).map(loaded -> new GpgKey(sdk, loaded));
+    }
+
+    /**
+     * Adds a GPG key without a name. See {@link #addGpgKey(String, String)}.
+     *
+     * @param armoredPublicKey the public key in ASCII armor
+     * @return the new key
+     * @throws NullPointerException if {@code armoredPublicKey} is {@code null}
+     * @throws IllegalArgumentException if {@code armoredPublicKey} is blank
+     * @throws IOException if the transport fails
+     */
+    public GpgKey addGpgKey(final String armoredPublicKey) throws IOException {
+        return createGpgKey(null, armoredPublicKey);
+    }
+
+    /**
+     * Adds a GPG key ({@code POST /user/gpg_keys}).
+     *
+     * @param name the name of the key
+     * @param armoredPublicKey the public key in ASCII armor
+     * @return the new key
+     * @throws NullPointerException if {@code name} or {@code armoredPublicKey} is {@code null}
+     * @throws IllegalArgumentException if {@code name} or {@code armoredPublicKey} is blank
+     * @throws IOException if the transport fails
+     */
+    public GpgKey addGpgKey(final String name, final String armoredPublicKey) throws IOException {
+        return createGpgKey(requireNotBlank(name, "name"), armoredPublicKey);
+    }
+
+    /**
+     * Lists the SSH signing keys ({@code GET /user/ssh_signing_keys}). Pages are fetched only as the stream is
+     * consumed; transport failures during iteration are {@link java.io.UncheckedIOException}.
+     *
+     * @return the keys
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<SigningKey> signingKeys() throws IOException {
+        return github().users().sshSigningKeys().listSshSigningKeys(GitHubPageRequest.byPage()).stream()
+                .map(listed -> new SigningKey(sdk, listed));
+    }
+
+    /**
+     * Loads one SSH signing key ({@code GET /user/ssh_signing_keys/{ssh_signing_key_id}}).
+     *
+     * @param id the key id
+     * @return the key, or empty when GitHub answers HTTP 404
+     * @throws IOException if the transport fails
+     */
+    public Optional<SigningKey> signingKey(final long id) throws IOException {
+        return github().users().sshSigningKeys().getSshSigningKey(id).map(loaded -> new SigningKey(sdk, loaded));
+    }
+
+    /**
+     * Adds an SSH signing key ({@code POST /user/ssh_signing_keys}).
+     *
+     * @param title the title of the key
+     * @param key the public key in OpenSSH format
+     * @return the new key
+     * @throws NullPointerException if {@code title} or {@code key} is {@code null}
+     * @throws IllegalArgumentException if {@code title} or {@code key} is blank
+     * @throws IOException if the transport fails
+     */
+    public SigningKey addSigningKey(final String title, final String key) throws IOException {
+        return new SigningKey(
+                sdk,
+                github().users()
+                        .sshSigningKeys()
+                        .createSshSigningKey(new GitHubCreateSshSigningKeyPayload(
+                                requireNotBlank(title, TITLE), requireNotBlank(key, KEY))));
+    }
+
+    /**
+     * Lists the accounts that follow this account ({@code GET /user/followers}) as GitHub returns them. Pages are
+     * fetched only as the stream is consumed; transport failures during iteration are
+     * {@link java.io.UncheckedIOException}.
+     *
+     * @return the followers
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<GitHubSimpleUser> followers() throws IOException {
+        return github().users().followers().listFollowers(GitHubPageRequest.byPage()).stream();
+    }
+
+    /**
+     * Lists the accounts this account follows ({@code GET /user/following}) as GitHub returns them. Pages are fetched
+     * only as the stream is consumed; transport failures during iteration are {@link java.io.UncheckedIOException}.
+     *
+     * @return the followed accounts
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<GitHubSimpleUser> following() throws IOException {
+        return github().users().followers().listFollowing(GitHubPageRequest.byPage()).stream();
+    }
+
+    /**
+     * Tells whether this account follows a user ({@code GET /user/following/{username}}).
+     *
+     * @param login the login of the user
+     * @return {@code true} when the user is followed
+     * @throws NullPointerException if {@code login} is {@code null}
+     * @throws IllegalArgumentException if {@code login} is blank
+     * @throws IOException if the transport fails
+     */
+    public boolean isFollowing(final String login) throws IOException {
+        return github().users().followers().isFollowing(requireNotBlank(login, LOGIN));
+    }
+
+    /**
+     * Follows a user ({@code PUT /user/following/{username}}).
+     *
+     * @param login the login of the user
+     * @throws NullPointerException if {@code login} is {@code null}
+     * @throws IllegalArgumentException if {@code login} is blank
+     * @throws IOException if the transport fails
+     */
+    public void follow(final String login) throws IOException {
+        github().users().followers().follow(requireNotBlank(login, LOGIN));
+    }
+
+    /**
+     * Stops following a user ({@code DELETE /user/following/{username}}).
+     *
+     * @param login the login of the user
+     * @throws NullPointerException if {@code login} is {@code null}
+     * @throws IllegalArgumentException if {@code login} is blank
+     * @throws IOException if the transport fails
+     */
+    public void unfollow(final String login) throws IOException {
+        github().users().followers().unfollow(requireNotBlank(login, LOGIN));
+    }
+
+    /**
+     * Lists the users this account blocked ({@code GET /user/blocks}) as GitHub returns them. Pages are fetched only as
+     * the stream is consumed; transport failures during iteration are {@link java.io.UncheckedIOException}.
+     *
+     * @return the blocked users
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<GitHubSimpleUser> blocked() throws IOException {
+        return github().users().blocking().listBlocked(GitHubPageRequest.byPage()).stream();
+    }
+
+    /**
+     * Tells whether this account blocked a user ({@code GET /user/blocks/{username}}).
+     *
+     * @param login the login of the user
+     * @return {@code true} when the user is blocked
+     * @throws NullPointerException if {@code login} is {@code null}
+     * @throws IllegalArgumentException if {@code login} is blank
+     * @throws IOException if the transport fails
+     */
+    public boolean isBlocked(final String login) throws IOException {
+        return github().users().blocking().isBlocked(requireNotBlank(login, LOGIN));
+    }
+
+    /**
+     * Blocks a user ({@code PUT /user/blocks/{username}}).
+     *
+     * @param login the login of the user
+     * @throws NullPointerException if {@code login} is {@code null}
+     * @throws IllegalArgumentException if {@code login} is blank
+     * @throws IOException if the transport fails
+     */
+    public void block(final String login) throws IOException {
+        github().users().blocking().block(requireNotBlank(login, LOGIN));
+    }
+
+    /**
+     * Unblocks a user ({@code DELETE /user/blocks/{username}}).
+     *
+     * @param login the login of the user
+     * @throws NullPointerException if {@code login} is {@code null}
+     * @throws IllegalArgumentException if {@code login} is blank
+     * @throws IOException if the transport fails
+     */
+    public void unblock(final String login) throws IOException {
+        github().users().blocking().unblock(requireNotBlank(login, LOGIN));
+    }
+
+    /**
+     * Lists the social accounts on the profile ({@code GET /user/social_accounts}) as GitHub returns them. Pages are
+     * fetched only as the stream is consumed; transport failures during iteration are
+     * {@link java.io.UncheckedIOException}.
+     *
+     * @return the social accounts
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<GitHubSocialAccount> socialAccounts() throws IOException {
+        return github().users().socialAccounts().listSocialAccounts(GitHubPageRequest.byPage()).stream();
+    }
+
+    /**
+     * Adds social accounts to the profile ({@code POST /user/social_accounts}).
+     *
+     * @param urls the URLs of the accounts
+     * @return the social accounts of the profile afterwards
+     * @throws NullPointerException if {@code urls} is {@code null}
+     * @throws IOException if the transport fails
+     */
+    public List<GitHubSocialAccount> addSocialAccounts(final List<String> urls) throws IOException {
+        return github().users()
+                .socialAccounts()
+                .addSocialAccounts(new GitHubUpdateSocialAccountsPayload(List.copyOf(requireNonNull(urls, "urls"))));
+    }
+
+    /**
+     * Removes social accounts from the profile ({@code DELETE /user/social_accounts}).
+     *
+     * @param urls the URLs of the accounts
+     * @throws NullPointerException if {@code urls} is {@code null}
+     * @throws IOException if the transport fails
+     */
+    public void removeSocialAccounts(final List<String> urls) throws IOException {
+        github().users()
+                .socialAccounts()
+                .deleteSocialAccounts(new GitHubUpdateSocialAccountsPayload(List.copyOf(requireNonNull(urls, "urls"))));
+    }
+
+    void apply(final GitHubUpdateAuthenticatedUserPayload payload) throws IOException {
+        github().users().user().updateAuthenticatedUser(payload);
+    }
+
+    private GpgKey createGpgKey(final @Nullable String name, final String armoredPublicKey) throws IOException {
+        return new GpgKey(
+                sdk,
+                github().users()
+                        .gpgKeys()
+                        .createGpgKey(new GitHubCreateGpgKeyPayload(name, requireNotBlank(armoredPublicKey, KEY))));
+    }
+
+    private GitHub github() {
+        return Internals.github(sdk);
+    }
+}

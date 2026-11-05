@@ -4,6 +4,7 @@ module io.github.piotr_janczukowicz.githubsdk {
     requires org.jspecify;
 
     exports io.github.piotr_janczukowicz.github.sdk;
+    exports io.github.piotr_janczukowicz.github.sdk.accounts;
     exports io.github.piotr_janczukowicz.github.sdk.actions;
     exports io.github.piotr_janczukowicz.github.sdk.checks;
     exports io.github.piotr_janczukowicz.github.sdk.collaborators;

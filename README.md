@@ -102,7 +102,7 @@ client. `ConfiguredClientTest` builds this configuration, so a change in the cli
 The entry points (`GitHubSdk`, `Repository`, `User`, `Organization`, `Team`, `Search`, `RateLimit`) are in
 `io.github.piotr_janczukowicz.github.sdk`. The other objects are grouped by area in sub-packages: `issues`, `pulls`,
 `content` (branches, commits, files, releases), `git` (refs, comparisons, multi-file commits), `gists`,
-`notifications`, `metrics`, `utilities`, `deploykeys`, `deployments`, `pages`, `security`, `actions`, `checks`, `collaborators`, `reactions` and
+`accounts`, `notifications`, `metrics`, `utilities`, `deploykeys`, `deployments`, `pages`, `security`, `actions`, `checks`, `collaborators`, `reactions` and
 `webhooks`. The `internal` package is not exported by the module and is not part of the API.
 
 ## What is covered
@@ -134,7 +134,8 @@ The entry points (`GitHubSdk`, `Repository`, `User`, `Organization`, `Team`, `Se
 | `Commit` (CI) | `checkRuns()`, `checkRuns(name)`, `statuses()`, `combinedStatus()`, `createStatus(...)` |
 | `CheckRun`, `CommitStatus`, `CombinedStatus` | read-only views of CI results; `CheckRun` also has `annotations()` and `refresh()` |
 | `Release`, `Label`, `Milestone`, `Webhook` | `update()`, `refresh()`, `delete()` |
-| `sdk.currentUser()`, `sdk.user(login)` | `User`: `repositories()`, `organizations()` |
+| `sdk.currentUser()`, `sdk.user(login)` | `User`: `repositories()`, `organizations()`, `gists()`, `followers()`, `following()`, `sshKeys()`, `gpgKeys()`, `signingKeys()`, `socialAccounts()` |
+| `sdk.me()` | `Me`, for the account the client authenticates as: `update()` the profile, `emails()`, `addEmail(...)`, `changeEmailVisibility(...)`; SSH, GPG and signing keys (`SshKey`, `GpgKey` and `SigningKey` have `refresh()` and `delete()`); `follow(...)`, `block(...)` and their lists; social accounts |
 | `sdk.organization(login)` | `Organization`: `repositories()`, `createRepository(...)`, `members()`, `teams()`, `team(slug)`; `Team`: `members()`, `repositories()` |
 | `sdk.search()` | issues, repositories, users, code and commits |
 | `sdk.rateLimit()` | `RateLimit` |
