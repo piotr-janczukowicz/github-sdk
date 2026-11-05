@@ -4,6 +4,7 @@ import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 
 import io.github.piotr_janczukowicz.github.api.GitHub;
+import io.github.piotr_janczukowicz.github.api.activity.GitHubListNotificationsForAuthenticatedUserFilter;
 import io.github.piotr_janczukowicz.github.api.gists.GitHubBaseGist;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateForAuthenticatedUserPayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateInOrgPayload;
@@ -13,6 +14,7 @@ import io.github.piotr_janczukowicz.github.sdk.gists.Gist;
 import io.github.piotr_janczukowicz.github.sdk.gists.GistDraft;
 import io.github.piotr_janczukowicz.github.sdk.internal.Internals;
 import io.github.piotr_janczukowicz.github.sdk.internal.Lookups;
+import io.github.piotr_janczukowicz.github.sdk.notifications.Notification;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -170,6 +172,62 @@ public final class GitHubSdk {
     }
 
     /**
+     * Lists the notifications of the authenticated user ({@code GET /notifications}), unread ones only. See
+     * {@link #notifications(GitHubListNotificationsForAuthenticatedUserFilter)}.
+     *
+     * @return the notifications
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<Notification> notifications() throws IOException {
+        return notifications(GitHubListNotificationsForAuthenticatedUserFilter.empty());
+    }
+
+    /**
+     * Lists the notifications of the authenticated user ({@code GET /notifications}). GitHub does not support
+     * fine-grained tokens for notifications, so the client needs a classic token. Pages are fetched only as the stream
+     * is consumed; transport failures during iteration are {@link java.io.UncheckedIOException}.
+     *
+     * @param filter the filter for read state, participation and dates
+     * @return the notifications
+     * @throws NullPointerException if {@code filter} is {@code null}
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<Notification> notifications(final GitHubListNotificationsForAuthenticatedUserFilter filter)
+            throws IOException {
+        requireNonNull(filter, "filter");
+        return github
+                .activity()
+                .notifications()
+                .listNotificationsForAuthenticatedUser(filter, GitHubPageRequest.byPage())
+                .stream()
+                .map(listed -> new Notification(this, listed));
+    }
+
+    /**
+     * Loads one notification ({@code GET /notifications/threads/{thread_id}}).
+     *
+     * @param id the thread id
+     * @return the notification, or empty when GitHub answers HTTP 404
+     * @throws NullPointerException if {@code id} is {@code null}
+     * @throws IllegalArgumentException if {@code id} is blank or not a number
+     * @throws IOException if the transport fails
+     */
+    public Optional<Notification> notification(final String id) throws IOException {
+        final long threadId = threadId(id);
+        return github.activity().notifications().getThread(threadId).map(loaded -> new Notification(this, loaded));
+    }
+
+    /**
+     * Marks all notifications of the authenticated user as read ({@code PUT /notifications}). GitHub may do this
+     * asynchronously.
+     *
+     * @throws IOException if the transport fails
+     */
+    public void markNotificationsRead() throws IOException {
+        github.activity().notifications().markNotificationsAsRead();
+    }
+
+    /**
      * Returns the search of this SDK.
      *
      * @return the search
@@ -199,5 +257,13 @@ public final class GitHubSdk {
 
     Gist load(final GitHubBaseGist listed) {
         return Lookups.require(() -> gist(listed.id()), () -> "Gist " + listed.id() + " is gone");
+    }
+
+    private static long threadId(final String id) {
+        try {
+            return Long.parseLong(requireNotBlank(id, "id"));
+        } catch (final NumberFormatException e) {
+            throw new IllegalArgumentException("id must be a number, but was: " + id, e);
+        }
     }
 }

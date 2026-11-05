@@ -13,7 +13,7 @@ Create a fine-grained personal access token. Resource owner: the owner of the sa
 sandbox repository.
 
 - Repository permissions, read and write: Actions, Administration, Commit statuses, Contents, Issues, Pull requests,
-  Variables, Webhooks. The Actions, Administration and Variables tests are skipped, not failed, when GitHub answers
+  Variables, Webhooks, Deploy keys. The Actions, Administration, Deploy keys and Variables tests are skipped, not failed, when GitHub answers
   403.
 - Repository permissions, read: Metadata.
 - Account permissions, read and write: Gists, and Starring and Watching, when your token form offers them. The gist,
@@ -54,6 +54,7 @@ Without `SMOKE_GITHUB_TOKEN` every smoke class is skipped.
 | `BranchProtectionSmokeIT` | protect a throwaway branch, replace the rule, read and refresh it, remove it. The default branch is never touched. Skipped when GitHub answers 403, which a private repository on a plan without branch protection does |
 | `GitDataSmokeIT` | create a throwaway branch, commit two files and then delete one as separate commits, compare with the default branch, force the ref back, delete it; list refs and load a tree |
 | `GistsSmokeIT` | create a secret gist, update and rename a file, comment (edit, delete), star and unstar, list its revisions and your gists, delete it; 404 on a missing gist. Forking is not run live, because GitHub does not let you fork your own gist. Skipped when GitHub answers 403 |
+| `DeployKeysAndNotificationsSmokeIT` | add a throwaway Ed25519 deploy key, list, reload and delete it; list your notifications without changing any. GitHub does not support fine-grained tokens for notifications, so that test is skipped on 403 or 404; marking notifications as read is never run live |
 | `ContentSmokeIT` | default branch, its head commit, branch and commit lists, 404 on a missing branch |
 | `FilesSmokeIT` | write, update, read, delete a file on a throwaway branch (binary and UTF-8 text), directory and missing paths |
 | `ReleasesSmokeIT` | draft release: create, update, list, refresh, delete; latest release; tags |

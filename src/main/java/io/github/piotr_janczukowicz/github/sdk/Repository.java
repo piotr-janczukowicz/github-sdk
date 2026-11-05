@@ -5,6 +5,7 @@ import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 
 import io.github.piotr_janczukowicz.github.api.actions.GitHubCreateRepoVariablePayload;
 import io.github.piotr_janczukowicz.github.api.actions.GitHubListWorkflowRunsForRepoFilter;
+import io.github.piotr_janczukowicz.github.api.activity.GitHubListRepoNotificationsForAuthenticatedUserFilter;
 import io.github.piotr_janczukowicz.github.api.activity.GitHubSetRepoSubscriptionPayload;
 import io.github.piotr_janczukowicz.github.api.agents.GitHubActionsSecret;
 import io.github.piotr_janczukowicz.github.api.branches.GitHubListBranchesFilter;
@@ -13,6 +14,7 @@ import io.github.piotr_janczukowicz.github.api.collaborators.GitHubAddCollaborat
 import io.github.piotr_janczukowicz.github.api.collaborators.GitHubListCollaboratorsFilter;
 import io.github.piotr_janczukowicz.github.api.collaborators.GitHubRepositoryCollaboratorPermission;
 import io.github.piotr_janczukowicz.github.api.commits.GitHubListCommitsFilter;
+import io.github.piotr_janczukowicz.github.api.deploykeys.GitHubCreateDeployKeyPayload;
 import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubBlob;
 import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubCreateRefPayload;
 import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubGetTreeFilter;
@@ -59,6 +61,7 @@ import io.github.piotr_janczukowicz.github.sdk.content.Branch;
 import io.github.piotr_janczukowicz.github.sdk.content.Commit;
 import io.github.piotr_janczukowicz.github.sdk.content.Release;
 import io.github.piotr_janczukowicz.github.sdk.content.RepositoryFile;
+import io.github.piotr_janczukowicz.github.sdk.deploykeys.DeployKey;
 import io.github.piotr_janczukowicz.github.sdk.git.Comparison;
 import io.github.piotr_janczukowicz.github.sdk.git.FileChanges;
 import io.github.piotr_janczukowicz.github.sdk.git.Ref;
@@ -68,6 +71,7 @@ import io.github.piotr_janczukowicz.github.sdk.internal.Lookups;
 import io.github.piotr_janczukowicz.github.sdk.issues.Issue;
 import io.github.piotr_janczukowicz.github.sdk.issues.Label;
 import io.github.piotr_janczukowicz.github.sdk.issues.Milestone;
+import io.github.piotr_janczukowicz.github.sdk.notifications.Notification;
 import io.github.piotr_janczukowicz.github.sdk.pulls.PullRequest;
 import io.github.piotr_janczukowicz.github.sdk.webhooks.Webhook;
 import java.io.IOException;
@@ -1471,6 +1475,110 @@ public final class Repository {
      */
     public Optional<GitHubBlob> blob(final String sha) throws IOException {
         return sdk.github().gitDatabase().blobs().getBlob(owner, name, requireNotBlank(sha, SHA));
+    }
+
+    /**
+     * Lists the notifications of the authenticated user for this repository, unread ones only. See
+     * {@link #notifications(GitHubListRepoNotificationsForAuthenticatedUserFilter)}.
+     *
+     * @return the notifications
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<Notification> notifications() throws IOException {
+        return notifications(GitHubListRepoNotificationsForAuthenticatedUserFilter.empty());
+    }
+
+    /**
+     * Lists the notifications of the authenticated user for this repository ({@code GET
+     * /repos/{owner}/{repo}/notifications}). GitHub does not support fine-grained tokens for notifications, so the
+     * client needs a classic token. Pages are fetched only as the stream is consumed; transport failures during
+     * iteration are {@link java.io.UncheckedIOException}.
+     *
+     * @param filter the filter for read state, participation and dates
+     * @return the notifications
+     * @throws NullPointerException if {@code filter} is {@code null}
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<Notification> notifications(final GitHubListRepoNotificationsForAuthenticatedUserFilter filter)
+            throws IOException {
+        requireNonNull(filter, FILTER);
+        return sdk
+                .github()
+                .activity()
+                .notifications()
+                .listRepoNotificationsForAuthenticatedUser(owner, name, filter, GitHubPageRequest.byPage())
+                .stream()
+                .map(listed -> new Notification(sdk, listed));
+    }
+
+    /**
+     * Marks all notifications of this repository as read ({@code PUT /repos/{owner}/{repo}/notifications}). GitHub may
+     * do this asynchronously.
+     *
+     * @throws IOException if the transport fails
+     */
+    public void markNotificationsRead() throws IOException {
+        sdk.github().activity().notifications().markRepoNotificationsAsRead(owner, name);
+    }
+
+    /**
+     * Lists the deploy keys ({@code GET /repos/{owner}/{repo}/keys}). Pages are fetched only as the stream is consumed;
+     * transport failures during iteration are {@link java.io.UncheckedIOException}.
+     *
+     * @return the deploy keys
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<DeployKey> deployKeys() throws IOException {
+        return sdk.github().deployKeys().listDeployKeys(owner, name, GitHubPageRequest.byPage()).stream()
+                .map(listed -> new DeployKey(this, listed));
+    }
+
+    /**
+     * Loads one deploy key ({@code GET /repos/{owner}/{repo}/keys/{key_id}}).
+     *
+     * @param id the key id
+     * @return the key, or empty when GitHub answers HTTP 404
+     * @throws IOException if the transport fails
+     */
+    public Optional<DeployKey> deployKey(final long id) throws IOException {
+        return sdk.github().deployKeys().getDeployKey(owner, name, id).map(loaded -> new DeployKey(this, loaded));
+    }
+
+    /**
+     * Adds a read-only deploy key. See {@link #addDeployKey(String, String, boolean)}.
+     *
+     * @param title the title of the key
+     * @param key the public key in OpenSSH format
+     * @return the new key
+     * @throws NullPointerException if {@code title} or {@code key} is {@code null}
+     * @throws IllegalArgumentException if {@code title} or {@code key} is blank
+     * @throws IOException if the transport fails
+     */
+    public DeployKey addDeployKey(final String title, final String key) throws IOException {
+        return addDeployKey(title, key, true);
+    }
+
+    /**
+     * Adds a deploy key ({@code POST /repos/{owner}/{repo}/keys}).
+     *
+     * @param title the title of the key
+     * @param key the public key in OpenSSH format
+     * @param isReadOnly {@code true} for read access only, {@code false} to allow pushing
+     * @return the new key
+     * @throws NullPointerException if {@code title} or {@code key} is {@code null}
+     * @throws IllegalArgumentException if {@code title} or {@code key} is blank
+     * @throws IOException if the transport fails
+     */
+    public DeployKey addDeployKey(final String title, final String key, final boolean isReadOnly) throws IOException {
+        return new DeployKey(
+                this,
+                sdk.github()
+                        .deployKeys()
+                        .createDeployKey(
+                                owner,
+                                name,
+                                new GitHubCreateDeployKeyPayload(
+                                        requireNotBlank(title, "title"), requireNotBlank(key, "key"), isReadOnly)));
     }
 
     Repository apply(final GitHubUpdatePayload payload) throws IOException {
