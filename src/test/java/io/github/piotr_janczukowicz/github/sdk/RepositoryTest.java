@@ -15,9 +15,11 @@ import io.github.piotr_janczukowicz.github.api.issues.GitHubCreatePayload;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubCreatePayloadBuilder;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubIssue;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubListForRepoFilter;
+import io.github.piotr_janczukowicz.github.api.issues.GitHubListForRepoFilterBuilder;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubCreatePullRequestPayload;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubCreatePullRequestPayloadBuilder;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubListPullRequestsFilter;
+import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubListPullRequestsFilterBuilder;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubPullRequest;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubFullRepository;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubPullRequestSimple;
@@ -106,15 +108,16 @@ class RepositoryTest {
     @Test
     void issues_shouldWrapEachIssue_whenCalledWithAFilter() throws IOException {
         final GitHubIssue response = IssuesFixtures.issue();
+        final GitHubListForRepoFilter filter =
+                GitHubListForRepoFilterBuilder.builder().labels("bug").build();
         when(github
                         .issues()
                         .issue()
-                        .listForRepo(
-                                eq(OWNER), eq(NAME), any(GitHubListForRepoFilter.class), any(GitHubPageRequest.class))
+                        .listForRepo(eq(OWNER), eq(NAME), eq(filter), any(GitHubPageRequest.class))
                         .stream())
                 .thenReturn(Stream.of(response));
 
-        final List<Issue> issues = sut.issues(GitHubListForRepoFilter.empty()).toList();
+        final List<Issue> issues = sut.issues(filter).toList();
 
         assertSoftly(softly -> {
             softly.assertThat(issues).hasSize(1);
@@ -219,20 +222,17 @@ class RepositoryTest {
         final GitHubPullRequestSimple listed = mock(GitHubPullRequestSimple.class);
         when(listed.number()).thenReturn(7);
         final GitHubPullRequest response = PullRequestsFixtures.pullRequest();
+        final GitHubListPullRequestsFilter filter =
+                GitHubListPullRequestsFilterBuilder.builder().base("main").build();
         when(github
                         .pullRequests()
                         .pullRequest()
-                        .list(
-                                eq(OWNER),
-                                eq(NAME),
-                                any(GitHubListPullRequestsFilter.class),
-                                any(GitHubPageRequest.class))
+                        .list(eq(OWNER), eq(NAME), eq(filter), any(GitHubPageRequest.class))
                         .stream())
                 .thenReturn(Stream.of(listed));
         when(github.pullRequests().pullRequest().get(OWNER, NAME, 7)).thenReturn(Optional.of(response));
 
-        final List<PullRequest> pullRequests =
-                sut.pullRequests(GitHubListPullRequestsFilter.empty()).toList();
+        final List<PullRequest> pullRequests = sut.pullRequests(filter).toList();
 
         assertThat(pullRequests).extracting(PullRequest::response).containsExactly(response);
     }

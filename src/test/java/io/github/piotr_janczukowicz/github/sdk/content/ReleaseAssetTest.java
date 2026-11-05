@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -97,14 +98,14 @@ class ReleaseAssetTest {
     void update_shouldSendTheChangedFields_whenNameAndLabelAreSet() throws IOException {
         final GitHubReleaseAsset updated =
                 GitHubReleaseAssetBuilder.builder(response).name("tool.zip").build();
-        when(github.releases().assets().updateReleaseAsset(any(), any(), any(Long.class), any()))
+        when(github.releases().assets().updateReleaseAsset(eq(OWNER), eq(NAME), eq(ID), any()))
                 .thenReturn(updated);
         final ArgumentCaptor<GitHubUpdateReleaseAssetPayload> payload =
                 ArgumentCaptor.forClass(GitHubUpdateReleaseAssetPayload.class);
 
         final ReleaseAsset result = sut.update().name("tool.zip").label("Tool").send();
 
-        verify(github.releases().assets()).updateReleaseAsset(any(), any(), any(Long.class), payload.capture());
+        verify(github.releases().assets()).updateReleaseAsset(eq(OWNER), eq(NAME), eq(ID), payload.capture());
         assertSoftly(softly -> {
             softly.assertThat(result.response()).isSameAs(updated);
             softly.assertThat(payload.getValue().name()).isEqualTo("tool.zip");
@@ -200,14 +201,14 @@ class ReleaseAssetTest {
 
     @Test
     void update_shouldSendOnlyTheName_whenOnlyTheNameIsSet() throws IOException {
-        when(github.releases().assets().updateReleaseAsset(any(), any(), any(Long.class), any()))
+        when(github.releases().assets().updateReleaseAsset(eq(OWNER), eq(NAME), eq(ID), any()))
                 .thenReturn(response);
         final ArgumentCaptor<GitHubUpdateReleaseAssetPayload> payload =
                 ArgumentCaptor.forClass(GitHubUpdateReleaseAssetPayload.class);
 
         sut.update().name("tool.zip").send();
 
-        verify(github.releases().assets()).updateReleaseAsset(any(), any(), any(Long.class), payload.capture());
+        verify(github.releases().assets()).updateReleaseAsset(eq(OWNER), eq(NAME), eq(ID), payload.capture());
         assertSoftly(softly -> {
             softly.assertThat(payload.getValue().name()).isEqualTo("tool.zip");
             softly.assertThat(payload.getValue().label()).isNull();
@@ -216,14 +217,14 @@ class ReleaseAssetTest {
 
     @Test
     void update_shouldSendOnlyTheLabel_whenOnlyTheLabelIsSet() throws IOException {
-        when(github.releases().assets().updateReleaseAsset(any(), any(), any(Long.class), any()))
+        when(github.releases().assets().updateReleaseAsset(eq(OWNER), eq(NAME), eq(ID), any()))
                 .thenReturn(response);
         final ArgumentCaptor<GitHubUpdateReleaseAssetPayload> payload =
                 ArgumentCaptor.forClass(GitHubUpdateReleaseAssetPayload.class);
 
         sut.update().label("Tool").send();
 
-        verify(github.releases().assets()).updateReleaseAsset(any(), any(), any(Long.class), payload.capture());
+        verify(github.releases().assets()).updateReleaseAsset(eq(OWNER), eq(NAME), eq(ID), payload.capture());
         assertSoftly(softly -> {
             softly.assertThat(payload.getValue().label()).isEqualTo("Tool");
             softly.assertThat(payload.getValue().name()).isNull();

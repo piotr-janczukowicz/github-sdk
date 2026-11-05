@@ -1,6 +1,7 @@
 package io.github.piotr_janczukowicz.github.sdk.smoke;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubCreateRefPayload;
@@ -44,10 +45,12 @@ class FilesSmokeIT {
             final boolean isDirectoryAFile = repository.file("smoke", branch).isPresent();
             read.delete("smoke delete", branch);
 
-            assertThat(created.bytes()).isEqualTo(binary);
-            assertThat(updated.sha()).isNotEqualTo(created.sha());
-            assertThat(read.text()).isEqualTo("héllo");
-            assertThat(isDirectoryAFile).isFalse();
+            assertSoftly(softly -> {
+                softly.assertThat(created.bytes()).isEqualTo(binary);
+                softly.assertThat(updated.sha()).isNotEqualTo(created.sha());
+                softly.assertThat(read.text()).isEqualTo("héllo");
+                softly.assertThat(isDirectoryAFile).isFalse();
+            });
             assertThat(repository.file(path, branch)).isEmpty();
         } finally {
             github.gitDatabase().refs().deleteRef(ENV.owner(), ENV.repo(), "heads/" + branch);

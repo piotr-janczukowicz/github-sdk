@@ -6,6 +6,7 @@ import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.github.piotr_janczukowicz.github.api.GitHub;
@@ -149,5 +150,6 @@ class EventsAndAppsEntryPointsTest {
         final Marketplace marketplace = sdk.marketplace();
 
         assertThat(marketplace).isNotNull();
+        verifyNoInteractions(github);
     }
 }

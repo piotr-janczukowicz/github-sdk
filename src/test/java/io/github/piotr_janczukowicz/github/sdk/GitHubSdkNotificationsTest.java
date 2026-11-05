@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -13,6 +14,7 @@ import static org.mockito.Mockito.when;
 import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.activity.GitHubActivityNotificationsApi;
 import io.github.piotr_janczukowicz.github.api.activity.GitHubListNotificationsForAuthenticatedUserFilter;
+import io.github.piotr_janczukowicz.github.api.activity.GitHubListNotificationsForAuthenticatedUserFilterBuilder;
 import io.github.piotr_janczukowicz.github.api.activity.GitHubThread;
 import io.github.piotr_janczukowicz.github.pagination.GitHubPageRequest;
 import io.github.piotr_janczukowicz.github.sdk.fixtures.NotificationFixtures;
@@ -101,5 +103,41 @@ class GitHubSdkNotificationsTest {
         sut.markNotificationsRead();
 
         verify(api).markNotificationsAsRead();
+    }
+
+    @Test
+    void notifications_shouldSendTheGivenFilter_whenCalledWithOne() throws IOException {
+        final GitHubListNotificationsForAuthenticatedUserFilter filter =
+                GitHubListNotificationsForAuthenticatedUserFilterBuilder.builder()
+                        .participating(true)
+                        .build();
+        final GitHubThread listed = NotificationFixtures.thread();
+        when(github
+                        .activity()
+                        .notifications()
+                        .listNotificationsForAuthenticatedUser(eq(filter), any(GitHubPageRequest.class))
+                        .stream())
+                .thenReturn(Stream.of(listed));
+
+        final List<Notification> notifications = sut.notifications(filter).toList();
+
+        assertThat(notifications).hasSize(1);
+    }
+
+    @Test
+    void notifications_shouldSendTheEmptyFilter_whenCalledWithoutOne() throws IOException {
+        final GitHubThread listed = NotificationFixtures.thread();
+        when(github
+                        .activity()
+                        .notifications()
+                        .listNotificationsForAuthenticatedUser(
+                                eq(GitHubListNotificationsForAuthenticatedUserFilter.empty()),
+                                any(GitHubPageRequest.class))
+                        .stream())
+                .thenReturn(Stream.of(listed));
+
+        final List<Notification> notifications = sut.notifications().toList();
+
+        assertThat(notifications).hasSize(1);
     }
 }

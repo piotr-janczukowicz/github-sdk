@@ -166,9 +166,9 @@ class ProjectTest {
     }
 
     @Test
-    void addIssue_shouldAddByRepositoryAndReturnTheItem() throws IOException {
+    void addIssue_shouldAddByTheRepositoryOfTheIssue_whenItIsNotTheOwnerOfTheProject() throws IOException {
         final Issue issue = mock(Issue.class);
-        when(issue.repository()).thenReturn(repository);
+        when(issue.repository()).thenReturn(GitHubSdk.of(mock(GitHub.class)).repository("hubot", "linguist"));
         when(issue.number()).thenReturn(12);
         final GitHubProjectItem loaded = ProjectFixtures.item();
         when(gateway.addItem(eq(NUMBER), any())).thenReturn(added);
@@ -182,8 +182,8 @@ class ProjectTest {
         assertSoftly(softly -> {
             softly.assertThat(result.response()).isSameAs(loaded);
             softly.assertThat(payload.getValue().type()).isEqualTo(GitHubProjectItemContentType.ISSUE);
-            softly.assertThat(payload.getValue().owner()).isEqualTo("octocat");
-            softly.assertThat(payload.getValue().repo()).isEqualTo("hello-world");
+            softly.assertThat(payload.getValue().owner()).isEqualTo("hubot");
+            softly.assertThat(payload.getValue().repo()).isEqualTo("linguist");
             softly.assertThat(payload.getValue().number()).isEqualTo(12);
         });
     }

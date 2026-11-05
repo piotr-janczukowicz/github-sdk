@@ -72,19 +72,23 @@ class RepositoryCollaboratorsTest {
     }
 
     @Test
-    void isCollaborator_shouldReturnWhatGitHubSays_whenCalled() throws IOException {
+    void isCollaborator_shouldReturnTrue_whenGitHubAnswersYes() throws IOException {
         when(github.collaborators().collaborator().checkCollaborator(OWNER, NAME, "hubot"))
                 .thenReturn(true);
+
+        final boolean isMember = sut.isCollaborator("hubot");
+
+        assertThat(isMember).isTrue();
+    }
+
+    @Test
+    void isCollaborator_shouldReturnFalse_whenGitHubAnswersNo() throws IOException {
         when(github.collaborators().collaborator().checkCollaborator(OWNER, NAME, "stranger"))
                 .thenReturn(false);
 
-        final boolean isMember = sut.isCollaborator("hubot");
-        final boolean isStranger = sut.isCollaborator("stranger");
+        final boolean isMember = sut.isCollaborator("stranger");
 
-        assertSoftly(softly -> {
-            softly.assertThat(isMember).isTrue();
-            softly.assertThat(isStranger).isFalse();
-        });
+        assertThat(isMember).isFalse();
     }
 
     @Test

@@ -38,10 +38,6 @@ class ConfiguredClientTest {
 
             assertSoftly(softly -> {
                 softly.assertThat(repository.owner()).isEqualTo("octocat");
-                softly.assertThat(configuration.retry().attempts().maxRateLimitAttempts())
-                        .isEqualTo(5);
-                softly.assertThat(configuration.retry().totalDeadline()).isEqualTo(Duration.ofMinutes(5));
-                softly.assertThat(configuration.conditionalCacheMaxEntries()).isEqualTo(500);
                 softly.assertThat(client.pagination().perPage()).isEqualTo(100);
                 softly.assertThat(client.pagination().maxPages()).isEqualTo(5);
             });

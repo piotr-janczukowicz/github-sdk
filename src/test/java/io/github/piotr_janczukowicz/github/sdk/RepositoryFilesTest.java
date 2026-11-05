@@ -79,8 +79,9 @@ class RepositoryFilesTest {
                         .getContent(eq(OWNER), eq(NAME), eq(PATH), any(GitHubGetContentFilter.class)))
                 .thenReturn(Optional.of(response));
         final ArgumentCaptor<GitHubDeleteFilePayload> payload = ArgumentCaptor.forClass(GitHubDeleteFilePayload.class);
+        final RepositoryFile file = sut.file(PATH, "feature").orElseThrow();
 
-        sut.file(PATH, "feature").orElseThrow().delete("Remove the file");
+        file.delete("Remove the file");
 
         verify(github.repositories().contents()).deleteFile(eq(OWNER), eq(NAME), eq(PATH), payload.capture());
         assertThat(payload.getValue().branch()).isEqualTo("feature");
