@@ -101,8 +101,9 @@ client. `ConfiguredClientTest` builds this configuration, so a change in the cli
 
 The entry points (`GitHubSdk`, `Repository`, `User`, `Organization`, `Team`, `Search`, `RateLimit`) are in
 `io.github.piotr_janczukowicz.github.sdk`. The other objects are grouped by area in sub-packages: `issues`, `pulls`,
-`content` (branches, commits, files, releases), `git` (refs, comparisons, multi-file commits), `gists`, `notifications`, `deploykeys`, `deployments`, `pages`, `security`, `actions`, `checks`, `collaborators`, `reactions` and `webhooks`. The `internal`
-package is not exported by the module and is not part of the API.
+`content` (branches, commits, files, releases), `git` (refs, comparisons, multi-file commits), `gists`,
+`notifications`, `deploykeys`, `deployments`, `pages`, `security`, `actions`, `checks`, `collaborators`, `reactions` and
+`webhooks`. The `internal` package is not exported by the module and is not part of the API.
 
 ## What is covered
 
@@ -135,8 +136,10 @@ package is not exported by the module and is not part of the API.
 | `sdk.search()` | issues, repositories, users, code and commits |
 | `sdk.rateLimit()` | `RateLimit` |
 
-Security products, Copilot, Apps and installations, GitHub Enterprise Server administration, billing and enterprise
-administration have no objects here; use `github-rest-client` for them.
+Copilot, Apps and installations, packages, codespaces, GitHub Enterprise Server administration, billing, enterprise
+administration, code scanning uploads, CodeQL databases and everything that needs GraphQL, such as discussions, have no
+objects here yet; use `github-rest-client` for the REST ones. Which areas ran against the real GitHub API is listed in
+[Live smoke tests](docs/guide/smoke-tests.md).
 
 ## Conventions
 

@@ -78,6 +78,25 @@ Not covered: Actions, creating check runs, Git data objects beyond what the test
 reactions on releases and commit comments, reviewer requests on a pull request (they need a second user), GitHub Enterprise Server, and the organization
 operations on a personal-account sandbox.
 
+## Not yet verified live
+
+These areas are covered by unit tests only, because the smoke tests skip with a fine-grained token or on the private
+sandbox repository. Their behavior against the real GitHub API has not been checked:
+
+| Area | Why it skips |
+|---|---|
+| Gists | the token has no Gists permission |
+| Deployments and Pages | the token has no Deployments or Pages permission; Pages also needs a plan that offers it for private repositories |
+| Security alerts and switches | the token has no Dependabot, secret scanning or code scanning permission, or the feature is off |
+| Branch protection | the private repository is on a plan without branch protection |
+| Notifications | GitHub does not support fine-grained tokens for them |
+| Check runs | fine-grained tokens have no Checks permission |
+| Stars and watching | the token form does not offer the permissions |
+| Workflow dispatch | `SMOKE_GITHUB_WORKFLOW` is not set |
+| Organizations and teams | the account has no organization |
+
+A classic token or a public sandbox repository would cover most of them.
+
 ## Reading a failure
 
 A failing smoke test means the SDK and the live API disagree. "Resource not accessible by personal access token" (403)
