@@ -65,6 +65,8 @@ try (GitHubClient client = GitHubClients.create(AuthenticationProviders.bearer(S
 | `PullRequestReview` | `edit(...)`, `submit(...)`, `dismiss(...)`, `deletePending()`, `comments()`, `refresh()` |
 | `PullRequestReviewComment` | `edit(...)`, `reply(...)`, `delete()`, `refresh()` |
 | `Branch`, `Commit`, `RepositoryFile` | read; a file gives `text()` and `bytes()`, and writes with `writeFile(...)` and `delete(...)` |
+| `Commit` (CI) | `checkRuns()`, `checkRuns(name)`, `statuses()`, `combinedStatus()`, `createStatus(...)` |
+| `CheckRun`, `CommitStatus`, `CombinedStatus` | read-only views of CI results; `CheckRun` also has `annotations()` and `refresh()` |
 | `Release`, `Label`, `Milestone`, `Webhook` | `update()`, `refresh()`, `delete()` |
 | `sdk.currentUser()`, `sdk.user(login)` | `User`: `repositories()`, `organizations()` |
 | `sdk.organization(login)` | `Organization`: `repositories()`, `createRepository(...)`, `members()`, `teams()`, `team(slug)`; `Team`: `members()`, `repositories()` |

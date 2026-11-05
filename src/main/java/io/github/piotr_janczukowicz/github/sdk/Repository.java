@@ -291,6 +291,17 @@ public final class Repository {
     }
 
     /**
+     * Loads one check run ({@code GET /repos/{owner}/{repo}/check-runs/{check_run_id}}).
+     *
+     * @param id the check run id
+     * @return the check run, or empty when GitHub answers HTTP 404
+     * @throws IOException if the transport fails
+     */
+    public Optional<CheckRun> checkRun(final long id) throws IOException {
+        return sdk.github().checks().runs().getCheckRun(owner, name, id).map(loaded -> new CheckRun(this, loaded));
+    }
+
+    /**
      * Lists the commits of the default branch ({@code GET /repos/{owner}/{repo}/commits}). See
      * {@link #commits(GitHubListCommitsFilter)}.
      *
