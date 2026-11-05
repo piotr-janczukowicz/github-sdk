@@ -7,7 +7,6 @@ import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.dependencygraph.GitHubCreateRepositorySnapshotPayload;
 import io.github.piotr_janczukowicz.github.api.dependencygraph.GitHubCreateRepositorySnapshotResponse;
 import io.github.piotr_janczukowicz.github.api.dependencygraph.GitHubDependencyGraphDiffEntry;
-import io.github.piotr_janczukowicz.github.api.dependencygraph.GitHubDependencyGraphSpdxSbom;
 import io.github.piotr_janczukowicz.github.api.dependencygraph.GitHubGenerateSbomReportResponse;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
 import io.github.piotr_janczukowicz.github.sdk.internal.Internals;
@@ -37,23 +36,10 @@ public final class RepositoryDependencies {
     }
 
     /**
-     * Exports the software bill of materials in SPDX format ({@code GET /repos/{owner}/{repo}/dependency-graph/sbom}).
-     *
-     * @return the SBOM as GitHub returns it
-     * @throws IOException if the transport fails
-     * @deprecated GitHub closes this operation down on {@code 2026-11-13}. Use {@link #requestSbomReport()}, then
-     *     {@link #sbomReport(String)}.
-     */
-    @Deprecated(since = "2026-05-12")
-    public GitHubDependencyGraphSpdxSbom sbom() throws IOException {
-        return github().dependencyGraph().sboms().exportSbom(repository.owner(), repository.name());
-    }
-
-    /**
      * Requests the generation of the software bill of materials ({@code GET
-     * /repos/{owner}/{repo}/dependency-graph/sbom/generate-report}). This is the first step of the asynchronous flow
-     * that replaces {@link #sbom()}; the URL in the result ends with the report id to pass to
-     * {@link #sbomReport(String)}. Available on GitHub.com and GitHub Enterprise Cloud only.
+     * /repos/{owner}/{repo}/dependency-graph/sbom/generate-report}). This is the first step of the asynchronous flow;
+     * the URL in the result ends with the report id to pass to {@link #sbomReport(String)}. Available on GitHub.com and
+     * GitHub Enterprise Cloud only.
      *
      * @return the response with the URL to poll, as GitHub returns it
      * @throws IOException if the transport fails

@@ -10,7 +10,6 @@ import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.dependencygraph.GitHubCreateRepositorySnapshotPayload;
 import io.github.piotr_janczukowicz.github.api.dependencygraph.GitHubCreateRepositorySnapshotResponse;
 import io.github.piotr_janczukowicz.github.api.dependencygraph.GitHubDependencyGraphDiffEntry;
-import io.github.piotr_janczukowicz.github.api.dependencygraph.GitHubDependencyGraphSpdxSbom;
 import io.github.piotr_janczukowicz.github.api.dependencygraph.GitHubGenerateSbomReportResponse;
 import io.github.piotr_janczukowicz.github.sdk.GitHubSdk;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
@@ -30,17 +29,6 @@ class RepositoryDependenciesTest {
     private final GitHub github = mock(GitHub.class, RETURNS_DEEP_STUBS);
     private final Repository repository = GitHubSdk.of(github).repository(OWNER, NAME);
     private final RepositoryDependencies sut = repository.dependencies();
-
-    @Test
-    @SuppressWarnings("deprecation") // the test covers the deprecated method until GitHub removes it
-    void sbom_shouldReturnTheSbom_whenCalled() throws IOException {
-        final GitHubDependencyGraphSpdxSbom sbom = mock(GitHubDependencyGraphSpdxSbom.class);
-        when(github.dependencyGraph().sboms().exportSbom(OWNER, NAME)).thenReturn(sbom);
-
-        final GitHubDependencyGraphSpdxSbom result = sut.sbom();
-
-        assertThat(result).isSameAs(sbom);
-    }
 
     @Test
     void requestSbomReport_shouldReturnTheResponse_whenCalled() throws IOException {
