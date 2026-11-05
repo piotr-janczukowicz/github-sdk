@@ -3,10 +3,10 @@ package io.github.piotr_janczukowicz.github.sdk.smoke;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.github.piotr_janczukowicz.github.api.search.GitHubMilestoneState;
-import io.github.piotr_janczukowicz.github.sdk.Issue;
-import io.github.piotr_janczukowicz.github.sdk.Label;
-import io.github.piotr_janczukowicz.github.sdk.Milestone;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
+import io.github.piotr_janczukowicz.github.sdk.issues.Issue;
+import io.github.piotr_janczukowicz.github.sdk.issues.Label;
+import io.github.piotr_janczukowicz.github.sdk.issues.Milestone;
 import java.io.IOException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;

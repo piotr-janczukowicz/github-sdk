@@ -2,11 +2,11 @@ package io.github.piotr_janczukowicz.github.sdk.smoke;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.github.piotr_janczukowicz.github.sdk.Issue;
-import io.github.piotr_janczukowicz.github.sdk.MergeMethod;
-import io.github.piotr_janczukowicz.github.sdk.PullRequest;
-import io.github.piotr_janczukowicz.github.sdk.PullRequestState;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
+import io.github.piotr_janczukowicz.github.sdk.issues.Issue;
+import io.github.piotr_janczukowicz.github.sdk.pulls.MergeMethod;
+import io.github.piotr_janczukowicz.github.sdk.pulls.PullRequest;
+import io.github.piotr_janczukowicz.github.sdk.pulls.PullRequestState;
 import java.io.IOException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;

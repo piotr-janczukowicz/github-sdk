@@ -8,6 +8,7 @@ import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateInOrgPay
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubFullRepository;
 import io.github.piotr_janczukowicz.github.api.teams.GitHubTeam;
 import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
+import io.github.piotr_janczukowicz.github.sdk.internal.Lookups;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.stream.Stream;

@@ -3,7 +3,7 @@ package io.github.piotr_janczukowicz.github.sdk.smoke;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.github.piotr_janczukowicz.github.sdk.Repository;
-import io.github.piotr_janczukowicz.github.sdk.Webhook;
+import io.github.piotr_janczukowicz.github.sdk.webhooks.Webhook;
 import java.io.IOException;
 import java.util.List;
 import org.junit.jupiter.api.BeforeAll;

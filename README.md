@@ -55,6 +55,13 @@ try (GitHubClient client = GitHubClients.create(AuthenticationProviders.bearer(S
 }
 ```
 
+## Packages
+
+The entry points (`GitHubSdk`, `Repository`, `User`, `Organization`, `Team`, `Search`, `RateLimit`) are in
+`io.github.piotr_janczukowicz.github.sdk`. The other objects are grouped by area in sub-packages: `issues`, `pulls`,
+`content` (branches, commits, files, releases), `checks`, `collaborators`, `reactions` and `webhooks`. The `internal`
+package is not exported by the module and is not part of the API.
+
 ## What is covered
 
 | Entry point | Objects and what they do |

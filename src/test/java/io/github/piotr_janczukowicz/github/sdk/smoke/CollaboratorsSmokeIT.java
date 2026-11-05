@@ -3,9 +3,9 @@ package io.github.piotr_janczukowicz.github.sdk.smoke;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
-import io.github.piotr_janczukowicz.github.sdk.Collaborator;
-import io.github.piotr_janczukowicz.github.sdk.Invitation;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
+import io.github.piotr_janczukowicz.github.sdk.collaborators.Collaborator;
+import io.github.piotr_janczukowicz.github.sdk.collaborators.Invitation;
 import java.io.IOException;
 import java.util.List;
 import org.junit.jupiter.api.BeforeAll;

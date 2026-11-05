@@ -18,6 +18,8 @@ import io.github.piotr_janczukowicz.github.api.search.GitHubUserSearchResultItem
 import io.github.piotr_janczukowicz.github.api.users.GitHubUser;
 import io.github.piotr_janczukowicz.github.api.users.GitHubUserApi;
 import io.github.piotr_janczukowicz.github.api.users.GitHubUserView;
+import io.github.piotr_janczukowicz.github.sdk.fixtures.IssuesFixtures;
+import io.github.piotr_janczukowicz.github.sdk.issues.Issue;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.io.IOException;
 import java.io.UncheckedIOException;

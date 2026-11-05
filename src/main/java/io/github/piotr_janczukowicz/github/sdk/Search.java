@@ -7,6 +7,8 @@ import io.github.piotr_janczukowicz.github.api.search.GitHubCodeSearchResultItem
 import io.github.piotr_janczukowicz.github.api.search.GitHubCommitSearchResultItem;
 import io.github.piotr_janczukowicz.github.api.search.GitHubIssueSearchResultItem;
 import io.github.piotr_janczukowicz.github.api.search.GitHubUserSearchResultItem;
+import io.github.piotr_janczukowicz.github.sdk.internal.Lookups;
+import io.github.piotr_janczukowicz.github.sdk.issues.Issue;
 import java.io.IOException;
 import java.util.stream.Stream;
 

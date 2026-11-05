@@ -3,9 +3,9 @@ package io.github.piotr_janczukowicz.github.sdk.smoke;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.github.piotr_janczukowicz.github.api.search.GitHubCommitSearchResultItem;
-import io.github.piotr_janczukowicz.github.sdk.Issue;
 import io.github.piotr_janczukowicz.github.sdk.RateLimit;
 import io.github.piotr_janczukowicz.github.sdk.User;
+import io.github.piotr_janczukowicz.github.sdk.issues.Issue;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;

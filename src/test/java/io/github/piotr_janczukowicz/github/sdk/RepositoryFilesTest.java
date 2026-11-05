@@ -17,6 +17,8 @@ import io.github.piotr_janczukowicz.github.api.repositories.GitHubContentFile;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateOrUpdateFileContentsPayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubDeleteFilePayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubGetContentFilter;
+import io.github.piotr_janczukowicz.github.sdk.content.RepositoryFile;
+import io.github.piotr_janczukowicz.github.sdk.fixtures.RepositoryContentFixtures;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;

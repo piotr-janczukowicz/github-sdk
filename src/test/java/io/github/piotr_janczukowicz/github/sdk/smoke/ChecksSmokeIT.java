@@ -4,12 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 import io.github.piotr_janczukowicz.github.client.exception.GitHubForbiddenException;
-import io.github.piotr_janczukowicz.github.sdk.CheckRun;
-import io.github.piotr_janczukowicz.github.sdk.CombinedStatus;
-import io.github.piotr_janczukowicz.github.sdk.Commit;
-import io.github.piotr_janczukowicz.github.sdk.CommitStatus;
-import io.github.piotr_janczukowicz.github.sdk.CommitStatusState;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
+import io.github.piotr_janczukowicz.github.sdk.checks.CheckRun;
+import io.github.piotr_janczukowicz.github.sdk.checks.CombinedStatus;
+import io.github.piotr_janczukowicz.github.sdk.checks.CommitStatus;
+import io.github.piotr_janczukowicz.github.sdk.checks.CommitStatusState;
+import io.github.piotr_janczukowicz.github.sdk.content.Commit;
 import java.io.IOException;
 import java.util.List;
 import org.junit.jupiter.api.Assumptions;

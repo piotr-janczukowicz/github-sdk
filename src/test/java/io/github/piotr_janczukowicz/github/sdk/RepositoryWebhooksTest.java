@@ -13,6 +13,8 @@ import static org.mockito.Mockito.when;
 import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateWebhookPayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubHook;
+import io.github.piotr_janczukowicz.github.sdk.fixtures.RepositoryContentFixtures;
+import io.github.piotr_janczukowicz.github.sdk.webhooks.Webhook;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.io.IOException;
 import java.util.List;

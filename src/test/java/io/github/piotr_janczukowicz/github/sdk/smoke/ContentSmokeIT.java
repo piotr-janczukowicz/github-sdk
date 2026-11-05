@@ -3,9 +3,9 @@ package io.github.piotr_janczukowicz.github.sdk.smoke;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubCreateRefPayload;
-import io.github.piotr_janczukowicz.github.sdk.Branch;
-import io.github.piotr_janczukowicz.github.sdk.Commit;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
+import io.github.piotr_janczukowicz.github.sdk.content.Branch;
+import io.github.piotr_janczukowicz.github.sdk.content.Commit;
 import java.io.IOException;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeAll;

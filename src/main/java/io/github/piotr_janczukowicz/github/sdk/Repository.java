@@ -32,6 +32,22 @@ import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryTag;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubWebhookConfig;
 import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
 import io.github.piotr_janczukowicz.github.pagination.GitHubPageRequest;
+import io.github.piotr_janczukowicz.github.sdk.checks.CheckRun;
+import io.github.piotr_janczukowicz.github.sdk.collaborators.Collaborator;
+import io.github.piotr_janczukowicz.github.sdk.collaborators.Invitation;
+import io.github.piotr_janczukowicz.github.sdk.collaborators.RepositoryPermission;
+import io.github.piotr_janczukowicz.github.sdk.content.Branch;
+import io.github.piotr_janczukowicz.github.sdk.content.Commit;
+import io.github.piotr_janczukowicz.github.sdk.content.Release;
+import io.github.piotr_janczukowicz.github.sdk.content.RepositoryFile;
+import io.github.piotr_janczukowicz.github.sdk.internal.ClientValues;
+import io.github.piotr_janczukowicz.github.sdk.internal.Internals;
+import io.github.piotr_janczukowicz.github.sdk.internal.Lookups;
+import io.github.piotr_janczukowicz.github.sdk.issues.Issue;
+import io.github.piotr_janczukowicz.github.sdk.issues.Label;
+import io.github.piotr_janczukowicz.github.sdk.issues.Milestone;
+import io.github.piotr_janczukowicz.github.sdk.pulls.PullRequest;
+import io.github.piotr_janczukowicz.github.sdk.webhooks.Webhook;
 import java.io.IOException;
 import java.util.Base64;
 import java.util.List;
@@ -49,6 +65,10 @@ public final class Repository {
     private static final String PAYLOAD = "payload";
     private static final String FILTER = "filter";
     private static final String LOGIN = "login";
+
+    static {
+        Internals.registerRepositoryAccess(repository -> repository.sdk.github());
+    }
 
     private final GitHubSdk sdk;
     private final String owner;
@@ -737,7 +757,8 @@ public final class Repository {
     public Optional<Invitation> addCollaborator(final String login, final RepositoryPermission permission)
             throws IOException {
         final GitHubAddCollaboratorPayload payload = new GitHubAddCollaboratorPayload(
-                requireNonNull(permission, "permission").toClient().wireValue());
+                ClientValues.permissionToClient(requireNonNull(permission, "permission"))
+                        .wireValue());
         return sdk.github()
                 .collaborators()
                 .collaborator()
@@ -912,15 +933,6 @@ public final class Repository {
      */
     public Repository fork(final GitHubCreateForkPayload payload) throws IOException {
         return createFork(requireNonNull(payload, PAYLOAD));
-    }
-
-    /**
-     * Returns the SDK this repository belongs to.
-     *
-     * @return the SDK
-     */
-    GitHubSdk sdk() {
-        return sdk;
     }
 
     private PullRequest loadPullRequest(final GitHubPullRequestSimple listed) {

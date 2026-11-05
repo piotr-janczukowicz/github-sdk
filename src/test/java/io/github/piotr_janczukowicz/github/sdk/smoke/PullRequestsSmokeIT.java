@@ -9,9 +9,9 @@ import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubPullRequestUpd
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubUpdatePullRequestPayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateOrUpdateFileContentsPayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubDiffEntry;
-import io.github.piotr_janczukowicz.github.sdk.PullRequest;
-import io.github.piotr_janczukowicz.github.sdk.PullRequestState;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
+import io.github.piotr_janczukowicz.github.sdk.pulls.PullRequest;
+import io.github.piotr_janczukowicz.github.sdk.pulls.PullRequestState;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;

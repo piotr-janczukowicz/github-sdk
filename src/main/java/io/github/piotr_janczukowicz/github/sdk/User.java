@@ -6,6 +6,7 @@ import io.github.piotr_janczukowicz.github.api.organizations.GitHubOrganizationS
 import io.github.piotr_janczukowicz.github.api.users.GitHubAuthenticatedUser;
 import io.github.piotr_janczukowicz.github.api.users.GitHubUser;
 import io.github.piotr_janczukowicz.github.api.users.GitHubUserView;
+import io.github.piotr_janczukowicz.github.sdk.internal.Lookups;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.stream.Stream;

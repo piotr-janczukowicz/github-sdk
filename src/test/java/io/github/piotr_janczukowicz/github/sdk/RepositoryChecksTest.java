@@ -8,6 +8,8 @@ import static org.mockito.Mockito.when;
 
 import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.checks.GitHubCheckRun;
+import io.github.piotr_janczukowicz.github.sdk.checks.CheckRun;
+import io.github.piotr_janczukowicz.github.sdk.fixtures.ChecksFixtures;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.io.IOException;
 import java.util.Optional;

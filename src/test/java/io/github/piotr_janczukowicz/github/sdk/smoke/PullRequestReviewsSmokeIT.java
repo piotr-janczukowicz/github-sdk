@@ -3,11 +3,11 @@ package io.github.piotr_janczukowicz.github.sdk.smoke;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
-import io.github.piotr_janczukowicz.github.sdk.PullRequest;
-import io.github.piotr_janczukowicz.github.sdk.PullRequestReview;
-import io.github.piotr_janczukowicz.github.sdk.PullRequestReviewComment;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
-import io.github.piotr_janczukowicz.github.sdk.ReviewEvent;
+import io.github.piotr_janczukowicz.github.sdk.pulls.PullRequest;
+import io.github.piotr_janczukowicz.github.sdk.pulls.PullRequestReview;
+import io.github.piotr_janczukowicz.github.sdk.pulls.PullRequestReviewComment;
+import io.github.piotr_janczukowicz.github.sdk.pulls.ReviewEvent;
 import java.io.IOException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
