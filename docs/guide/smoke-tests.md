@@ -36,6 +36,7 @@ Without `SMOKE_GITHUB_TOKEN` every smoke class is skipped.
 | `IssuesSmokeIT` | fetch the sandbox, create, list, update, comment, edit and delete comments, close and reopen, labels, lock, 404 on a missing issue |
 | `PullRequestsSmokeIT` | create a pull request between two branches, read, list, files, commits, 404 |
 | `PullRequestWriteSmokeIT` | update, close, reopen, comment through the issue, squash merge into a throwaway branch |
+| `PullRequestReviewsSmokeIT` | comment review, draft review (edit, submit, delete), inline comment (reply, edit, list, delete), review comments. Approve, request changes and dismiss need a second user, because GitHub refuses them on one's own pull request |
 | `ContentSmokeIT` | default branch, its head commit, branch and commit lists, 404 on a missing branch |
 | `FilesSmokeIT` | write, update, read, delete a file on a throwaway branch (binary and UTF-8 text), directory and missing paths |
 | `ReleasesSmokeIT` | draft release: create, update, list, refresh, delete; latest release; tags |

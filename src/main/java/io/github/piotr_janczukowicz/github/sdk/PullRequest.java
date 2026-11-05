@@ -3,10 +3,11 @@ package io.github.piotr_janczukowicz.github.sdk;
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonEmpty;
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
 
+import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubCreateReviewCommentPayload;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubCreateReviewPayload;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubMergePullRequestPayload;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubPullRequest;
-import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubPullRequestReview;
+import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubPullRequestReviewRequest;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubPullRequestUpdateState;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubRemoveReviewersPayload;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubRequestReviewersPayload;
@@ -16,7 +17,9 @@ import io.github.piotr_janczukowicz.github.api.repositories.GitHubDiffEntry;
 import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A pull request of a {@link Repository}, as GitHub returned it. The object is immutable: it keeps the data of the
@@ -213,31 +216,145 @@ public final class PullRequest {
      * @return the reviews, oldest first
      * @throws IOException if the first page cannot be loaded
      */
-    public Stream<GitHubPullRequestReview> reviews() throws IOException {
+    public Stream<PullRequestReview> reviews() throws IOException {
         return repository
                 .sdk()
                 .github()
                 .pullRequests()
                 .reviews()
                 .list(repository.owner(), repository.name(), number())
-                .stream();
+                .stream()
+                .map(listed -> new PullRequestReview(this, listed));
     }
 
     /**
-     * Creates a review ({@code POST /repos/{owner}/{repo}/pulls/{pull_number}/reviews}).
+     * Loads one review ({@code GET /repos/{owner}/{repo}/pulls/{pull_number}/reviews/{review_id}}).
      *
-     * @param payload the review to create
-     * @return the review as GitHub returned it
-     * @throws NullPointerException if {@code payload} is {@code null}
+     * @param id the review id
+     * @return the review, or empty when GitHub has none with this id
      * @throws IOException if the transport fails
      */
-    public GitHubPullRequestReview review(final GitHubCreateReviewPayload payload) throws IOException {
+    public Optional<PullRequestReview> review(final long id) throws IOException {
         return repository
                 .sdk()
                 .github()
                 .pullRequests()
                 .reviews()
-                .create(repository.owner(), repository.name(), number(), requireNonNull(payload, "payload"));
+                .get(repository.owner(), repository.name(), number(), id)
+                .map(loaded -> new PullRequestReview(this, loaded));
+    }
+
+    /**
+     * Reviews the pull request with no text and submits the review at once ({@code POST
+     * /repos/{owner}/{repo}/pulls/{pull_number}/reviews}). This object is not changed.
+     *
+     * @param event what the review says; GitHub requires text for every event but {@link ReviewEvent#APPROVE}, so use
+     *     {@link #review(ReviewEvent, String)} for the others
+     * @return the submitted review
+     * @throws NullPointerException if {@code event} is {@code null}
+     * @throws IOException if the transport fails
+     */
+    public PullRequestReview review(final ReviewEvent event) throws IOException {
+        return review(event, null);
+    }
+
+    /**
+     * Reviews the pull request and submits the review at once ({@code POST
+     * /repos/{owner}/{repo}/pulls/{pull_number}/reviews}). This object is not changed.
+     *
+     * @param event what the review says
+     * @param body the review text in Markdown, or {@code null} for none
+     * @return the submitted review
+     * @throws NullPointerException if {@code event} is {@code null}
+     * @throws IOException if the transport fails
+     */
+    public PullRequestReview review(final ReviewEvent event, final @Nullable String body) throws IOException {
+        return createReview(new GitHubCreateReviewPayload(
+                null, body, requireNonNull(event, "event").toClient(), null));
+    }
+
+    /**
+     * Starts a review that stays pending, visible only to its author, until
+     * {@link PullRequestReview#submit(ReviewEvent)} is called ({@code POST
+     * /repos/{owner}/{repo}/pulls/{pull_number}/reviews}). This object is not changed.
+     *
+     * @param body the review text in Markdown, or {@code null} for none
+     * @return the pending review
+     * @throws IOException if the transport fails
+     */
+    public PullRequestReview draftReview(final @Nullable String body) throws IOException {
+        return createReview(new GitHubCreateReviewPayload(null, body, null, null));
+    }
+
+    /**
+     * Lists the inline comments on the diff, from every review ({@code GET
+     * /repos/{owner}/{repo}/pulls/{pull_number}/comments}). Pages are fetched only as the stream is consumed; transport
+     * failures during iteration are {@link java.io.UncheckedIOException}.
+     *
+     * @return the comments, oldest first
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<PullRequestReviewComment> reviewComments() throws IOException {
+        return repository
+                .sdk()
+                .github()
+                .pullRequests()
+                .comments()
+                .list(repository.owner(), repository.name(), number())
+                .stream()
+                .map(listed -> new PullRequestReviewComment(this, listed));
+    }
+
+    /**
+     * Adds an inline comment on one line of the diff, outside any review ({@code POST
+     * /repos/{owner}/{repo}/pulls/{pull_number}/comments}). This object is not changed.
+     *
+     * @param commitId the sha of the commit to comment on, usually the head of the pull request
+     * @param path the file path, relative to the repository root
+     * @param line the line in the file to comment on
+     * @param body the comment text in Markdown
+     * @return the new comment
+     * @throws NullPointerException if an argument is {@code null}
+     * @throws IllegalArgumentException if {@code commitId}, {@code path} or {@code body} is blank
+     * @throws IOException if the transport fails
+     */
+    public PullRequestReviewComment commentOnLine(
+            final String commitId, final String path, final int line, final String body) throws IOException {
+        final GitHubCreateReviewCommentPayload payload = new GitHubCreateReviewCommentPayload(
+                requireNonNull(body, "body"),
+                requireNonNull(commitId, "commitId"),
+                requireNonNull(path, "path"),
+                null,
+                null,
+                line,
+                null,
+                null,
+                null,
+                null);
+        return new PullRequestReviewComment(
+                this,
+                repository
+                        .sdk()
+                        .github()
+                        .pullRequests()
+                        .comments()
+                        .create(repository.owner(), repository.name(), number(), payload));
+    }
+
+    /**
+     * Loads the users and teams whose review is requested ({@code GET
+     * /repos/{owner}/{repo}/pulls/{pull_number}/requested_reviewers}). This object is not changed.
+     *
+     * @return the requested reviewers, as the client returned them
+     * @throws IOException if the transport fails
+     */
+    public GitHubPullRequestReviewRequest reviewRequests() throws IOException {
+        return repository
+                .sdk()
+                .github()
+                .pullRequests()
+                .reviewRequests()
+                .list(repository.owner(), repository.name(), number());
     }
 
     /**
@@ -318,6 +435,17 @@ public final class PullRequest {
                         .pullRequests()
                         .pullRequest()
                         .update(repository.owner(), repository.name(), number(), payload));
+    }
+
+    private PullRequestReview createReview(final GitHubCreateReviewPayload payload) throws IOException {
+        return new PullRequestReview(
+                this,
+                repository
+                        .sdk()
+                        .github()
+                        .pullRequests()
+                        .reviews()
+                        .create(repository.owner(), repository.name(), number(), payload));
     }
 
     private PullRequest sendMerge(final GitHubMergePullRequestPayload payload) throws IOException {

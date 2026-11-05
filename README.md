@@ -61,7 +61,9 @@ try (GitHubClient client = GitHubClients.create(AuthenticationProviders.bearer(S
 |---|---|
 | `sdk.repository(owner, name)` | `Repository`: `fetch()`, issues, pull requests, branches, commits, files (`file(path)`, `writeFile(...)`), releases, tags, labels, milestones, webhooks |
 | `Issue` | `update()`, `refresh()`, `close()`, `reopen()`, `lock()`, `unlock()`, labels, assignees, `comment(...)`, `comments()` |
-| `PullRequest` | `update()`, `refresh()`, `close()`, `reopen()`, `merge(...)`, reviews, reviewers, files, commits, `issue()` |
+| `PullRequest` | `update()`, `refresh()`, `close()`, `reopen()`, `merge(...)`, `reviews()`, `review(...)`, `draftReview(...)`, `reviewComments()`, `commentOnLine(...)`, reviewers, files, commits, `issue()` |
+| `PullRequestReview` | `edit(...)`, `submit(...)`, `dismiss(...)`, `deletePending()`, `comments()`, `refresh()` |
+| `PullRequestReviewComment` | `edit(...)`, `reply(...)`, `delete()`, `refresh()` |
 | `Branch`, `Commit`, `RepositoryFile` | read; a file gives `text()` and `bytes()`, and writes with `writeFile(...)` and `delete(...)` |
 | `Release`, `Label`, `Milestone`, `Webhook` | `update()`, `refresh()`, `delete()` |
 | `sdk.currentUser()`, `sdk.user(login)` | `User`: `repositories()`, `organizations()` |

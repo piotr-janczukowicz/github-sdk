@@ -6,19 +6,25 @@ import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubIssue;
+import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubCreateReviewCommentPayload;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubCreateReviewPayload;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubMergePullRequestPayload;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubPullRequest;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubPullRequestBuilder;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubPullRequestMergeMethod;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubPullRequestReview;
+import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubPullRequestReviewComment;
+import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubPullRequestReviewEvent;
+import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubPullRequestReviewRequest;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubPullRequestUpdateState;
+import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubPullsReviewsApi;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubRemoveReviewersPayload;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubRequestReviewersPayload;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubUpdatePullRequestPayload;
@@ -186,24 +192,155 @@ class PullRequestTest {
 
     @Test
     void reviews_shouldStreamTheReviews_whenTheyExist() throws IOException {
-        final GitHubPullRequestReview review = mock(GitHubPullRequestReview.class);
-        when(github.pullRequests().reviews().list(OWNER, NAME, NUMBER).stream()).thenReturn(Stream.of(review));
+        final GitHubPullRequestReview listed = ReviewsFixtures.review();
+        when(github.pullRequests().reviews().list(OWNER, NAME, NUMBER).stream()).thenReturn(Stream.of(listed));
 
-        final List<GitHubPullRequestReview> reviews = sut.reviews().toList();
+        final List<PullRequestReview> reviews = sut.reviews().toList();
 
-        assertThat(reviews).containsExactly(review);
+        assertThat(reviews).singleElement().satisfies(review -> {
+            assertThat(review.response()).isSameAs(listed);
+            assertThat(review.pullRequest()).isSameAs(sut);
+        });
     }
 
     @Test
-    void review_shouldSendThePayloadAndReturnTheReview_whenCalled() throws IOException {
-        final GitHubPullRequestReview created = mock(GitHubPullRequestReview.class);
-        final GitHubCreateReviewPayload payload = mock(GitHubCreateReviewPayload.class);
-        when(github.pullRequests().reviews().create(OWNER, NAME, NUMBER, payload))
+    void review_shouldReturnTheReview_whenTheIdExists() throws IOException {
+        final GitHubPullRequestReview loaded = ReviewsFixtures.review();
+        final GitHubPullsReviewsApi reviews = github.pullRequests().reviews();
+        doReturn(Optional.of(loaded)).when(reviews).get(OWNER, NAME, NUMBER, ReviewsFixtures.REVIEW_ID);
+
+        final Optional<PullRequestReview> review = sut.review(ReviewsFixtures.REVIEW_ID);
+
+        assertThat(review).map(PullRequestReview::response).containsSame(loaded);
+    }
+
+    @Test
+    void review_shouldBeEmpty_whenTheIdDoesNotExist() throws IOException {
+        final GitHubPullsReviewsApi reviews = github.pullRequests().reviews();
+        doReturn(Optional.empty()).when(reviews).get(OWNER, NAME, NUMBER, ReviewsFixtures.REVIEW_ID);
+
+        final Optional<PullRequestReview> review = sut.review(ReviewsFixtures.REVIEW_ID);
+
+        assertThat(review).isEmpty();
+    }
+
+    @Test
+    void review_shouldSubmitTheReviewWithTheEventAndBody_whenBothAreGiven() throws IOException {
+        final GitHubPullRequestReview created = ReviewsFixtures.review();
+        when(github.pullRequests().reviews().create(eq(OWNER), eq(NAME), eq(NUMBER), any()))
                 .thenReturn(created);
+        final ArgumentCaptor<GitHubCreateReviewPayload> payload =
+                ArgumentCaptor.forClass(GitHubCreateReviewPayload.class);
 
-        final GitHubPullRequestReview review = sut.review(payload);
+        final PullRequestReview review = sut.review(ReviewEvent.COMMENT, "Thoughts");
 
-        assertThat(review).isSameAs(created);
+        verify(github.pullRequests().reviews()).create(eq(OWNER), eq(NAME), eq(NUMBER), payload.capture());
+        assertSoftly(softly -> {
+            softly.assertThat(payload.getValue().event()).isEqualTo(GitHubPullRequestReviewEvent.COMMENT);
+            softly.assertThat(payload.getValue().body()).isEqualTo("Thoughts");
+            softly.assertThat(review.response()).isSameAs(created);
+            softly.assertThat(review.pullRequest()).isSameAs(sut);
+        });
+    }
+
+    @Test
+    void review_shouldSendNoBody_whenOnlyTheEventIsGiven() throws IOException {
+        when(github.pullRequests().reviews().create(eq(OWNER), eq(NAME), eq(NUMBER), any()))
+                .thenReturn(ReviewsFixtures.review());
+        final ArgumentCaptor<GitHubCreateReviewPayload> payload =
+                ArgumentCaptor.forClass(GitHubCreateReviewPayload.class);
+
+        sut.review(ReviewEvent.APPROVE);
+
+        verify(github.pullRequests().reviews()).create(eq(OWNER), eq(NAME), eq(NUMBER), payload.capture());
+        assertSoftly(softly -> {
+            softly.assertThat(payload.getValue().event()).isEqualTo(GitHubPullRequestReviewEvent.APPROVE);
+            softly.assertThat(payload.getValue().body()).isNull();
+        });
+    }
+
+    @Test
+    void review_shouldThrowNullPointerException_whenEventIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.review(null, "text"));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("event");
+    }
+
+    @Test
+    void draftReview_shouldCreateAReviewWithoutEvent_whenCalled() throws IOException {
+        when(github.pullRequests().reviews().create(eq(OWNER), eq(NAME), eq(NUMBER), any()))
+                .thenReturn(ReviewsFixtures.reviewInState("PENDING"));
+        final ArgumentCaptor<GitHubCreateReviewPayload> payload =
+                ArgumentCaptor.forClass(GitHubCreateReviewPayload.class);
+
+        final PullRequestReview review = sut.draftReview("Work in progress");
+
+        verify(github.pullRequests().reviews()).create(eq(OWNER), eq(NAME), eq(NUMBER), payload.capture());
+        assertSoftly(softly -> {
+            softly.assertThat(payload.getValue().event()).isNull();
+            softly.assertThat(payload.getValue().body()).isEqualTo("Work in progress");
+            softly.assertThat(review.isPending()).isTrue();
+        });
+    }
+
+    @Test
+    void reviewComments_shouldStreamTheComments_whenTheyExist() throws IOException {
+        final GitHubPullRequestReviewComment listed = ReviewsFixtures.comment();
+        when(github.pullRequests().comments().list(OWNER, NAME, NUMBER).stream())
+                .thenReturn(Stream.of(listed));
+
+        final List<PullRequestReviewComment> comments = sut.reviewComments().toList();
+
+        assertThat(comments).singleElement().satisfies(comment -> {
+            assertThat(comment.response()).isSameAs(listed);
+            assertThat(comment.pullRequest()).isSameAs(sut);
+        });
+    }
+
+    @Test
+    void commentOnLine_shouldSendTheLocationAndBody_whenCalled() throws IOException {
+        final GitHubPullRequestReviewComment created = ReviewsFixtures.comment();
+        when(github.pullRequests().comments().create(eq(OWNER), eq(NAME), eq(NUMBER), any()))
+                .thenReturn(created);
+        final ArgumentCaptor<GitHubCreateReviewCommentPayload> payload =
+                ArgumentCaptor.forClass(GitHubCreateReviewCommentPayload.class);
+
+        final PullRequestReviewComment comment = sut.commentOnLine("abc123", "src/Main.java", 12, "Rename this");
+
+        verify(github.pullRequests().comments()).create(eq(OWNER), eq(NAME), eq(NUMBER), payload.capture());
+        assertSoftly(softly -> {
+            softly.assertThat(payload.getValue().commitId()).isEqualTo("abc123");
+            softly.assertThat(payload.getValue().path()).isEqualTo("src/Main.java");
+            softly.assertThat(payload.getValue().line()).isEqualTo(12);
+            softly.assertThat(payload.getValue().body()).isEqualTo("Rename this");
+            softly.assertThat(comment.response()).isSameAs(created);
+            softly.assertThat(comment.pullRequest()).isSameAs(sut);
+        });
+    }
+
+    @Test
+    void commentOnLine_shouldThrowNullPointerException_whenAnArgumentIsNull() {
+        final Throwable nullBody = catchThrowable(() -> sut.commentOnLine("abc123", "a.txt", 1, null));
+        final Throwable nullCommit = catchThrowable(() -> sut.commentOnLine(null, "a.txt", 1, "text"));
+        final Throwable nullPath = catchThrowable(() -> sut.commentOnLine("abc123", null, 1, "text"));
+
+        assertSoftly(softly -> {
+            softly.assertThat(nullBody).isInstanceOf(NullPointerException.class).hasMessageContaining("body");
+            softly.assertThat(nullCommit)
+                    .isInstanceOf(NullPointerException.class)
+                    .hasMessageContaining("commitId");
+            softly.assertThat(nullPath).isInstanceOf(NullPointerException.class).hasMessageContaining("path");
+        });
+    }
+
+    @Test
+    void reviewRequests_shouldReturnTheClientRecord_whenCalled() throws IOException {
+        final GitHubPullRequestReviewRequest requests = mock(GitHubPullRequestReviewRequest.class);
+        when(github.pullRequests().reviewRequests().list(OWNER, NAME, NUMBER)).thenReturn(requests);
+
+        final GitHubPullRequestReviewRequest result = sut.reviewRequests();
+
+        assertThat(result).isSameAs(requests);
     }
 
     @Test
