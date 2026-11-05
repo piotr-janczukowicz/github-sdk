@@ -3,7 +3,10 @@ package io.github.piotr_janczukowicz.github.sdk;
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 
+import io.github.piotr_janczukowicz.github.api.actions.GitHubCreateRepoVariablePayload;
+import io.github.piotr_janczukowicz.github.api.actions.GitHubListWorkflowRunsForRepoFilter;
 import io.github.piotr_janczukowicz.github.api.activity.GitHubSetRepoSubscriptionPayload;
+import io.github.piotr_janczukowicz.github.api.agents.GitHubActionsSecret;
 import io.github.piotr_janczukowicz.github.api.branches.GitHubListBranchesFilter;
 import io.github.piotr_janczukowicz.github.api.branches.GitHubShortBranch;
 import io.github.piotr_janczukowicz.github.api.collaborators.GitHubAddCollaboratorPayload;
@@ -32,6 +35,10 @@ import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryTag;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubWebhookConfig;
 import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
 import io.github.piotr_janczukowicz.github.pagination.GitHubPageRequest;
+import io.github.piotr_janczukowicz.github.sdk.actions.Artifact;
+import io.github.piotr_janczukowicz.github.sdk.actions.Variable;
+import io.github.piotr_janczukowicz.github.sdk.actions.Workflow;
+import io.github.piotr_janczukowicz.github.sdk.actions.WorkflowRun;
 import io.github.piotr_janczukowicz.github.sdk.checks.CheckRun;
 import io.github.piotr_janczukowicz.github.sdk.collaborators.Collaborator;
 import io.github.piotr_janczukowicz.github.sdk.collaborators.Invitation;
@@ -65,6 +72,7 @@ public final class Repository {
     private static final String PAYLOAD = "payload";
     private static final String FILTER = "filter";
     private static final String LOGIN = "login";
+    private static final String VARIABLE_NAME = "variableName";
 
     static {
         Internals.registerRepositoryAccess(repository -> repository.sdk.github());
@@ -328,6 +336,183 @@ public final class Repository {
      */
     public Optional<CheckRun> checkRun(final long id) throws IOException {
         return sdk.github().checks().runs().getCheckRun(owner, name, id).map(loaded -> new CheckRun(this, loaded));
+    }
+
+    /**
+     * Lists the workflows ({@code GET /repos/{owner}/{repo}/actions/workflows}). Pages are fetched only as the stream
+     * is consumed; transport failures during iteration are {@link java.io.UncheckedIOException}.
+     *
+     * @return the workflows
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<Workflow> workflows() throws IOException {
+        return sdk.github().actions().workflows().listRepoWorkflows(owner, name, GitHubPageRequest.byPage()).stream()
+                .map(listed -> new Workflow(this, listed));
+    }
+
+    /**
+     * Loads one workflow ({@code GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}}).
+     *
+     * @param idOrFileName the workflow id or the file name, for example {@code build.yml}
+     * @return the workflow, or empty when GitHub answers HTTP 404
+     * @throws NullPointerException if {@code idOrFileName} is {@code null}
+     * @throws IllegalArgumentException if {@code idOrFileName} is blank
+     * @throws IOException if the transport fails
+     */
+    public Optional<Workflow> workflow(final String idOrFileName) throws IOException {
+        return sdk.github()
+                .actions()
+                .workflows()
+                .getWorkflow(owner, name, requireNotBlank(idOrFileName, "idOrFileName"))
+                .map(loaded -> new Workflow(this, loaded));
+    }
+
+    /**
+     * Lists the workflow runs of all workflows ({@code GET /repos/{owner}/{repo}/actions/runs}). See
+     * {@link #workflowRuns(GitHubListWorkflowRunsForRepoFilter)}.
+     *
+     * @return the runs, newest first
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<WorkflowRun> workflowRuns() throws IOException {
+        return workflowRuns(GitHubListWorkflowRunsForRepoFilter.empty());
+    }
+
+    /**
+     * Lists the workflow runs of all workflows ({@code GET /repos/{owner}/{repo}/actions/runs}). Pages are fetched only
+     * as the stream is consumed; transport failures during iteration are {@link java.io.UncheckedIOException}.
+     *
+     * @param filter the filter for actor, branch, event, status, creation date and commit
+     * @return the runs, newest first
+     * @throws NullPointerException if {@code filter} is {@code null}
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<WorkflowRun> workflowRuns(final GitHubListWorkflowRunsForRepoFilter filter) throws IOException {
+        return sdk
+                .github()
+                .actions()
+                .workflowRuns()
+                .listWorkflowRunsForRepo(owner, name, requireNonNull(filter, FILTER), GitHubPageRequest.byPage())
+                .stream()
+                .map(listed -> new WorkflowRun(this, listed));
+    }
+
+    /**
+     * Loads one workflow run ({@code GET /repos/{owner}/{repo}/actions/runs/{run_id}}).
+     *
+     * @param id the run id
+     * @return the run, or empty when GitHub answers HTTP 404
+     * @throws IOException if the transport fails
+     */
+    public Optional<WorkflowRun> workflowRun(final long id) throws IOException {
+        return sdk.github()
+                .actions()
+                .workflowRuns()
+                .getWorkflowRun(owner, name, id)
+                .map(loaded -> new WorkflowRun(this, loaded));
+    }
+
+    /**
+     * Lists the artifacts of the repository ({@code GET /repos/{owner}/{repo}/actions/artifacts}). Pages are fetched
+     * only as the stream is consumed; transport failures during iteration are {@link java.io.UncheckedIOException}.
+     *
+     * @return the artifacts, newest first
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<Artifact> artifacts() throws IOException {
+        return sdk.github().actions().artifacts().listArtifactsForRepo(owner, name, GitHubPageRequest.byPage()).stream()
+                .map(listed -> new Artifact(this, listed));
+    }
+
+    /**
+     * Loads one artifact ({@code GET /repos/{owner}/{repo}/actions/artifacts/{artifact_id}}).
+     *
+     * @param id the artifact id
+     * @return the artifact, or empty when GitHub answers HTTP 404
+     * @throws IOException if the transport fails
+     */
+    public Optional<Artifact> artifact(final long id) throws IOException {
+        return sdk.github()
+                .actions()
+                .artifacts()
+                .getArtifact(owner, name, id)
+                .map(loaded -> new Artifact(this, loaded));
+    }
+
+    /**
+     * Lists the Actions variables of the repository itself ({@code GET /repos/{owner}/{repo}/actions/variables}). Pages
+     * are fetched only as the stream is consumed; transport failures during iteration are
+     * {@link java.io.UncheckedIOException}.
+     *
+     * @return the variables
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<Variable> variables() throws IOException {
+        return sdk.github().actions().variables().listRepoVariables(owner, name, GitHubPageRequest.byPage()).stream()
+                .map(listed -> new Variable(this, listed));
+    }
+
+    /**
+     * Loads one Actions variable ({@code GET /repos/{owner}/{repo}/actions/variables/{name}}).
+     *
+     * @param variableName the variable name
+     * @return the variable, or empty when GitHub answers HTTP 404
+     * @throws NullPointerException if {@code variableName} is {@code null}
+     * @throws IllegalArgumentException if {@code variableName} is blank
+     * @throws IOException if the transport fails
+     */
+    public Optional<Variable> variable(final String variableName) throws IOException {
+        return sdk.github()
+                .actions()
+                .variables()
+                .getRepoVariable(owner, name, requireNotBlank(variableName, VARIABLE_NAME))
+                .map(loaded -> new Variable(this, loaded));
+    }
+
+    /**
+     * Creates an Actions variable ({@code POST /repos/{owner}/{repo}/actions/variables}).
+     *
+     * @param variableName the variable name
+     * @param value the value
+     * @return the variable as GitHub holds it afterwards
+     * @throws NullPointerException if {@code variableName} or {@code value} is {@code null}
+     * @throws IllegalArgumentException if {@code variableName} is blank
+     * @throws IOException if the transport fails
+     * @throws IllegalStateException if GitHub does not have the variable it just created
+     */
+    public Variable createVariable(final String variableName, final String value) throws IOException {
+        final String validName = requireNotBlank(variableName, VARIABLE_NAME);
+        sdk.github()
+                .actions()
+                .variables()
+                .createRepoVariable(
+                        owner, name, new GitHubCreateRepoVariablePayload(validName, requireNonNull(value, "value")));
+        return variable(validName).orElseThrow(() -> new IllegalStateException("Variable " + validName + " is gone"));
+    }
+
+    /**
+     * Lists the Actions secrets of the repository itself ({@code GET /repos/{owner}/{repo}/actions/secrets}). GitHub
+     * never returns a secret value, only the name and the dates. Creating a secret needs the value encrypted with the
+     * repository public key, which this library does not do; use the client for that. Pages are fetched only as the
+     * stream is consumed; transport failures during iteration are {@link java.io.UncheckedIOException}.
+     *
+     * @return the secrets
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<GitHubActionsSecret> secrets() throws IOException {
+        return sdk.github().actions().secrets().listRepoSecrets(owner, name, GitHubPageRequest.byPage()).stream();
+    }
+
+    /**
+     * Deletes an Actions secret ({@code DELETE /repos/{owner}/{repo}/actions/secrets/{secret_name}}).
+     *
+     * @param secretName the secret name
+     * @throws NullPointerException if {@code secretName} is {@code null}
+     * @throws IllegalArgumentException if {@code secretName} is blank
+     * @throws IOException if the transport fails
+     */
+    public void deleteSecret(final String secretName) throws IOException {
+        sdk.github().actions().secrets().deleteRepoSecret(owner, name, requireNotBlank(secretName, "secretName"));
     }
 
     /**

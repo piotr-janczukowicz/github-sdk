@@ -59,7 +59,7 @@ try (GitHubClient client = GitHubClients.create(AuthenticationProviders.bearer(S
 
 The entry points (`GitHubSdk`, `Repository`, `User`, `Organization`, `Team`, `Search`, `RateLimit`) are in
 `io.github.piotr_janczukowicz.github.sdk`. The other objects are grouped by area in sub-packages: `issues`, `pulls`,
-`content` (branches, commits, files, releases), `checks`, `collaborators`, `reactions` and `webhooks`. The `internal`
+`content` (branches, commits, files, releases), `actions`, `checks`, `collaborators`, `reactions` and `webhooks`. The `internal`
 package is not exported by the module and is not part of the API.
 
 ## What is covered
@@ -70,6 +70,7 @@ package is not exported by the module and is not part of the API.
 | `Issue` | `update()`, `refresh()`, `close()`, `reopen()`, `lock()`, `unlock()`, labels, assignees, `comment(...)`, `comments()`, `react(...)`, `reactions()`, `events()`, `timeline()` |
 | `Collaborator`, `Invitation` | `repository.collaborators()`, `isCollaborator(...)`, `collaboratorPermission(...)`, `addCollaborator(...)`, `invitations()`; a collaborator has `remove()`, an invitation `changePermission(...)` and `cancel()` |
 | `Repository` (activity) | `star()`, `unstar()`, `isStarred()`, `stargazers()`, `watchers()`, `subscription()`, `watch()`, `ignore()`, `unwatch()`, `forks()`, `fork()`; `User` lists `starredRepositories()` and `watchedRepositories()` |
+| `Workflow`, `WorkflowRun`, `WorkflowJob`, `Artifact`, `Variable` | `repository.workflows()`, `workflowRuns()`, `artifacts()`, `variables()`, `createVariable(...)`; a workflow has `enable()`, `disable()`, `dispatch(ref)` and `runs()`; a run has `cancel()`, `rerun()`, `rerunFailedJobs()`, `delete()`, `jobs()`, `artifacts()` and `logs()` (a short-lived link, nothing is downloaded); `repository.secrets()` lists names only, because creating a secret needs encryption that the client covers |
 | `Reaction` | `content()`, `user()`, `delete()`; made on an issue, an `IssueComment` or a `PullRequestReviewComment` with `react(...)` |
 | `PullRequest` | `update()`, `refresh()`, `close()`, `reopen()`, `merge(...)`, `reviews()`, `review(...)`, `draftReview(...)`, `reviewComments()`, `commentOnLine(...)`, reviewers, files, commits, `issue()` |
 | `PullRequestReview` | `edit(...)`, `submit(...)`, `dismiss(...)`, `deletePending()`, `comments()`, `refresh()` |
