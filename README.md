@@ -67,7 +67,7 @@ Each area below is an object you reach from `sdk`, a `Repository`, an `Organizat
 |---|---|
 | **Repositories** | create, update, archive, transfer, fork, star and watch; topics and languages; collaborators and invitations; webhooks and deploy keys; Pages |
 | **Code** | branches and branch protection, rulesets, commits, comparisons, files, multi-file commits, refs, tags, releases and their assets, annotated tags, README |
-| **Issues and pull requests** | issues, comments, labels, milestones, reactions, events; pull requests, reviews, review comments, merging |
+| **Issues and pull requests** | issues, comments, labels, milestones, reactions, events, sub-issues and dependencies; pull requests, reviews, review comments, merging |
 | **Actions and CI** | workflows, runs, jobs, artifacts, variables, caches, self-hosted runners, check runs, commit statuses, deployments and environments |
 | **Security** | Dependabot, secret scanning and code scanning alerts, code quality, security advisories, dependency graph and SBOM, interaction limits |
 | **People and organizations** | users, the signed-in account, organizations, teams, members and invitations, SSH, GPG and signing keys, notifications, gists |

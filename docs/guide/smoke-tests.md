@@ -70,6 +70,7 @@ Without `SMOKE_GITHUB_TOKEN` every smoke class is skipped.
 | `ContentSmokeIT` | default branch, its head commit, branch and commit lists, 404 on a missing branch |
 | `FilesSmokeIT` | write, update, read, delete a file on a throwaway branch (binary and UTF-8 text), directory and missing paths |
 | `RepositoryReadsSmokeIT` | readme, activities, CODEOWNERS errors, teams, the repositories of the signed-in account, and an annotated tag: create, load, delete |
+| `IssueRelationsSmokeIT` | sub-issues (add, list, parent, move, remove), dependencies (add, list, remove), pin and unpin a comment, assignees; the first three abort when the feature is off |
 | `ReleasesSmokeIT` | draft release: create, update, list, refresh, delete; asset: upload, list, relabel, download, delete; generated release notes; latest release; tags |
 | `LabelsAndMilestonesSmokeIT` | labels and milestones: create, read, list, update, refresh, close, reopen, delete; a milestone on an issue |
 | `WebhooksSmokeIT` | create, list, update, refresh, delete a webhook |

@@ -39,6 +39,7 @@ import io.github.piotr_janczukowicz.github.api.issues.GitHubCreateLabelPayload;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubCreateMilestonePayload;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubCreatePayload;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubCreatePayloadBuilder;
+import io.github.piotr_janczukowicz.github.api.issues.GitHubIssue;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubListForRepoFilter;
 import io.github.piotr_janczukowicz.github.api.licenses.GitHubLicenseContent;
 import io.github.piotr_janczukowicz.github.api.metrics.GitHubCommunityProfile;
@@ -115,6 +116,7 @@ import io.github.piotr_janczukowicz.github.sdk.internal.Arguments;
 import io.github.piotr_janczukowicz.github.sdk.internal.ClientValues;
 import io.github.piotr_janczukowicz.github.sdk.internal.Internals;
 import io.github.piotr_janczukowicz.github.sdk.internal.Lookups;
+import io.github.piotr_janczukowicz.github.sdk.internal.RepositoryUrls;
 import io.github.piotr_janczukowicz.github.sdk.issues.Issue;
 import io.github.piotr_janczukowicz.github.sdk.issues.Label;
 import io.github.piotr_janczukowicz.github.sdk.issues.Milestone;
@@ -292,6 +294,49 @@ public final class Repository {
      */
     public Optional<Issue> issue(final int number) throws IOException {
         return sdk.github().issues().issue().get(owner, name, number).map(loaded -> new Issue(this, loaded));
+    }
+
+    /**
+     * Wraps an issue response of this repository or of another one, for example a parent or a blocking issue. The
+     * repository is read from {@code repositoryUrl} of the response.
+     *
+     * @param response the issue response
+     * @return the issue, bound to the repository it belongs to
+     * @throws NullPointerException if {@code response} is {@code null}
+     * @throws IllegalArgumentException if the repository URL of the response is malformed
+     */
+    public Issue issueOf(final GitHubIssue response) {
+        final RepositoryUrls.Coordinates coordinates =
+                RepositoryUrls.parse(requireNonNull(response, "response").repositoryUrl());
+        final boolean isSameRepository =
+                coordinates.owner().equals(owner) && coordinates.name().equals(name);
+        return new Issue(isSameRepository ? this : sdk.repository(coordinates.owner(), coordinates.name()), response);
+    }
+
+    /**
+     * Lists the users who can be assigned to the issues of the repository ({@code GET /repos/{owner}/{repo}/assignees})
+     * as GitHub returns them. Pages are fetched only as the stream is consumed; transport failures during iteration are
+     * {@link java.io.UncheckedIOException}.
+     *
+     * @return the users
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<GitHubSimpleUser> assignees() throws IOException {
+        return sdk.github().issues().assignees().listAssignees(owner, name).stream();
+    }
+
+    /**
+     * Tells whether a user can be assigned to the issues of the repository ({@code GET
+     * /repos/{owner}/{repo}/assignees/{assignee}}).
+     *
+     * @param login the login of the user
+     * @return {@code true} when GitHub answers HTTP 204
+     * @throws NullPointerException if {@code login} is {@code null}
+     * @throws IllegalArgumentException if {@code login} is blank
+     * @throws IOException if the transport fails
+     */
+    public boolean canBeAssigned(final String login) throws IOException {
+        return sdk.github().issues().assignees().checkUserCanBeAssigned(owner, name, requireNotBlank(login, LOGIN));
     }
 
     /**

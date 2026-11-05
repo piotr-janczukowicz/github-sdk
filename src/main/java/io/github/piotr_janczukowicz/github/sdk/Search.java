@@ -8,6 +8,7 @@ import io.github.piotr_janczukowicz.github.api.search.GitHubCommitSearchResultIt
 import io.github.piotr_janczukowicz.github.api.search.GitHubIssueSearchResultItem;
 import io.github.piotr_janczukowicz.github.api.search.GitHubUserSearchResultItem;
 import io.github.piotr_janczukowicz.github.sdk.internal.Lookups;
+import io.github.piotr_janczukowicz.github.sdk.internal.RepositoryUrls;
 import io.github.piotr_janczukowicz.github.sdk.issues.Issue;
 import java.io.IOException;
 import java.util.Optional;
@@ -115,16 +116,8 @@ public final class Search {
     }
 
     private Repository repositoryOf(final String url) {
-        int end = url.length();
-        while (end > 0 && url.charAt(end - 1) == '/') {
-            end--;
-        }
-        final int nameStart = url.lastIndexOf('/', end - 1) + 1;
-        if (nameStart == 0) {
-            throw new IllegalArgumentException("Unexpected repository URL in a search hit: " + url);
-        }
-        final int ownerStart = url.lastIndexOf('/', nameStart - 2) + 1;
-        return sdk.repository(url.substring(ownerStart, nameStart - 1), url.substring(nameStart, end));
+        final RepositoryUrls.Coordinates coordinates = RepositoryUrls.parse(url);
+        return sdk.repository(coordinates.owner(), coordinates.name());
     }
 
     private Optional<User> loadUser(final GitHubUserSearchResultItem hit) {

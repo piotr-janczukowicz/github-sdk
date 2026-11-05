@@ -159,6 +159,33 @@ public final class IssueComment {
     }
 
     /**
+     * Pins the comment to the top of the issue ({@code PUT /repos/{owner}/{repo}/issues/comments/{comment_id}/pin}).
+     * This object is not changed.
+     *
+     * @return the comment as GitHub holds it afterwards
+     * @throws IOException if the transport fails
+     */
+    public IssueComment pin() throws IOException {
+        final Repository repository = issue.repository();
+        return new IssueComment(
+                issue,
+                Internals.github(repository)
+                        .issues()
+                        .comments()
+                        .pinComment(repository.owner(), repository.name(), id()));
+    }
+
+    /**
+     * Unpins the comment ({@code DELETE /repos/{owner}/{repo}/issues/comments/{comment_id}/pin}).
+     *
+     * @throws IOException if the transport fails
+     */
+    public void unpin() throws IOException {
+        final Repository repository = issue.repository();
+        Internals.github(repository).issues().comments().unpinComment(repository.owner(), repository.name(), id());
+    }
+
+    /**
      * Returns the complete response this object was built from.
      *
      * @return the response record

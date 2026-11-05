@@ -139,4 +139,22 @@ class IssueCommentTest {
 
         assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("body");
     }
+
+    @Test
+    void pin_shouldReturnThePinnedComment_whenCalled() throws IOException {
+        final GitHubIssueComment pinned =
+                GitHubIssueCommentBuilder.builder(response).body("Pinned").build();
+        when(github.issues().comments().pinComment(OWNER, NAME, ID)).thenReturn(pinned);
+
+        final IssueComment result = sut.pin();
+
+        assertThat(result.response()).isSameAs(pinned);
+    }
+
+    @Test
+    void unpin_shouldUnpinTheComment_whenCalled() throws IOException {
+        sut.unpin();
+
+        verify(github.issues().comments()).unpinComment(OWNER, NAME, ID);
+    }
 }

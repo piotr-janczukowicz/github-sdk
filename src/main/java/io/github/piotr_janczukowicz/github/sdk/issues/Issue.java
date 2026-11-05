@@ -6,14 +6,18 @@ import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubAddAssigneesAssignee;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubAddAssigneesPayload;
+import io.github.piotr_janczukowicz.github.api.issues.GitHubAddBlockedByDependencyPayload;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubAddLabelsLabel;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubAddLabelsPayload;
+import io.github.piotr_janczukowicz.github.api.issues.GitHubAddSubIssuePayload;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubCreateCommentPayload;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubIssue;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubIssueEvent;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubIssueLabel;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubIssueUpdateState;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubRemoveAssigneesPayload;
+import io.github.piotr_janczukowicz.github.api.issues.GitHubRemoveSubIssuePayload;
+import io.github.piotr_janczukowicz.github.api.issues.GitHubReprioritizeSubIssuePayload;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubSetLabelsLabel;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubSetLabelsPayload;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubTimelineEvent;
@@ -394,6 +398,197 @@ public final class Issue {
     }
 
     /**
+     * Loads the parent of this sub-issue ({@code GET /repos/{owner}/{repo}/issues/{issue_number}/parent}). Available on
+     * GitHub.com and GitHub Enterprise Cloud only.
+     *
+     * @return the parent, bound to its own repository, or empty when the issue has none
+     * @throws UnsupportedOperationException if the client is limited to another flavor of GitHub
+     * @throws IOException if the transport fails
+     */
+    public Optional<Issue> parent() throws IOException {
+        return github().issues()
+                .subIssues()
+                .getParent(repository.owner(), repository.name(), number())
+                .map(repository::issueOf);
+    }
+
+    /**
+     * Lists the sub-issues ({@code GET /repos/{owner}/{repo}/issues/{issue_number}/sub_issues}), each bound to its own
+     * repository. Pages are fetched only as the stream is consumed; transport failures during iteration are
+     * {@link java.io.UncheckedIOException}. Available on GitHub.com and GitHub Enterprise Cloud only.
+     *
+     * @return the sub-issues
+     * @throws UnsupportedOperationException if the client is limited to another flavor of GitHub
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<Issue> subIssues() throws IOException {
+        return github().issues().subIssues().listSubIssues(repository.owner(), repository.name(), number()).stream()
+                .map(repository::issueOf);
+    }
+
+    /**
+     * Makes an issue a sub-issue of this one ({@code POST /repos/{owner}/{repo}/issues/{issue_number}/sub_issues}).
+     * GitHub refuses an issue that already has another parent; see {@link #addSubIssue(Issue, boolean)}. This object is
+     * not changed. Available on GitHub.com and GitHub Enterprise Cloud only.
+     *
+     * @param child the issue to add, which may be in another repository
+     * @return this issue as GitHub holds it afterwards
+     * @throws NullPointerException if {@code child} is {@code null}
+     * @throws UnsupportedOperationException if the client is limited to another flavor of GitHub
+     * @throws IOException if the transport fails
+     */
+    public Issue addSubIssue(final Issue child) throws IOException {
+        return addSubIssue(child, false);
+    }
+
+    /**
+     * Makes an issue a sub-issue of this one and, with {@code replaceParent}, takes it from its current parent
+     * ({@code POST /repos/{owner}/{repo}/issues/{issue_number}/sub_issues}). This object is not changed. Available on
+     * GitHub.com and GitHub Enterprise Cloud only.
+     *
+     * @param child the issue to add, which may be in another repository
+     * @param replaceParent {@code true} to move the issue when it already has a parent
+     * @return this issue as GitHub holds it afterwards
+     * @throws NullPointerException if {@code child} is {@code null}
+     * @throws UnsupportedOperationException if the client is limited to another flavor of GitHub
+     * @throws IOException if the transport fails
+     */
+    public Issue addSubIssue(final Issue child, final boolean replaceParent) throws IOException {
+        return own(github().issues()
+                .subIssues()
+                .addSubIssue(
+                        repository.owner(),
+                        repository.name(),
+                        number(),
+                        new GitHubAddSubIssuePayload(idOf(child), replaceParent)));
+    }
+
+    /**
+     * Takes a sub-issue away from this issue ({@code DELETE /repos/{owner}/{repo}/issues/{issue_number}/sub_issue}).
+     * The sub-issue itself stays. This object is not changed. Available on GitHub.com and GitHub Enterprise Cloud only.
+     *
+     * @param child the sub-issue to remove
+     * @return this issue as GitHub holds it afterwards
+     * @throws NullPointerException if {@code child} is {@code null}
+     * @throws UnsupportedOperationException if the client is limited to another flavor of GitHub
+     * @throws IOException if the transport fails
+     */
+    public Issue removeSubIssue(final Issue child) throws IOException {
+        return own(github().issues()
+                .subIssues()
+                .removeSubIssue(
+                        repository.owner(), repository.name(), number(), new GitHubRemoveSubIssuePayload(idOf(child))));
+    }
+
+    /**
+     * Moves a sub-issue after another sub-issue of this issue ({@code PATCH
+     * /repos/{owner}/{repo}/issues/{issue_number}/sub_issues/priority}). This object is not changed. Available on
+     * GitHub.com and GitHub Enterprise Cloud only.
+     *
+     * @param child the sub-issue to move
+     * @param other the sub-issue it goes after
+     * @return this issue as GitHub holds it afterwards
+     * @throws NullPointerException if an argument is {@code null}
+     * @throws UnsupportedOperationException if the client is limited to another flavor of GitHub
+     * @throws IOException if the transport fails
+     */
+    public Issue moveSubIssueAfter(final Issue child, final Issue other) throws IOException {
+        return reprioritize(new GitHubReprioritizeSubIssuePayload(idOf(child), idOf(other), null));
+    }
+
+    /**
+     * Moves a sub-issue before another sub-issue of this issue ({@code PATCH
+     * /repos/{owner}/{repo}/issues/{issue_number}/sub_issues/priority}). This object is not changed. Available on
+     * GitHub.com and GitHub Enterprise Cloud only.
+     *
+     * @param child the sub-issue to move
+     * @param other the sub-issue it goes before
+     * @return this issue as GitHub holds it afterwards
+     * @throws NullPointerException if an argument is {@code null}
+     * @throws UnsupportedOperationException if the client is limited to another flavor of GitHub
+     * @throws IOException if the transport fails
+     */
+    public Issue moveSubIssueBefore(final Issue child, final Issue other) throws IOException {
+        return reprioritize(new GitHubReprioritizeSubIssuePayload(idOf(child), null, idOf(other)));
+    }
+
+    /**
+     * Lists the issues that block this one ({@code GET
+     * /repos/{owner}/{repo}/issues/{issue_number}/dependencies/blocked_by}), each bound to its own repository. Pages
+     * are fetched only as the stream is consumed; transport failures during iteration are
+     * {@link java.io.UncheckedIOException}. Available on GitHub.com and GitHub Enterprise Cloud only.
+     *
+     * @return the blocking issues
+     * @throws UnsupportedOperationException if the client is limited to another flavor of GitHub
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<Issue> blockedBy() throws IOException {
+        return github()
+                .issues()
+                .issueDependencies()
+                .listDependenciesBlockedBy(repository.owner(), repository.name(), number())
+                .stream()
+                .map(repository::issueOf);
+    }
+
+    /**
+     * Lists the issues that this one blocks ({@code GET
+     * /repos/{owner}/{repo}/issues/{issue_number}/dependencies/blocking}), each bound to its own repository. Pages are
+     * fetched only as the stream is consumed; transport failures during iteration are
+     * {@link java.io.UncheckedIOException}. Available on GitHub.com and GitHub Enterprise Cloud only.
+     *
+     * @return the blocked issues
+     * @throws UnsupportedOperationException if the client is limited to another flavor of GitHub
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<Issue> blocking() throws IOException {
+        return github()
+                .issues()
+                .issueDependencies()
+                .listDependenciesBlocking(repository.owner(), repository.name(), number())
+                .stream()
+                .map(repository::issueOf);
+    }
+
+    /**
+     * Records that another issue blocks this one ({@code POST
+     * /repos/{owner}/{repo}/issues/{issue_number}/dependencies/blocked_by}). This object is not changed. Available on
+     * GitHub.com and GitHub Enterprise Cloud only.
+     *
+     * @param blocker the issue that blocks this one, which may be in another repository
+     * @return this issue as GitHub holds it afterwards
+     * @throws NullPointerException if {@code blocker} is {@code null}
+     * @throws UnsupportedOperationException if the client is limited to another flavor of GitHub
+     * @throws IOException if the transport fails
+     */
+    public Issue addBlockedBy(final Issue blocker) throws IOException {
+        return own(github().issues()
+                .issueDependencies()
+                .addBlockedByDependency(
+                        repository.owner(),
+                        repository.name(),
+                        number(),
+                        new GitHubAddBlockedByDependencyPayload(idOf(blocker))));
+    }
+
+    /**
+     * Removes a blocking issue ({@code DELETE
+     * /repos/{owner}/{repo}/issues/{issue_number}/dependencies/blocked_by/{issue_id}}). This object is not changed.
+     * Available on GitHub.com and GitHub Enterprise Cloud only.
+     *
+     * @param blocker the issue that no longer blocks this one
+     * @return this issue as GitHub holds it afterwards
+     * @throws NullPointerException if {@code blocker} is {@code null}
+     * @throws UnsupportedOperationException if the client is limited to another flavor of GitHub
+     * @throws IOException if the transport fails
+     */
+    public Issue removeBlockedBy(final Issue blocker) throws IOException {
+        return own(github().issues()
+                .issueDependencies()
+                .removeDependencyBlockedBy(repository.owner(), repository.name(), number(), idOf(blocker)));
+    }
+
+    /**
      * Returns the complete response this object was built from.
      *
      * @return the response record
@@ -405,6 +600,20 @@ public final class Issue {
     Issue apply(final GitHubUpdatePayload payload) throws IOException {
         github().issues().issue().update(repository.owner(), repository.name(), number(), payload);
         return refresh();
+    }
+
+    private static long idOf(final Issue issue) {
+        return requireNonNull(issue, "issue").response().id();
+    }
+
+    private Issue own(final GitHubIssue updated) {
+        return new Issue(repository, updated);
+    }
+
+    private Issue reprioritize(final GitHubReprioritizeSubIssuePayload payload) throws IOException {
+        return own(github().issues()
+                .subIssues()
+                .reprioritizeSubIssue(repository.owner(), repository.name(), number(), payload));
     }
 
     private Reaction reaction(final GitHubReaction listed) {
