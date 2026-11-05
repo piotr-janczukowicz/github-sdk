@@ -345,7 +345,7 @@ public final class Repository {
         return sdk.github()
                 .branches()
                 .branch()
-                .getBranch(owner, this.name, requireNotBlank(name, "name"))
+                .getBranch(owner, this.name, Arguments.requireSafePath(name, "name"))
                 .map(loaded -> new Branch(this, loaded));
     }
 
@@ -385,7 +385,8 @@ public final class Repository {
      *
      * @param sha the commit hash, a branch name or a tag name
      * @return the commit, or empty when GitHub answers HTTP 404
-     * @throws IllegalArgumentException if {@code sha} is blank
+     * @throws IllegalArgumentException if {@code sha} is blank, has a control character or has a {@code .} or
+     *     {@code ..} segment
      * @throws NullPointerException if {@code sha} is {@code null}
      * @throws IOException if the transport fails
      */
@@ -393,7 +394,7 @@ public final class Repository {
         return sdk.github()
                 .commits()
                 .commit()
-                .getCommit(owner, name, requireNotBlank(sha, SHA))
+                .getCommit(owner, name, Arguments.requireSafePath(sha, SHA))
                 .map(loaded -> new Commit(this, loaded));
     }
 
@@ -620,12 +621,13 @@ public final class Repository {
      *
      * @param path the path within the repository
      * @return the file, or empty when GitHub answers HTTP 404 or the path is a directory, symbolic link or submodule
-     * @throws IllegalArgumentException if {@code path} is blank
+     * @throws IllegalArgumentException if {@code path} is blank, has a control character or has a {@code .} or
+     *     {@code ..} segment
      * @throws NullPointerException if {@code path} is {@code null}
      * @throws IOException if the transport fails
      */
     public Optional<RepositoryFile> file(final String path) throws IOException {
-        return read(requireNotBlank(path, "path"), null);
+        return read(Arguments.requireSafePath(path, "path"), null);
     }
 
     /**
@@ -639,7 +641,7 @@ public final class Repository {
      * @throws IOException if the transport fails
      */
     public Optional<RepositoryFile> file(final String path, final String ref) throws IOException {
-        return read(requireNotBlank(path, "path"), requireNotBlank(ref, REF));
+        return read(Arguments.requireSafePath(path, "path"), Arguments.requireSafePath(ref, REF));
     }
 
     /**
@@ -675,7 +677,7 @@ public final class Repository {
      */
     public RepositoryFile writeFile(final String path, final String message, final byte[] content, final String branch)
             throws IOException {
-        return write(path, message, content, requireNotBlank(branch, "branch"));
+        return write(path, message, content, Arguments.requireSafePath(branch, "branch"));
     }
 
     /**
@@ -1390,7 +1392,8 @@ public final class Repository {
      * @param branch the name of the branch that receives the commit
      * @return a new, empty set of changes
      * @throws NullPointerException if {@code branch} is {@code null}
-     * @throws IllegalArgumentException if {@code branch} is blank
+     * @throws IllegalArgumentException if {@code branch} is blank, has a control character or has a {@code .} or
+     *     {@code ..} segment
      */
     public FileChanges commitTo(final String branch) {
         return new FileChanges(this, branch);
@@ -1407,7 +1410,8 @@ public final class Repository {
      * @throws IOException if the transport fails
      */
     public Optional<Comparison> compare(final String base, final String head) throws IOException {
-        final String baseHead = requireNotBlank(base, "base") + "..." + requireNotBlank(head, "head");
+        final String baseHead =
+                Arguments.requireSafePath(base, "base") + "..." + Arguments.requireSafePath(head, "head");
         return sdk.github()
                 .commits()
                 .commit()
@@ -1442,14 +1446,15 @@ public final class Repository {
      * @param ref the reference name without {@code refs/}, such as {@code heads/main} or {@code tags/v1}
      * @return the reference, or empty when GitHub answers HTTP 404
      * @throws NullPointerException if {@code ref} is {@code null}
-     * @throws IllegalArgumentException if {@code ref} is blank
+     * @throws IllegalArgumentException if {@code ref} is blank, has a control character or has a {@code .} or
+     *     {@code ..} segment
      * @throws IOException if the transport fails
      */
     public Optional<Ref> ref(final String ref) throws IOException {
         return sdk.github()
                 .gitDatabase()
                 .refs()
-                .getRef(owner, name, requireNotBlank(ref, REF))
+                .getRef(owner, name, Arguments.requireSafePath(ref, REF))
                 .map(loaded -> new Ref(this, loaded));
     }
 
@@ -1472,7 +1477,8 @@ public final class Repository {
                         .createRef(
                                 owner,
                                 name,
-                                new GitHubCreateRefPayload(requireNotBlank(ref, REF), requireNotBlank(sha, SHA))));
+                                new GitHubCreateRefPayload(
+                                        Arguments.requireSafePath(ref, REF), Arguments.requireSafePath(sha, SHA))));
     }
 
     /**
@@ -1487,7 +1493,7 @@ public final class Repository {
      * @throws IllegalStateException if GitHub does not have the branch it just created
      */
     public Branch createBranch(final String branch, final String sha) throws IOException {
-        final String validBranch = requireNotBlank(branch, "branch");
+        final String validBranch = Arguments.requireSafePath(branch, "branch");
         createRef("refs/heads/" + validBranch, sha);
         return branch(validBranch).orElseThrow(() -> new IllegalStateException("Branch " + validBranch + IS_GONE));
     }
@@ -1499,7 +1505,8 @@ public final class Repository {
      * @param sha the sha of the tree, or of a commit or branch that points to it
      * @return the tree, or empty when GitHub answers HTTP 404
      * @throws NullPointerException if {@code sha} is {@code null}
-     * @throws IllegalArgumentException if {@code sha} is blank
+     * @throws IllegalArgumentException if {@code sha} is blank, has a control character or has a {@code .} or
+     *     {@code ..} segment
      * @throws IOException if the transport fails
      */
     public Optional<GitHubGitTree> tree(final String sha) throws IOException {
@@ -1514,7 +1521,8 @@ public final class Repository {
      * @param isRecursive {@code true} to include the entries of all subdirectories
      * @return the tree, or empty when GitHub answers HTTP 404
      * @throws NullPointerException if {@code sha} is {@code null}
-     * @throws IllegalArgumentException if {@code sha} is blank
+     * @throws IllegalArgumentException if {@code sha} is blank, has a control character or has a {@code .} or
+     *     {@code ..} segment
      * @throws IOException if the transport fails
      */
     public Optional<GitHubGitTree> tree(final String sha, final boolean isRecursive) throws IOException {
@@ -1524,7 +1532,7 @@ public final class Repository {
                 .getTree(
                         owner,
                         name,
-                        requireNotBlank(sha, SHA),
+                        Arguments.requireSafePath(sha, SHA),
                         isRecursive ? GitHubGetTreeFilter.recursively() : GitHubGetTreeFilter.empty());
     }
 
@@ -1534,11 +1542,12 @@ public final class Repository {
      * @param sha the sha of the blob
      * @return the blob, or empty when GitHub answers HTTP 404
      * @throws NullPointerException if {@code sha} is {@code null}
-     * @throws IllegalArgumentException if {@code sha} is blank
+     * @throws IllegalArgumentException if {@code sha} is blank, has a control character or has a {@code .} or
+     *     {@code ..} segment
      * @throws IOException if the transport fails
      */
     public Optional<GitHubBlob> blob(final String sha) throws IOException {
-        return sdk.github().gitDatabase().blobs().getBlob(owner, name, requireNotBlank(sha, SHA));
+        return sdk.github().gitDatabase().blobs().getBlob(owner, name, Arguments.requireSafePath(sha, SHA));
     }
 
     /**
@@ -1705,7 +1714,7 @@ public final class Repository {
      */
     public Deployment deploy(final String ref, final String environment) throws IOException {
         return deploy(new GitHubCreateDeploymentPayload(
-                requireNotBlank(ref, REF),
+                Arguments.requireSafePath(ref, REF),
                 null,
                 false,
                 null,
@@ -1791,8 +1800,9 @@ public final class Repository {
     }
 
     /**
-     * Creates or updates an environment ({@code PUT /repos/{owner}/{repo}/environments/{environment_name}}). GitHub
-     * replaces the settings that the payload carries.
+     * Creates or updates an environment ({@code PUT /repos/{owner}/{repo}/environments/{environment_name}}). This is a
+     * full PUT: a setting the payload leaves {@code null} (wait timer, reviewers, branch policy) can be reset, so load
+     * the environment and send again the settings you want to keep.
      *
      * @param environmentName the environment name
      * @param payload the wait timer, reviewers and branch policy
@@ -1832,12 +1842,15 @@ public final class Repository {
      * @param branch the branch to build from
      * @return the new site
      * @throws NullPointerException if {@code branch} is {@code null}
-     * @throws IllegalArgumentException if {@code branch} is blank
+     * @throws IllegalArgumentException if {@code branch} is blank, has a control character or has a {@code .} or
+     *     {@code ..} segment
      * @throws IOException if the transport fails
      */
     public PagesSite enablePages(final String branch) throws IOException {
         return enablePages(new GitHubCreatePagesSitePayload(
-                null, new GitHubCreatePagesSiteSource(requireNotBlank(branch, "branch"), GitHubPagesSourcePath.ROOT)));
+                null,
+                new GitHubCreatePagesSiteSource(
+                        Arguments.requireSafePath(branch, "branch"), GitHubPagesSourcePath.ROOT)));
     }
 
     /**
@@ -2376,7 +2389,7 @@ public final class Repository {
     private RepositoryFile write(
             final String path, final String message, final byte[] content, final @Nullable String branch)
             throws IOException {
-        requireNotBlank(path, "path");
+        Arguments.requireSafePath(path, "path");
         requireNotBlank(message, "message");
         requireNonNull(content, "content");
         final String sha = read(path, branch).map(RepositoryFile::sha).orElse(null);

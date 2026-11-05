@@ -150,25 +150,26 @@ public final class GitHubSdk {
      * Lists the gists of the authenticated user ({@code GET /gists}). GitHub's list holds no file contents, so each
      * gist is loaded with one more request as the stream reaches it; {@code limit(...)} bounds the cost. Pages are
      * fetched only as the stream is consumed; transport failures during iteration are
-     * {@link java.io.UncheckedIOException}.
+     * {@link java.io.UncheckedIOException}. A gist that is deleted after it was listed is skipped.
      *
      * @return the gists, most recently updated first
      * @throws IOException if the first page cannot be loaded
      */
     public Stream<Gist> gists() throws IOException {
         return github.gists().gist().listGists(GitHubPageRequest.byPage()).stream()
-                .map(this::load);
+                .flatMap(listed -> load(listed).stream());
     }
 
     /**
-     * Lists the public gists of everyone ({@code GET /gists/public}). See {@link #gists()} for the cost per gist.
+     * Lists the public gists of everyone ({@code GET /gists/public}). See {@link #gists()} for the cost per gist. A
+     * gist that is deleted after it was listed is skipped.
      *
      * @return the gists, most recently updated first
      * @throws IOException if the first page cannot be loaded
      */
     public Stream<Gist> publicGists() throws IOException {
         return github.gists().gist().listPublicGists(GitHubPageRequest.byPage()).stream()
-                .map(this::load);
+                .flatMap(listed -> load(listed).stream());
     }
 
     /**
@@ -180,7 +181,7 @@ public final class GitHubSdk {
      */
     public Stream<Gist> starredGists() throws IOException {
         return github.gists().gist().listStarredGists(GitHubPageRequest.byPage()).stream()
-                .map(this::load);
+                .flatMap(listed -> load(listed).stream());
     }
 
     /**
@@ -397,8 +398,8 @@ public final class GitHubSdk {
         return github;
     }
 
-    Gist load(final GitHubBaseGist listed) {
-        return Lookups.require(() -> gist(listed.id()), () -> "Gist " + listed.id() + " is gone");
+    Optional<Gist> load(final GitHubBaseGist listed) {
+        return Lookups.find(() -> gist(listed.id()));
     }
 
     private static long threadId(final String id) {

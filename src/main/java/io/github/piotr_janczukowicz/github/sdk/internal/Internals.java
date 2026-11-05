@@ -12,7 +12,8 @@ import java.util.function.Function;
  * Gives the object packages of the SDK access to the wrapped {@link GitHub} client without exposing it in the public
  * API. This package is not exported by the module, so applications cannot name it. {@code Repository} and
  * {@code GitHubSdk} register the access when their classes are initialized, which always happens before an instance
- * exists.
+ * exists. The package is hidden only when the module runs on the module path; on the classpath the accessors are
+ * public, so the encapsulation is a convention and not a security boundary, and code in the same JVM is trusted.
  */
 public final class Internals {
 

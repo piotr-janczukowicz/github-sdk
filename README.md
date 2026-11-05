@@ -128,7 +128,7 @@ The entry points (`GitHubSdk`, `Repository`, `User`, `Organization`, `Team`, `Se
 `io.github.piotr_janczukowicz.github.sdk`. The other objects are grouped by area in sub-packages: `issues`, `pulls`,
 `content` (branches, commits, files, releases), `git` (refs, comparisons, multi-file commits), `gists`,
 `accounts`, `organizations`, `notifications`, `metrics`, `utilities`, `deploykeys`, `deployments`, `pages`, `security`, `rulesets`, `projects`, `apps`, `interactions`, `packages`, `advisories`, `dependencies`, `actions`, `checks`, `collaborators`, `reactions` and
-`webhooks`. The `internal` package is not exported by the module and is not part of the API.
+`webhooks`. The `internal` package is not exported by the module and is not part of the API. The module system hides it only on the module path; on the classpath it is a convention and not a security boundary.
 
 ## What is covered
 

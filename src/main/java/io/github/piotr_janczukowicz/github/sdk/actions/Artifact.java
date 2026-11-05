@@ -94,8 +94,9 @@ public final class Artifact {
 
     /**
      * Asks for the link to the artifact as a zip archive ({@code GET
-     * /repos/{owner}/{repo}/actions/artifacts/{artifact_id}/zip}). The link is short-lived, and this method downloads
-     * nothing.
+     * /repos/{owner}/{repo}/actions/artifacts/{artifact_id}/zip}). The link is short-lived and carries a signed token
+     * that grants access without authentication, so treat it as a secret: do not log it or put it in a message, and
+     * fetch it without the Authorization header of the client. This method downloads nothing.
      *
      * @return the link GitHub redirects to
      * @throws IOException if the transport fails

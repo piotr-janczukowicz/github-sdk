@@ -76,17 +76,16 @@ class GitHubSdkGistsTest {
     }
 
     @Test
-    void gists_shouldFail_whenAListedGistIsGone() throws IOException {
+    void gists_shouldSkipTheGist_whenAListedGistIsGone() throws IOException {
         final GitHubBaseGist listed = GistFixtures.baseGist();
         when(github.gists().gist().listGists(any(GitHubPageRequest.class)).stream())
                 .thenReturn(Stream.of(listed));
         final GitHubGistApi api = github.gists().gist();
         doReturn(Optional.empty()).when(api).getGist(GistFixtures.ID);
-        final Stream<Gist> gists = sut.gists();
 
-        final Throwable thrown = catchThrowable(gists::toList);
+        final List<Gist> gists = sut.gists().toList();
 
-        assertThat(thrown).isInstanceOf(IllegalStateException.class).hasMessageContaining("is gone");
+        assertThat(gists).isEmpty();
     }
 
     @Test

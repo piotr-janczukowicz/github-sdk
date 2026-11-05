@@ -34,6 +34,23 @@ public final class Lookups {
     }
 
     /**
+     * Runs a lookup and returns what it found, or empty when GitHub no longer has the object, so a lazy stream can skip
+     * an item that was deleted after it was listed.
+     *
+     * @param lookup the lookup, which may fail with {@link IOException}
+     * @param <T> the type of the found object
+     * @return the found object, or empty
+     * @throws UncheckedIOException if the lookup failed with {@link IOException}
+     */
+    public static <T> Optional<T> find(final IoLookup<T> lookup) {
+        try {
+            return lookup.find();
+        } catch (final IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /**
      * A lookup that may fail with {@link IOException}.
      *
      * @param <T> the type of the found object

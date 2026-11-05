@@ -147,14 +147,14 @@ public final class User {
      * Lists the public gists of the user ({@code GET /users/{username}/gists}). GitHub's list holds no file contents,
      * so each gist is loaded with one more request as the stream reaches it; {@code limit(...)} bounds the cost. Pages
      * are fetched only as the stream is consumed; transport failures during iteration are
-     * {@link java.io.UncheckedIOException}.
+     * {@link java.io.UncheckedIOException}. A gist that is deleted after it was listed is skipped.
      *
      * @return the gists, most recently updated first
      * @throws IOException if the first page cannot be loaded
      */
     public Stream<Gist> gists() throws IOException {
         return sdk.github().gists().gist().listGistsForUser(login(), GitHubPageRequest.byPage()).stream()
-                .map(sdk::load);
+                .flatMap(listed -> sdk.load(listed).stream());
     }
 
     /**

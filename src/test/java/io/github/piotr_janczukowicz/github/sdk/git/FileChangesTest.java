@@ -307,4 +307,17 @@ class FileChangesTest {
         when(newCommit.sha()).thenReturn(NEW_COMMIT);
         doReturn(newCommit).when(gitCommits).createCommit(eq(OWNER), eq(NAME), any(GitHubCreateCommitPayload.class));
     }
+
+    @Test
+    void send_shouldThrowIllegalStateException_whenTheBaseTreeIsTruncated() throws IOException {
+        arrangeHead();
+        doReturn(Optional.of(new GitHubGitTree(TREE, URL, true, List.of())))
+                .when(trees)
+                .getTree(OWNER, NAME, TREE);
+        final FileChanges changes = sut.write("a.txt", "x");
+
+        final Throwable thrown = catchThrowable(() -> changes.send("Big"));
+
+        assertThat(thrown).isInstanceOf(IllegalStateException.class).hasMessageContaining("too large");
+    }
 }

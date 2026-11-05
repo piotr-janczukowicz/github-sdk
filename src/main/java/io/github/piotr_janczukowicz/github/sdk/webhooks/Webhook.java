@@ -12,7 +12,8 @@ import java.util.Optional;
 
 /**
  * A webhook of a {@link Repository}, as GitHub returned it. The object is immutable, and {@link #response()} gives the
- * complete response for every field the accessors here do not cover. GitHub never returns the secret.
+ * complete response for every field the accessors here do not cover. GitHub does not return the secret, but the payload
+ * URL can embed credentials or tokens, so do not log {@link #payloadUrl()} or {@link #response()}.
  */
 public final class Webhook {
 

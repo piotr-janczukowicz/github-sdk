@@ -362,7 +362,9 @@ public final class WorkflowRun {
 
     /**
      * Asks for the link to the logs of the latest attempt as a zip archive ({@code GET
-     * /repos/{owner}/{repo}/actions/runs/{run_id}/logs}). The link is short-lived, and this method downloads nothing.
+     * /repos/{owner}/{repo}/actions/runs/{run_id}/logs}). The link is short-lived and carries a signed token that
+     * grants access without authentication, so treat it as a secret: do not log it or put it in a message, and fetch it
+     * without the Authorization header of the client. This method downloads nothing.
      *
      * @return the link GitHub redirects to
      * @throws IOException if the transport fails

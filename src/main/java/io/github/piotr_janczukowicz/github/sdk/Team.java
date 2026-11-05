@@ -123,7 +123,9 @@ public final class Team {
     }
 
     /**
-     * Adds a user to the team as a regular member. See {@link #addMember(String, TeamRole)}.
+     * Adds a user to the team as a regular member. GitHub's endpoint is an upsert, so this also sets the role of an
+     * existing maintainer to member; check {@link #membership(String)} first or use {@link #addMember(String,
+     * TeamRole)} to keep a role. See {@link #addMember(String, TeamRole)}.
      *
      * @param login the login of the user
      * @return the membership as GitHub holds it afterwards

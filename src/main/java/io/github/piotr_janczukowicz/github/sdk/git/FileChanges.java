@@ -15,6 +15,7 @@ import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubGitTreeEntry;
 import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubUpdateRefPayload;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
 import io.github.piotr_janczukowicz.github.sdk.content.Commit;
+import io.github.piotr_janczukowicz.github.sdk.internal.Arguments;
 import io.github.piotr_janczukowicz.github.sdk.internal.Internals;
 import io.github.piotr_janczukowicz.json.OptionalNull;
 import java.io.IOException;
@@ -57,7 +58,7 @@ public final class FileChanges {
      */
     public FileChanges(final Repository repository, final String branch) {
         this.repository = requireNonNull(repository, "repository");
-        this.branch = requireNotBlank(branch, "branch");
+        this.branch = Arguments.requireSafePath(branch, "branch");
     }
 
     /**
@@ -67,11 +68,12 @@ public final class FileChanges {
      * @param content the new content
      * @return these changes
      * @throws NullPointerException if {@code path} or {@code content} is {@code null}
-     * @throws IllegalArgumentException if {@code path} is blank
+     * @throws IllegalArgumentException if {@code path} is blank, has a control character or has a {@code .} or
+     *     {@code ..} segment
      */
     public FileChanges write(final String path, final byte[] content) {
         changes.put(
-                requireNotBlank(path, "path"),
+                Arguments.requireSafePath(path, "path"),
                 requireNonNull(content, "content").clone());
         return this;
     }
@@ -83,7 +85,8 @@ public final class FileChanges {
      * @param text the new content
      * @return these changes
      * @throws NullPointerException if {@code path} or {@code text} is {@code null}
-     * @throws IllegalArgumentException if {@code path} is blank
+     * @throws IllegalArgumentException if {@code path} is blank, has a control character or has a {@code .} or
+     *     {@code ..} segment
      */
     public FileChanges write(final String path, final String text) {
         return write(path, requireNonNull(text, "text").getBytes(StandardCharsets.UTF_8));
@@ -95,10 +98,11 @@ public final class FileChanges {
      * @param path the path in the repository
      * @return these changes
      * @throws NullPointerException if {@code path} is {@code null}
-     * @throws IllegalArgumentException if {@code path} is blank
+     * @throws IllegalArgumentException if {@code path} is blank, has a control character or has a {@code .} or
+     *     {@code ..} segment
      */
     public FileChanges delete(final String path) {
-        changes.put(requireNotBlank(path, "path"), null);
+        changes.put(Arguments.requireSafePath(path, "path"), null);
         return this;
     }
 
@@ -240,11 +244,14 @@ public final class FileChanges {
         if (cached != null) {
             return cached;
         }
-        final List<GitHubGitTreeEntry> loaded = github.gitDatabase()
+        final GitHubGitTree tree = github.gitDatabase()
                 .trees()
                 .getTree(repository.owner(), repository.name(), sha)
-                .map(GitHubGitTree::tree)
                 .orElseThrow(() -> new IllegalStateException("Tree " + sha + IS_GONE));
+        if (tree.truncated()) {
+            throw new IllegalStateException("Tree " + sha + " is too large to read the modes of its files");
+        }
+        final List<GitHubGitTreeEntry> loaded = tree.tree();
         trees.put(sha, loaded);
         return loaded;
     }

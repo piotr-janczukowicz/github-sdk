@@ -59,4 +59,27 @@ class LookupsTest {
 
         assertThat(thrown).hasCauseInstanceOf(UnsupportedOperationException.class);
     }
+
+    @Test
+    void find_shouldReturnTheValue_whenTheLookupFindsIt() {
+        final Optional<String> value = Lookups.find(() -> Optional.of("found"));
+
+        assertThat(value).contains("found");
+    }
+
+    @Test
+    void find_shouldBeEmpty_whenTheLookupFindsNothing() {
+        final Optional<String> value = Lookups.find(Optional::empty);
+
+        assertThat(value).isEmpty();
+    }
+
+    @Test
+    void find_shouldThrowUncheckedIoException_whenTheLookupFails() {
+        final Throwable thrown = catchThrowable(() -> Lookups.find(() -> {
+            throw new IOException("transport failed");
+        }));
+
+        assertThat(thrown).isInstanceOf(UncheckedIOException.class);
+    }
 }

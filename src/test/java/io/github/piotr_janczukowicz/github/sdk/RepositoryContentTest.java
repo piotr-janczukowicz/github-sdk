@@ -200,4 +200,18 @@ class RepositoryContentTest {
 
         assertThat(commits).isEmpty();
     }
+
+    @Test
+    void file_shouldThrowIllegalArgumentException_whenThePathHasADotSegment() {
+        final Throwable thrown = catchThrowable(() -> sut.file("docs/../secrets.txt"));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("path");
+    }
+
+    @Test
+    void compare_shouldThrowIllegalArgumentException_whenARefHasADotSegment() {
+        final Throwable thrown = catchThrowable(() -> sut.compare("main", ".."));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("head");
+    }
 }
