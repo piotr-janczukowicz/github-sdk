@@ -2,6 +2,7 @@ package io.github.piotr_janczukowicz.github.sdk.smoke;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubPullRequestBranchUpdateResult;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
 import io.github.piotr_janczukowicz.github.sdk.issues.Issue;
 import io.github.piotr_janczukowicz.github.sdk.pulls.MergeMethod;
@@ -73,6 +74,38 @@ class PullRequestWriteSmokeIT {
             assertThat(merged.isMerged()).isTrue();
             assertThat(merged.state()).isEqualTo(PullRequestState.CLOSED);
         } finally {
+            SandboxBranches.deleteBranch(ENV, head);
+            SandboxBranches.deleteBranch(ENV, base);
+        }
+    }
+
+    @Test
+    void pullRequest_shouldGiveDiffPatchAndAnUpdatedBranch_whenTheBaseMovedOn() throws IOException {
+        final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
+        final String main = repository.fetch().orElseThrow().response().defaultBranch();
+        final String base = ENV.name("diff-base");
+        final String head = ENV.name("diff-head");
+        final String baseSha = SandboxBranches.branchSha(ENV, main);
+        SandboxBranches.createBranch(ENV, base, baseSha);
+        SandboxBranches.createBranch(ENV, head, baseSha);
+        PullRequest pullRequest = null;
+        try {
+            final String file = "smoke/" + ENV.runId() + "-diff.txt";
+            SandboxBranches.commitFile(ENV, head, file);
+            SandboxBranches.commitFile(ENV, base, "smoke/" + ENV.runId() + "-base.txt");
+            pullRequest = repository.createPullRequest(SandboxBranches.newPullRequest(head, base, ENV.name("diff")));
+
+            final String diff = pullRequest.diff().orElseThrow();
+            final String patch = pullRequest.patch().orElseThrow();
+            final GitHubPullRequestBranchUpdateResult update = pullRequest.updateBranch();
+
+            assertThat(diff).contains(file);
+            assertThat(patch).contains(file);
+            assertThat(update.message()).isNotBlank();
+        } finally {
+            if (pullRequest != null) {
+                pullRequest.close();
+            }
             SandboxBranches.deleteBranch(ENV, head);
             SandboxBranches.deleteBranch(ENV, base);
         }

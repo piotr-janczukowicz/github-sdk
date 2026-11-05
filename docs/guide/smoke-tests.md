@@ -43,7 +43,7 @@ Without `SMOKE_GITHUB_TOKEN` every smoke class is skipped.
 |---|---|
 | `IssuesSmokeIT` | fetch the sandbox, create, list, update, comment, edit and delete comments, close and reopen, labels, lock, 404 on a missing issue |
 | `PullRequestsSmokeIT` | create a pull request between two branches, read, list, files, commits, 404 |
-| `PullRequestWriteSmokeIT` | update, close, reopen, comment through the issue, squash merge into a throwaway branch |
+| `PullRequestWriteSmokeIT` | update, close, reopen, comment through the issue, squash merge into a throwaway branch; diff, patch and update-branch |
 | `PullRequestReviewsSmokeIT` | comment review, draft review (edit, submit, delete), inline comment (reply, edit, list, delete), review comments. Approve, request changes and dismiss need a second user, because GitHub refuses them on one's own pull request |
 | `ChecksSmokeIT` | commit status: create, list, combined state; check runs of the head commit when there are any; 404 on a missing check run. Check runs cannot be created, because GitHub accepts that only from GitHub Apps |
 | `ReactionsSmokeIT` | react, list and delete a reaction on an issue, an issue comment, a pull request review comment, a commit comment and a published release (a draft release answers 403; the test deletes its release and tag); issue events and timeline |
@@ -102,6 +102,7 @@ sandbox repository. Their behavior against the real GitHub API has not been chec
 | Check runs: create, update, complete, rerequest | only a GitHub App can write check runs, and fine-grained tokens have no Checks permission; the test aborts on HTTP 403 |
 | Stars and watching | the token form does not offer the permissions |
 | Workflow dispatch | `SMOKE_GITHUB_WORKFLOW` is not set |
+| Merge in the background (`mergeAsync`, `mergeAsyncResult`) | not run: the sandbox repository has no merge queue, so only unit tests cover it |
 | Apps, installations and Marketplace | they need an App JWT from a registered GitHub App and its private key, so they are covered by unit tests only |
 | Packages | the REST API for packages does not support fine-grained tokens; deleting and restoring packages is not smoke tested even with a classic token, because the sandbox has no packages to lose |
 | Repository advisories, dependency review and submission | they need the Repository security advisories permission and a repository with a dependency graph; submitting a snapshot is not smoke tested, because it cannot be removed again |

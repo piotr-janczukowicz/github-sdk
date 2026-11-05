@@ -6,12 +6,16 @@ import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubCreateReviewCommentPayload;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubCreateReviewPayload;
+import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubMergePullRequestAsyncPayload;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubMergePullRequestPayload;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubPullRequest;
+import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubPullRequestBranchUpdateResult;
+import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubPullRequestMergeAsyncResult;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubPullRequestReviewRequest;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubPullRequestUpdateState;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubRemoveReviewersPayload;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubRequestReviewersPayload;
+import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubUpdatePullRequestBranchPayload;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubUpdatePullRequestPayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubCommit;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubDiffEntry;
@@ -403,6 +407,109 @@ public final class PullRequest {
     }
 
     /**
+     * Loads the pull request as a unified diff ({@code GET /repos/{owner}/{repo}/pulls/{pull_number}} with the diff
+     * media type). The text is held in memory, so a very large diff can exceed the response limit of the client.
+     *
+     * @return the diff, or empty when GitHub answers HTTP 404
+     * @throws IOException if the transport fails
+     */
+    public Optional<String> diff() throws IOException {
+        return github().pullRequests().pullRequest().getDiff(repository.owner(), repository.name(), number());
+    }
+
+    /**
+     * Loads the pull request as a patch series ({@code GET /repos/{owner}/{repo}/pulls/{pull_number}} with the patch
+     * media type). The text is held in memory, so a very large patch can exceed the response limit of the client.
+     *
+     * @return the patch, or empty when GitHub answers HTTP 404
+     * @throws IOException if the transport fails
+     */
+    public Optional<String> patch() throws IOException {
+        return github().pullRequests().pullRequest().getPatch(repository.owner(), repository.name(), number());
+    }
+
+    /**
+     * Asks GitHub to merge the base branch into the head branch ({@code PUT
+     * /repos/{owner}/{repo}/pulls/{pull_number}/update-branch}). GitHub does the update in the background and answers
+     * with a message at once, so the pull request is not changed when this returns; call {@link #refresh()} later. This
+     * object is not changed.
+     *
+     * @return GitHub's answer, a message and a URL
+     * @throws IOException if the transport fails
+     */
+    public GitHubPullRequestBranchUpdateResult updateBranch() throws IOException {
+        return sendUpdateBranch(null);
+    }
+
+    /**
+     * Asks GitHub to merge the base branch into the head branch, but only when the head still is at the given commit
+     * ({@code PUT /repos/{owner}/{repo}/pulls/{pull_number}/update-branch}). GitHub refuses the update when the head
+     * has moved. See {@link #updateBranch()} for the background update.
+     *
+     * @param expectedHeadSha the commit the head is expected to be at
+     * @return GitHub's answer, a message and a URL
+     * @throws NullPointerException if {@code expectedHeadSha} is {@code null}
+     * @throws IllegalArgumentException if {@code expectedHeadSha} is blank or not a plain value
+     * @throws IOException if the transport fails
+     */
+    public GitHubPullRequestBranchUpdateResult updateBranch(final String expectedHeadSha) throws IOException {
+        return sendUpdateBranch(Arguments.requireSafePath(expectedHeadSha, "expectedHeadSha"));
+    }
+
+    /**
+     * Merges the pull request in the background or puts it into the merge queue ({@code PUT
+     * /repos/{owner}/{repo}/pulls/{pull_number}/merge-async}). Available on GitHub.com and GitHub Enterprise Cloud
+     * only. The answer holds a status and details; when it is accepted, the details carry a UUID for
+     * {@link #mergeAsyncResult(String)}. This object is not changed.
+     *
+     * @param method how to merge
+     * @return GitHub's answer as the client record
+     * @throws NullPointerException if {@code method} is {@code null}
+     * @throws UnsupportedOperationException if the client is limited to another flavor of GitHub
+     * @throws IOException if the transport fails
+     */
+    public GitHubPullRequestMergeAsyncResult mergeAsync(final MergeMethod method) throws IOException {
+        return mergeAsync(new GitHubMergePullRequestAsyncPayload(
+                null, null, null, requireNonNull(method, "method").toClient(), null, null));
+    }
+
+    /**
+     * Merges the pull request in the background with every option the client offers, such as the merge queue action and
+     * bypassing rules ({@code PUT /repos/{owner}/{repo}/pulls/{pull_number}/merge-async}). Available on GitHub.com and
+     * GitHub Enterprise Cloud only. This object is not changed.
+     *
+     * @param payload the merge options
+     * @return GitHub's answer as the client record
+     * @throws NullPointerException if {@code payload} is {@code null}
+     * @throws UnsupportedOperationException if the client is limited to another flavor of GitHub
+     * @throws IOException if the transport fails
+     */
+    public GitHubPullRequestMergeAsyncResult mergeAsync(final GitHubMergePullRequestAsyncPayload payload)
+            throws IOException {
+        return github().pullRequests()
+                .pullRequest()
+                .mergeAsync(repository.owner(), repository.name(), number(), requireNonNull(payload, "payload"));
+    }
+
+    /**
+     * Loads the result of a background merge ({@code GET
+     * /repos/{owner}/{repo}/pulls/{pull_number}/merge-async/{uuid}}). Available on GitHub.com and GitHub Enterprise
+     * Cloud only.
+     *
+     * @param uuid the UUID from the details of {@link #mergeAsync(MergeMethod)}
+     * @return the result, or empty when GitHub answers HTTP 404
+     * @throws NullPointerException if {@code uuid} is {@code null}
+     * @throws IllegalArgumentException if {@code uuid} is blank
+     * @throws UnsupportedOperationException if the client is limited to another flavor of GitHub
+     * @throws IOException if the transport fails
+     */
+    public Optional<GitHubPullRequestMergeAsyncResult> mergeAsyncResult(final String uuid) throws IOException {
+        return github().pullRequests()
+                .pullRequest()
+                .getMergeAsyncResult(repository.owner(), repository.name(), number(), requireNotBlank(uuid, "uuid"));
+    }
+
+    /**
      * Returns the complete response this object was built from.
      *
      * @return the response record
@@ -421,6 +528,17 @@ public final class PullRequest {
         return new PullRequestReview(
                 this,
                 github().pullRequests().reviews().create(repository.owner(), repository.name(), number(), payload));
+    }
+
+    private GitHubPullRequestBranchUpdateResult sendUpdateBranch(final @Nullable String expectedHeadSha)
+            throws IOException {
+        return github().pullRequests()
+                .pullRequest()
+                .updateBranch(
+                        repository.owner(),
+                        repository.name(),
+                        number(),
+                        expectedHeadSha == null ? null : new GitHubUpdatePullRequestBranchPayload(expectedHeadSha));
     }
 
     private PullRequest sendMerge(final GitHubMergePullRequestPayload payload) throws IOException {
