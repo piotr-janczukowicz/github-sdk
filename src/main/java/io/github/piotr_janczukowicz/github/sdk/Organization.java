@@ -24,6 +24,8 @@ import io.github.piotr_janczukowicz.github.sdk.organizations.OrganizationRole;
 import io.github.piotr_janczukowicz.github.sdk.organizations.OrganizationVariable;
 import io.github.piotr_janczukowicz.github.sdk.organizations.OrganizationWebhook;
 import io.github.piotr_janczukowicz.github.sdk.organizations.VariableVisibility;
+import io.github.piotr_janczukowicz.github.sdk.projects.Project;
+import io.github.piotr_janczukowicz.github.sdk.projects.Projects;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -403,6 +405,28 @@ public final class Organization {
      */
     public void deleteSecret(final String secretName) throws IOException {
         sdk.github().actions().secrets().deleteOrgSecret(login(), requireNotBlank(secretName, "secretName"));
+    }
+
+    /**
+     * Lists the projects (Projects v2) of the organization that the caller can see ({@code GET
+     * /orgs/{org}/projectsV2}). The stream is lazy and can be used once.
+     *
+     * @return the projects
+     * @throws IOException if the transport fails
+     */
+    public Stream<Project> projects() throws IOException {
+        return Projects.forOrganization(sdk, login()).all();
+    }
+
+    /**
+     * Loads one project by its number ({@code GET /orgs/{org}/projectsV2/{project_number}}).
+     *
+     * @param number the project number, as in the project URL
+     * @return the project, or empty when GitHub answers HTTP 404
+     * @throws IOException if the transport fails
+     */
+    public Optional<Project> project(final long number) throws IOException {
+        return Projects.forOrganization(sdk, login()).find(number);
     }
 
     /**

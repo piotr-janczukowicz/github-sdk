@@ -14,6 +14,8 @@ import io.github.piotr_janczukowicz.github.api.users.GitHubUserView;
 import io.github.piotr_janczukowicz.github.pagination.GitHubPageRequest;
 import io.github.piotr_janczukowicz.github.sdk.gists.Gist;
 import io.github.piotr_janczukowicz.github.sdk.internal.Lookups;
+import io.github.piotr_janczukowicz.github.sdk.projects.Project;
+import io.github.piotr_janczukowicz.github.sdk.projects.Projects;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -195,6 +197,28 @@ public final class User {
     public Stream<Organization> organizations() throws IOException {
         return sdk.github().organizations().organization().listForUser(login()).stream()
                 .map(this::loadOrganization);
+    }
+
+    /**
+     * Lists the projects (Projects v2) of the user that the caller can see ({@code GET /users/{username}/projectsV2}).
+     * The stream is lazy and can be used once.
+     *
+     * @return the projects
+     * @throws IOException if the transport fails
+     */
+    public Stream<Project> projects() throws IOException {
+        return Projects.forUser(sdk, login()).all();
+    }
+
+    /**
+     * Loads one project by its number ({@code GET /users/{username}/projectsV2/{project_number}}).
+     *
+     * @param number the project number, as in the project URL
+     * @return the project, or empty when GitHub answers HTTP 404
+     * @throws IOException if the transport fails
+     */
+    public Optional<Project> project(final long number) throws IOException {
+        return Projects.forUser(sdk, login()).find(number);
     }
 
     /**
