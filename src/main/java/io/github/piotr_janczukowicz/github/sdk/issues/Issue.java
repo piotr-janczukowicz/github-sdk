@@ -280,10 +280,9 @@ public final class Issue {
      */
     public IssueComment comment(final String body) throws IOException {
         final GitHubCreateCommentPayload payload = new GitHubCreateCommentPayload(requireNonNull(body, "body"));
-        final GitHub github = github();
         return new IssueComment(
                 this,
-                github.issues().comments().createComment(repository.owner(), repository.name(), number(), payload));
+                github().issues().comments().createComment(repository.owner(), repository.name(), number(), payload));
     }
 
     /**
@@ -295,8 +294,7 @@ public final class Issue {
      * @throws IOException if the first page cannot be loaded
      */
     public Stream<IssueComment> comments() throws IOException {
-        final GitHub github = github();
-        return github.issues().comments().listComments(repository.owner(), repository.name(), number()).stream()
+        return github().issues().comments().listComments(repository.owner(), repository.name(), number()).stream()
                 .map(response -> new IssueComment(this, response));
     }
 

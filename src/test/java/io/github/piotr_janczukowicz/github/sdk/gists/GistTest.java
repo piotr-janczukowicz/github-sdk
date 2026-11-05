@@ -265,4 +265,11 @@ class GistTest {
 
         assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("body");
     }
+
+    @Test
+    void content_shouldThrowIllegalArgumentException_whenTheFileNameIsBlank() {
+        final Throwable thrown = catchThrowable(() -> sut.content(" "));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("fileName");
+    }
 }

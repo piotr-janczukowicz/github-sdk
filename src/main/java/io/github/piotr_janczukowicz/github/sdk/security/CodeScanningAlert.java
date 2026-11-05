@@ -180,10 +180,9 @@ public final class CodeScanningAlert {
             final @Nullable GitHubCodeScanningAlertDismissedReason reason,
             final @Nullable String comment)
             throws IOException {
-        final GitHub github = Internals.github(repository);
         return new CodeScanningAlert(
                 repository,
-                github.codeScanning()
+                github().codeScanning()
                         .codeScanning()
                         .updateAlert(
                                 repository.owner(),

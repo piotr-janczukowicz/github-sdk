@@ -95,8 +95,7 @@ public final class Workflow {
      * @throws IllegalStateException if the workflow is gone
      */
     public Workflow refresh() throws IOException {
-        final GitHub github = github();
-        return github.actions()
+        return github().actions()
                 .workflows()
                 .getWorkflow(repository.owner(), repository.name(), key())
                 .map(reloaded -> new Workflow(repository, reloaded))
@@ -112,8 +111,7 @@ public final class Workflow {
      * @throws IllegalStateException if the workflow is gone
      */
     public Workflow enable() throws IOException {
-        final GitHub github = github();
-        github.actions().workflows().enableWorkflow(repository.owner(), repository.name(), key());
+        github().actions().workflows().enableWorkflow(repository.owner(), repository.name(), key());
         return refresh();
     }
 
@@ -126,8 +124,7 @@ public final class Workflow {
      * @throws IllegalStateException if the workflow is gone
      */
     public Workflow disable() throws IOException {
-        final GitHub github = github();
-        github.actions().workflows().disableWorkflow(repository.owner(), repository.name(), key());
+        github().actions().workflows().disableWorkflow(repository.owner(), repository.name(), key());
         return refresh();
     }
 
@@ -152,21 +149,21 @@ public final class Workflow {
      * @param ref the branch or tag to run on
      * @param inputs the workflow inputs by name
      * @return the run that was started
-     * @throws NullPointerException if {@code ref} or {@code inputs} is {@code null}
+     * @throws NullPointerException if {@code ref} or {@code inputs} is {@code null}, or an input value is {@code null}
      * @throws IllegalArgumentException if {@code ref} is blank
      * @throws IOException if the transport fails
      * @throws IllegalStateException if GitHub does not have the run it reported
      */
     public WorkflowRun dispatch(final String ref, final Map<String, Object> inputs) throws IOException {
-        final GitHub github = github();
-        final GitHubCreateWorkflowDispatchPayload payload = new GitHubCreateWorkflowDispatchPayload(
-                requireNotBlank(ref, REF), Map.copyOf(requireNonNull(inputs, "inputs")));
-        final long runId = github.actions()
+        requireNonNull(inputs, "inputs").forEach((key, value) -> requireNonNull(value, "inputs[" + key + "]"));
+        final GitHubCreateWorkflowDispatchPayload payload =
+                new GitHubCreateWorkflowDispatchPayload(requireNotBlank(ref, REF), Map.copyOf(inputs));
+        final long runId = github().actions()
                 .workflows()
                 .createWorkflowDispatch(repository.owner(), repository.name(), key(), payload)
                 .workflowRunId()
                 .value();
-        return github.actions()
+        return github().actions()
                 .workflowRuns()
                 .getWorkflowRun(repository.owner(), repository.name(), runId)
                 .map(started -> new WorkflowRun(repository, started))
@@ -194,8 +191,7 @@ public final class Workflow {
      * @throws IOException if the first page cannot be loaded
      */
     public Stream<WorkflowRun> runs(final GitHubListWorkflowRunsFilter filter) throws IOException {
-        final GitHub github = github();
-        return github
+        return github()
                 .actions()
                 .workflowRuns()
                 .listWorkflowRuns(

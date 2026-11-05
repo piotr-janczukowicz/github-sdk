@@ -170,8 +170,7 @@ public final class WorkflowRun {
      * @throws IllegalStateException if the run is gone
      */
     public WorkflowRun refresh() throws IOException {
-        final GitHub github = github();
-        return github.actions()
+        return github().actions()
                 .workflowRuns()
                 .getWorkflowRun(repository.owner(), repository.name(), id())
                 .map(reloaded -> new WorkflowRun(repository, reloaded))
@@ -186,8 +185,7 @@ public final class WorkflowRun {
      * @throws IOException if the transport fails
      */
     public Optional<WorkflowRun> attempt(final long attempt) throws IOException {
-        final GitHub github = github();
-        return github.actions()
+        return github().actions()
                 .workflowRuns()
                 .getWorkflowRunAttempt(repository.owner(), repository.name(), id(), attempt)
                 .map(found -> new WorkflowRun(repository, found));
@@ -202,8 +200,7 @@ public final class WorkflowRun {
      * @throws IllegalStateException if the run is gone
      */
     public WorkflowRun cancel() throws IOException {
-        final GitHub github = github();
-        github.actions().workflowRuns().cancelWorkflowRun(repository.owner(), repository.name(), id());
+        github().actions().workflowRuns().cancelWorkflowRun(repository.owner(), repository.name(), id());
         return refresh();
     }
 
@@ -217,8 +214,7 @@ public final class WorkflowRun {
      * @throws IllegalStateException if the run is gone
      */
     public WorkflowRun forceCancel() throws IOException {
-        final GitHub github = github();
-        github.actions().workflowRuns().forceCancelWorkflowRun(repository.owner(), repository.name(), id());
+        github().actions().workflowRuns().forceCancelWorkflowRun(repository.owner(), repository.name(), id());
         return refresh();
     }
 
@@ -242,8 +238,7 @@ public final class WorkflowRun {
      * @throws IllegalStateException if the run is gone
      */
     public WorkflowRun rerun(final boolean isDebugLoggingEnabled) throws IOException {
-        final GitHub github = github();
-        github.actions()
+        github().actions()
                 .workflowRuns()
                 .reRunWorkflow(
                         repository.owner(),
@@ -274,8 +269,7 @@ public final class WorkflowRun {
      * @throws IllegalStateException if the run is gone
      */
     public WorkflowRun rerunFailedJobs(final boolean isDebugLoggingEnabled) throws IOException {
-        final GitHub github = github();
-        github.actions()
+        github().actions()
                 .workflowRuns()
                 .reRunWorkflowFailedJobs(
                         repository.owner(),
@@ -291,8 +285,7 @@ public final class WorkflowRun {
      * @throws IOException if the transport fails
      */
     public void delete() throws IOException {
-        final GitHub github = github();
-        github.actions().workflowRuns().deleteWorkflowRun(repository.owner(), repository.name(), id());
+        github().actions().workflowRuns().deleteWorkflowRun(repository.owner(), repository.name(), id());
     }
 
     /**
@@ -304,8 +297,7 @@ public final class WorkflowRun {
      * @throws IOException if the first page cannot be loaded
      */
     public Stream<WorkflowJob> jobs() throws IOException {
-        final GitHub github = github();
-        return github
+        return github()
                 .actions()
                 .workflowJobs()
                 .listJobsForWorkflowRun(
@@ -328,8 +320,7 @@ public final class WorkflowRun {
      * @throws IOException if the first page cannot be loaded
      */
     public Stream<WorkflowJob> jobs(final long attempt) throws IOException {
-        final GitHub github = github();
-        return github
+        return github()
                 .actions()
                 .workflowJobs()
                 .listJobsForWorkflowRunAttempt(
@@ -347,8 +338,7 @@ public final class WorkflowRun {
      * @throws IOException if the first page cannot be loaded
      */
     public Stream<Artifact> artifacts() throws IOException {
-        final GitHub github = github();
-        return github
+        return github()
                 .actions()
                 .artifacts()
                 .listWorkflowRunArtifacts(repository.owner(), repository.name(), id(), GitHubPageRequest.byPage())
@@ -364,8 +354,7 @@ public final class WorkflowRun {
      * @throws IOException if the transport fails
      */
     public URI logs() throws IOException {
-        final GitHub github = github();
-        return github.actions().workflowRuns().downloadWorkflowRunLogs(repository.owner(), repository.name(), id());
+        return github().actions().workflowRuns().downloadWorkflowRunLogs(repository.owner(), repository.name(), id());
     }
 
     /**
@@ -374,8 +363,7 @@ public final class WorkflowRun {
      * @throws IOException if the transport fails
      */
     public void deleteLogs() throws IOException {
-        final GitHub github = github();
-        github.actions().workflowRuns().deleteWorkflowRunLogs(repository.owner(), repository.name(), id());
+        github().actions().workflowRuns().deleteWorkflowRunLogs(repository.owner(), repository.name(), id());
     }
 
     /**

@@ -120,8 +120,7 @@ public final class WorkflowJob {
      * @throws IllegalStateException if the job is gone
      */
     public WorkflowJob refresh() throws IOException {
-        final GitHub github = github();
-        return github.actions()
+        return github().actions()
                 .workflowJobs()
                 .getJobForWorkflowRun(repository.owner(), repository.name(), id())
                 .map(reloaded -> new WorkflowJob(repository, reloaded))
@@ -136,8 +135,7 @@ public final class WorkflowJob {
      * @throws IllegalStateException if the job is gone
      */
     public WorkflowJob rerun() throws IOException {
-        final GitHub github = github();
-        github.actions().workflowRuns().reRunJobForWorkflowRun(repository.owner(), repository.name(), id());
+        github().actions().workflowRuns().reRunJobForWorkflowRun(repository.owner(), repository.name(), id());
         return refresh();
     }
 
@@ -149,8 +147,7 @@ public final class WorkflowJob {
      * @throws IOException if the transport fails
      */
     public URI logs() throws IOException {
-        final GitHub github = github();
-        return github.actions()
+        return github().actions()
                 .workflowJobs()
                 .downloadJobLogsForWorkflowRun(repository.owner(), repository.name(), id());
     }

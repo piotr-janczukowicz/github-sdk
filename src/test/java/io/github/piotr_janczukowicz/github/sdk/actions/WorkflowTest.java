@@ -26,6 +26,7 @@ import io.github.piotr_janczukowicz.github.sdk.Repository;
 import io.github.piotr_janczukowicz.github.sdk.fixtures.ActionsFixtures;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -217,5 +218,15 @@ class WorkflowTest {
         final Throwable thrown = catchThrowable(() -> sut.runs(null));
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("filter");
+    }
+
+    @Test
+    void dispatch_shouldThrowNullPointerException_whenAnInputValueIsNull() {
+        final Map<String, Object> inputs = new HashMap<>();
+        inputs.put("level", null);
+
+        final Throwable thrown = catchThrowable(() -> sut.dispatch("main", inputs));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("inputs[level]");
     }
 }

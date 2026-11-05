@@ -94,9 +94,11 @@ public final class Gist {
      *
      * @param fileName the name of the file
      * @return the content, or empty when the gist has no such file or its content was cut off
+     * @throws NullPointerException if {@code fileName} is {@code null}
+     * @throws IllegalArgumentException if {@code fileName} is blank
      */
     public Optional<String> content(final String fileName) {
-        return Optional.ofNullable(files().get(fileName))
+        return Optional.ofNullable(files().get(requireNotBlank(fileName, "fileName")))
                 .filter(file -> !Boolean.TRUE.equals(file.truncated()))
                 .map(GitHubGistSimpleFile::content);
     }

@@ -9,6 +9,7 @@ import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -17,6 +18,7 @@ import io.github.piotr_janczukowicz.github.api.commits.GitHubCommitApi;
 import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubCreateBlobPayload;
 import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubCreateCommitPayload;
 import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubCreateTreeEntry;
+import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubCreateTreeEntryMode;
 import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubCreateTreePayload;
 import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubGitBlobsApi;
 import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubGitCommit;
@@ -25,6 +27,7 @@ import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubGitCommitsApi;
 import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubGitDatabaseApi;
 import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubGitRefsApi;
 import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubGitTree;
+import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubGitTreeEntry;
 import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubGitTreesApi;
 import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubShortBlob;
 import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubUpdateRefPayload;
@@ -36,7 +39,6 @@ import io.github.piotr_janczukowicz.github.sdk.fixtures.GitFixtures;
 import io.github.piotr_janczukowicz.github.sdk.fixtures.RepositoryContentFixtures;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
@@ -48,6 +50,8 @@ class FileChangesTest {
 
     private static final String OWNER = "octocat";
     private static final String NAME = "hello-world";
+    private static final String URL = "https://api.github.com/x";
+    private static final String DOCS_TREE = "4".repeat(40);
     private static final String TREE = "1".repeat(40);
     private static final String BLOB = "3".repeat(40);
     private static final String NEW_TREE = "2".repeat(40);
@@ -66,32 +70,26 @@ class FileChangesTest {
     @Test
     void send_shouldCommitWritesAndDeletionsAsOneCommit_whenChangesAreChosen() throws IOException {
         arrangeBranch();
-        final GitHubShortBlob blob = new GitHubShortBlob("https://api.github.com/blob", BLOB);
-        doReturn(blob).when(blobs).createBlob(eq(OWNER), eq(NAME), any(GitHubCreateBlobPayload.class));
         final GitHubCommit created = RepositoryContentFixtures.commit();
         doReturn(Optional.of(created)).when(commitApi).getCommit(OWNER, NAME, NEW_COMMIT);
         final ArgumentCaptor<GitHubCreateTreePayload> tree = ArgumentCaptor.forClass(GitHubCreateTreePayload.class);
         final ArgumentCaptor<GitHubCreateCommitPayload> commit =
                 ArgumentCaptor.forClass(GitHubCreateCommitPayload.class);
         final ArgumentCaptor<GitHubUpdateRefPayload> ref = ArgumentCaptor.forClass(GitHubUpdateRefPayload.class);
-        final ArgumentCaptor<GitHubCreateBlobPayload> blobPayload =
-                ArgumentCaptor.forClass(GitHubCreateBlobPayload.class);
 
         final Commit result = sut.write("docs/a.txt", "hello").delete("old.txt").send("Update docs");
 
-        verify(blobs).createBlob(eq(OWNER), eq(NAME), blobPayload.capture());
         verify(trees).createTree(eq(OWNER), eq(NAME), tree.capture());
         verify(gitCommits).createCommit(eq(OWNER), eq(NAME), commit.capture());
         verify(refs).updateRef(eq(OWNER), eq(NAME), eq("heads/main"), ref.capture());
+        verify(blobs, never()).createBlob(any(), any(), any());
         final List<GitHubCreateTreeEntry> entries = tree.getValue().tree();
         assertSoftly(softly -> {
-            softly.assertThat(blobPayload.getValue().encoding()).isEqualTo("base64");
-            softly.assertThat(new String(
-                            Base64.getDecoder().decode(blobPayload.getValue().content()), StandardCharsets.UTF_8))
-                    .isEqualTo("hello");
             softly.assertThat(tree.getValue().baseTree()).isEqualTo(TREE);
             softly.assertThat(entries).extracting(GitHubCreateTreeEntry::path).containsExactly("docs/a.txt", "old.txt");
-            softly.assertThat(entries.get(0).sha().value()).isEqualTo(BLOB);
+            softly.assertThat(entries.get(0).content()).isEqualTo("hello");
+            softly.assertThat(entries.get(0).sha()).isNull();
+            softly.assertThat(entries.get(0).mode()).isEqualTo(GitHubCreateTreeEntryMode.FILE);
             softly.assertThat(entries.get(1).sha().value()).isNull();
             softly.assertThat(commit.getValue().message()).isEqualTo("Update docs");
             softly.assertThat(commit.getValue().tree()).isEqualTo(NEW_TREE);
@@ -103,6 +101,65 @@ class FileChangesTest {
     }
 
     @Test
+    void send_shouldKeepTheModeOfTheExistingFile_whenAnExecutableFileIsRewritten() throws IOException {
+        arrangeBranch();
+        doReturn(Optional.of(RepositoryContentFixtures.commit()))
+                .when(commitApi)
+                .getCommit(OWNER, NAME, NEW_COMMIT);
+        final ArgumentCaptor<GitHubCreateTreePayload> tree = ArgumentCaptor.forClass(GitHubCreateTreePayload.class);
+
+        sut.write("run.sh", "echo hi")
+                .write("docs/old.md", "text")
+                .write("docs/new.md", "text")
+                .write("docs/old.md/inner", "text")
+                .write("link", "target")
+                .write("link/inner", "text")
+                .send("Rewrite");
+
+        verify(trees).createTree(eq(OWNER), eq(NAME), tree.capture());
+        assertThat(tree.getValue().tree())
+                .extracting(GitHubCreateTreeEntry::path, GitHubCreateTreeEntry::mode)
+                .containsExactly(
+                        org.assertj.core.api.Assertions.tuple("run.sh", GitHubCreateTreeEntryMode.EXECUTABLE),
+                        org.assertj.core.api.Assertions.tuple("docs/old.md", GitHubCreateTreeEntryMode.FILE),
+                        org.assertj.core.api.Assertions.tuple("docs/new.md", GitHubCreateTreeEntryMode.FILE),
+                        org.assertj.core.api.Assertions.tuple("docs/old.md/inner", GitHubCreateTreeEntryMode.FILE),
+                        org.assertj.core.api.Assertions.tuple("link", GitHubCreateTreeEntryMode.SYMLINK),
+                        org.assertj.core.api.Assertions.tuple("link/inner", GitHubCreateTreeEntryMode.FILE));
+    }
+
+    @Test
+    void send_shouldCreateABlob_whenTheTextIsEmptyOrHasANulCharacter() throws IOException {
+        arrangeBranch();
+        doReturn(new GitHubShortBlob("https://api.github.com/blob", BLOB))
+                .when(blobs)
+                .createBlob(eq(OWNER), eq(NAME), any(GitHubCreateBlobPayload.class));
+        doReturn(Optional.of(RepositoryContentFixtures.commit()))
+                .when(commitApi)
+                .getCommit(OWNER, NAME, NEW_COMMIT);
+        final ArgumentCaptor<GitHubCreateTreePayload> tree = ArgumentCaptor.forClass(GitHubCreateTreePayload.class);
+
+        sut.write("empty.txt", "").write("nul.txt", "a\u0000b").send("Odd text");
+
+        verify(blobs, times(2)).createBlob(eq(OWNER), eq(NAME), any(GitHubCreateBlobPayload.class));
+        verify(trees).createTree(eq(OWNER), eq(NAME), tree.capture());
+        assertThat(tree.getValue().tree())
+                .extracting(entry -> entry.sha().value())
+                .containsOnly(BLOB);
+    }
+
+    @Test
+    void send_shouldThrowIllegalStateException_whenABaseTreeIsGone() throws IOException {
+        arrangeHead();
+        doReturn(Optional.empty()).when(trees).getTree(OWNER, NAME, TREE);
+        final FileChanges changes = sut.write("a.txt", "x");
+
+        final Throwable thrown = catchThrowable(() -> changes.send("Gone"));
+
+        assertThat(thrown).isInstanceOf(IllegalStateException.class).hasMessageContaining("is gone");
+    }
+
+    @Test
     void send_shouldWriteBytesAsTheyAre_whenContentIsBinary() throws IOException {
         arrangeBranch();
         doReturn(new GitHubShortBlob("https://api.github.com/blob", BLOB))
@@ -111,14 +168,14 @@ class FileChangesTest {
         doReturn(Optional.of(RepositoryContentFixtures.commit()))
                 .when(commitApi)
                 .getCommit(OWNER, NAME, NEW_COMMIT);
-        final byte[] content = {1, 2, 3};
+        final byte[] content = {1, 0, 3};
         final ArgumentCaptor<GitHubCreateBlobPayload> blobPayload =
                 ArgumentCaptor.forClass(GitHubCreateBlobPayload.class);
 
         sut.write("bin/data", content).send("Add data");
 
         verify(blobs).createBlob(eq(OWNER), eq(NAME), blobPayload.capture());
-        assertThat(Base64.getDecoder().decode(blobPayload.getValue().content())).containsExactly(1, 2, 3);
+        assertThat(Base64.getDecoder().decode(blobPayload.getValue().content())).containsExactly(1, 0, 3);
     }
 
     @Test
@@ -222,13 +279,27 @@ class FileChangesTest {
         assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("branch");
     }
 
-    private void arrangeBranch() throws IOException {
+    private void arrangeHead() throws IOException {
         doReturn(Optional.of(GitFixtures.ref())).when(refs).getRef(OWNER, NAME, "heads/main");
         final GitHubGitCommit head = mock(GitHubGitCommit.class);
         final GitHubGitCommitTree headTree = mock(GitHubGitCommitTree.class);
         when(headTree.sha()).thenReturn(TREE);
         when(head.tree()).thenReturn(headTree);
         doReturn(Optional.of(head)).when(gitCommits).getCommit(OWNER, NAME, GitFixtures.SHA);
+    }
+
+    private void arrangeBranch() throws IOException {
+        arrangeHead();
+        final GitHubGitTreeEntry script = new GitHubGitTreeEntry("run.sh", "100755", "blob", BLOB, 10, URL);
+        final GitHubGitTreeEntry link = new GitHubGitTreeEntry("link", "120000", "blob", BLOB, 10, URL);
+        final GitHubGitTreeEntry docs = new GitHubGitTreeEntry("docs", "040000", "tree", DOCS_TREE, null, URL);
+        doReturn(Optional.of(new GitHubGitTree(TREE, URL, false, List.of(script, link, docs))))
+                .when(trees)
+                .getTree(OWNER, NAME, TREE);
+        final GitHubGitTreeEntry old = new GitHubGitTreeEntry("old.md", "100644", "blob", BLOB, 10, URL);
+        doReturn(Optional.of(new GitHubGitTree(DOCS_TREE, URL, false, List.of(old))))
+                .when(trees)
+                .getTree(OWNER, NAME, DOCS_TREE);
         final GitHubGitTree created = mock(GitHubGitTree.class);
         when(created.sha()).thenReturn(NEW_TREE);
         doReturn(created).when(trees).createTree(eq(OWNER), eq(NAME), any(GitHubCreateTreePayload.class));

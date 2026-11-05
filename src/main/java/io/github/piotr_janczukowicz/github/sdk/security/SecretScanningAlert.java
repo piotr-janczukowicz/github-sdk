@@ -178,7 +178,9 @@ public final class SecretScanningAlert {
     }
 
     /**
-     * Returns the complete response this object was built from, including the detected secret.
+     * Returns the complete response this object was built from, including the detected secret. The record prints the
+     * secret in its {@code toString()}, so do not log it or put it in a message; the accessors of this class never
+     * expose the secret.
      *
      * @return the response record
      */
@@ -191,11 +193,10 @@ public final class SecretScanningAlert {
             final @Nullable GitHubSecretScanningAlertResolution resolution,
             final @Nullable String comment)
             throws IOException {
-        final GitHub github = Internals.github(repository);
         final OptionalNull<String> sentComment = comment == null ? null : OptionalNull.of(comment);
         return new SecretScanningAlert(
                 repository,
-                github.secretScanning()
+                github().secretScanning()
                         .alerts()
                         .updateAlert(
                                 repository.owner(),

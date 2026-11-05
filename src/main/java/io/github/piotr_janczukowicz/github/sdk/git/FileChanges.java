@@ -10,15 +10,21 @@ import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubCreateTreeEntry
 import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubCreateTreeEntryMode;
 import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubCreateTreeEntryType;
 import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubCreateTreePayload;
+import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubGitTree;
+import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubGitTreeEntry;
 import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubUpdateRefPayload;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
 import io.github.piotr_janczukowicz.github.sdk.content.Commit;
 import io.github.piotr_janczukowicz.github.sdk.internal.Internals;
 import io.github.piotr_janczukowicz.json.OptionalNull;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +37,10 @@ import org.jspecify.annotations.Nullable;
 public final class FileChanges {
 
     private static final String BRANCH_REF = "heads/";
+    private static final String TREE = "tree";
+    private static final String IS_GONE = " is gone";
+    private static final String EXECUTABLE_MODE = "100755";
+    private static final String SYMLINK_MODE = "120000";
 
     private final Repository repository;
     private final String branch;
@@ -85,8 +95,9 @@ public final class FileChanges {
 
     /**
      * Commits all changes to the branch as one commit. The commit is built from git objects and the branch moves
-     * without force, so a push that lands in between makes GitHub refuse the update and nothing is overwritten. The
-     * author and committer are the authenticated user.
+     * without force, so a push that lands in between makes GitHub refuse the update and nothing is overwritten. A
+     * rewritten file keeps the mode it has on the branch, so an executable script stays executable. The author and
+     * committer are the authenticated user.
      *
      * @param message the commit message
      * @return the new commit
@@ -107,18 +118,18 @@ public final class FileChanges {
         final String headSha = github.gitDatabase()
                 .refs()
                 .getRef(owner, name, BRANCH_REF + branch)
-                .orElseThrow(() -> new IllegalStateException("Branch " + branch + " is gone"))
+                .orElseThrow(() -> new IllegalStateException("Branch " + branch + IS_GONE))
                 .object()
                 .sha();
         final String baseTree = github.gitDatabase()
                 .commits()
                 .getCommit(owner, name, headSha)
-                .orElseThrow(() -> new IllegalStateException("Commit " + headSha + " is gone"))
+                .orElseThrow(() -> new IllegalStateException("Commit " + headSha + IS_GONE))
                 .tree()
                 .sha();
         final String tree = github.gitDatabase()
                 .trees()
-                .createTree(owner, name, new GitHubCreateTreePayload(entries(github), baseTree))
+                .createTree(owner, name, new GitHubCreateTreePayload(entries(github, baseTree), baseTree))
                 .sha();
         final String commit = github.gitDatabase()
                 .commits()
@@ -128,19 +139,113 @@ public final class FileChanges {
         github.gitDatabase()
                 .refs()
                 .updateRef(owner, name, BRANCH_REF + branch, new GitHubUpdateRefPayload(commit, false));
-        return repository.commit(commit).orElseThrow(() -> new IllegalStateException("Commit " + commit + " is gone"));
+        return repository.commit(commit).orElseThrow(() -> new IllegalStateException("Commit " + commit + IS_GONE));
     }
 
-    private List<GitHubCreateTreeEntry> entries(final GitHub github) throws IOException {
+    private List<GitHubCreateTreeEntry> entries(final GitHub github, final String baseTree) throws IOException {
         final List<GitHubCreateTreeEntry> entries = new ArrayList<>(changes.size());
+        final Map<String, List<GitHubGitTreeEntry>> trees = new HashMap<>();
         for (final Map.Entry<String, byte @Nullable []> change : changes.entrySet()) {
             final byte[] content = change.getValue();
-            final OptionalNull<String> sha =
-                    content == null ? OptionalNull.ofNull() : OptionalNull.of(blob(github, content));
-            entries.add(new GitHubCreateTreeEntry(
-                    change.getKey(), GitHubCreateTreeEntryMode.FILE, GitHubCreateTreeEntryType.BLOB, sha, null));
+            if (content == null) {
+                entries.add(entry(change.getKey(), GitHubCreateTreeEntryMode.FILE, OptionalNull.ofNull(), null));
+                continue;
+            }
+            final GitHubCreateTreeEntryMode mode =
+                    existingMode(github, baseTree, change.getKey().split("/"), 0, trees);
+            final @Nullable String text = inlineText(content);
+            entries.add(
+                    text == null
+                            ? entry(change.getKey(), mode, OptionalNull.of(blob(github, content)), null)
+                            : entry(change.getKey(), mode, null, text));
         }
         return entries;
+    }
+
+    private static GitHubCreateTreeEntry entry(
+            final String path,
+            final GitHubCreateTreeEntryMode mode,
+            final @Nullable OptionalNull<String> sha,
+            final @Nullable String content) {
+        return new GitHubCreateTreeEntry(path, mode, GitHubCreateTreeEntryType.BLOB, sha, content);
+    }
+
+    /**
+     * Returns the text of a file that GitHub can take inline in the tree, so no blob request is needed: valid UTF-8
+     * without a NUL character, and not empty.
+     */
+    private static @Nullable String inlineText(final byte[] content) {
+        if (content.length == 0) {
+            return null;
+        }
+        for (final byte value : content) {
+            if (value == 0) {
+                return null;
+            }
+        }
+        try {
+            return StandardCharsets.UTF_8
+                    .newDecoder()
+                    .onMalformedInput(CodingErrorAction.REPORT)
+                    .onUnmappableCharacter(CodingErrorAction.REPORT)
+                    .decode(ByteBuffer.wrap(content))
+                    .toString();
+        } catch (final CharacterCodingException e) {
+            return null;
+        }
+    }
+
+    /**
+     * Finds the mode the file has in the base tree, so that rewriting an executable file or a symbolic link keeps its
+     * mode. A new file, and a path that is not a file there, gets the regular file mode. It walks the path one
+     * directory at a time and reuses the trees it already loaded.
+     */
+    private GitHubCreateTreeEntryMode existingMode(
+            final GitHub github,
+            final String treeSha,
+            final String[] segments,
+            final int index,
+            final Map<String, List<GitHubGitTreeEntry>> trees)
+            throws IOException {
+        final String segment = segments[index];
+        final GitHubGitTreeEntry found = tree(github, treeSha, trees).stream()
+                .filter(entry -> segment.equals(entry.path()))
+                .findFirst()
+                .orElse(null);
+        if (found == null) {
+            return GitHubCreateTreeEntryMode.FILE;
+        }
+        if (index == segments.length - 1) {
+            return modeOf(found.mode());
+        }
+        if (!TREE.equals(found.type())) {
+            return GitHubCreateTreeEntryMode.FILE;
+        }
+        return existingMode(github, found.sha(), segments, index + 1, trees);
+    }
+
+    private List<GitHubGitTreeEntry> tree(
+            final GitHub github, final String sha, final Map<String, List<GitHubGitTreeEntry>> trees)
+            throws IOException {
+        final List<GitHubGitTreeEntry> cached = trees.get(sha);
+        if (cached != null) {
+            return cached;
+        }
+        final List<GitHubGitTreeEntry> loaded = github.gitDatabase()
+                .trees()
+                .getTree(repository.owner(), repository.name(), sha)
+                .map(GitHubGitTree::tree)
+                .orElseThrow(() -> new IllegalStateException("Tree " + sha + IS_GONE));
+        trees.put(sha, loaded);
+        return loaded;
+    }
+
+    private static GitHubCreateTreeEntryMode modeOf(final String mode) {
+        return switch (mode) {
+            case EXECUTABLE_MODE -> GitHubCreateTreeEntryMode.EXECUTABLE;
+            case SYMLINK_MODE -> GitHubCreateTreeEntryMode.SYMLINK;
+            default -> GitHubCreateTreeEntryMode.FILE;
+        };
     }
 
     private String blob(final GitHub github, final byte[] content) throws IOException {

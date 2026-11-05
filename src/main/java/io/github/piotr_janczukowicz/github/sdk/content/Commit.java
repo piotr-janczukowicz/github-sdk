@@ -188,8 +188,7 @@ public final class Commit {
      * @throws IOException if the first page cannot be loaded
      */
     public Stream<CommitComment> comments() throws IOException {
-        final GitHub github = github();
-        return github
+        return github()
                 .commits()
                 .comments()
                 .listCommentsForCommit(repository.owner(), repository.name(), sha(), GitHubPageRequest.byPage())
@@ -235,8 +234,7 @@ public final class Commit {
      * @throws IOException if the first page cannot be loaded
      */
     public Stream<CheckSuite> checkSuites() throws IOException {
-        final GitHub github = github();
-        return github.checks().suites().listSuitesForRef(repository.owner(), repository.name(), sha()).stream()
+        return github().checks().suites().listSuitesForRef(repository.owner(), repository.name(), sha()).stream()
                 .map(listed -> new CheckSuite(repository, listed));
     }
 
@@ -250,10 +248,11 @@ public final class Commit {
     }
 
     private CommitComment createComment(final GitHubCreateCommitCommentPayload payload) throws IOException {
-        final GitHub github = github();
         return new CommitComment(
                 repository,
-                github.commits().comments().createCommitComment(repository.owner(), repository.name(), sha(), payload));
+                github().commits()
+                        .comments()
+                        .createCommitComment(repository.owner(), repository.name(), sha(), payload));
     }
 
     private GitHub github() {
