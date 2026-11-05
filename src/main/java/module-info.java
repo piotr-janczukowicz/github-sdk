@@ -13,10 +13,12 @@ module io.github.piotr_janczukowicz.githubsdk {
     exports io.github.piotr_janczukowicz.github.sdk.deployments;
     exports io.github.piotr_janczukowicz.github.sdk.git;
     exports io.github.piotr_janczukowicz.github.sdk.issues;
+    exports io.github.piotr_janczukowicz.github.sdk.metrics;
     exports io.github.piotr_janczukowicz.github.sdk.notifications;
     exports io.github.piotr_janczukowicz.github.sdk.pages;
     exports io.github.piotr_janczukowicz.github.sdk.pulls;
     exports io.github.piotr_janczukowicz.github.sdk.security;
+    exports io.github.piotr_janczukowicz.github.sdk.utilities;
     exports io.github.piotr_janczukowicz.github.sdk.reactions;
     exports io.github.piotr_janczukowicz.github.sdk.webhooks;
 }

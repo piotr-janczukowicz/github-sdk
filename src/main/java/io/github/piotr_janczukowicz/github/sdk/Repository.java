@@ -29,6 +29,8 @@ import io.github.piotr_janczukowicz.github.api.issues.GitHubCreateMilestonePaylo
 import io.github.piotr_janczukowicz.github.api.issues.GitHubCreatePayload;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubCreatePayloadBuilder;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubListForRepoFilter;
+import io.github.piotr_janczukowicz.github.api.licenses.GitHubLicenseContent;
+import io.github.piotr_janczukowicz.github.api.metrics.GitHubCommunityProfile;
 import io.github.piotr_janczukowicz.github.api.pages.GitHubCreatePagesSitePayload;
 import io.github.piotr_janczukowicz.github.api.pages.GitHubCreatePagesSiteSource;
 import io.github.piotr_janczukowicz.github.api.pages.GitHubPagesSourcePath;
@@ -38,6 +40,7 @@ import io.github.piotr_janczukowicz.github.api.releases.GitHubCreateReleasePaylo
 import io.github.piotr_janczukowicz.github.api.releases.GitHubCreateReleasePayloadBuilder;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubContentFile;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubContributor;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateAutolinkPayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateDispatchEventPayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateForkPayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateOrUpdateFileContentsPayload;
@@ -63,11 +66,14 @@ import io.github.piotr_janczukowicz.github.sdk.actions.Variable;
 import io.github.piotr_janczukowicz.github.sdk.actions.Workflow;
 import io.github.piotr_janczukowicz.github.sdk.actions.WorkflowRun;
 import io.github.piotr_janczukowicz.github.sdk.checks.CheckRun;
+import io.github.piotr_janczukowicz.github.sdk.checks.CheckSuite;
 import io.github.piotr_janczukowicz.github.sdk.collaborators.Collaborator;
 import io.github.piotr_janczukowicz.github.sdk.collaborators.Invitation;
 import io.github.piotr_janczukowicz.github.sdk.collaborators.RepositoryPermission;
+import io.github.piotr_janczukowicz.github.sdk.content.Autolink;
 import io.github.piotr_janczukowicz.github.sdk.content.Branch;
 import io.github.piotr_janczukowicz.github.sdk.content.Commit;
+import io.github.piotr_janczukowicz.github.sdk.content.CommitComment;
 import io.github.piotr_janczukowicz.github.sdk.content.Release;
 import io.github.piotr_janczukowicz.github.sdk.content.RepositoryFile;
 import io.github.piotr_janczukowicz.github.sdk.deploykeys.DeployKey;
@@ -82,6 +88,8 @@ import io.github.piotr_janczukowicz.github.sdk.internal.Lookups;
 import io.github.piotr_janczukowicz.github.sdk.issues.Issue;
 import io.github.piotr_janczukowicz.github.sdk.issues.Label;
 import io.github.piotr_janczukowicz.github.sdk.issues.Milestone;
+import io.github.piotr_janczukowicz.github.sdk.metrics.RepositoryStatistics;
+import io.github.piotr_janczukowicz.github.sdk.metrics.RepositoryTraffic;
 import io.github.piotr_janczukowicz.github.sdk.notifications.Notification;
 import io.github.piotr_janczukowicz.github.sdk.pages.PagesSite;
 import io.github.piotr_janczukowicz.github.sdk.pulls.PullRequest;
@@ -1936,6 +1944,142 @@ public final class Repository {
      */
     public RepositorySecurity security() {
         return new RepositorySecurity(this);
+    }
+
+    /**
+     * Returns the traffic of the repository, which GitHub shows only to people with push access. Nothing is requested
+     * until a method of the result is called.
+     *
+     * @return the traffic
+     */
+    public RepositoryTraffic traffic() {
+        return new RepositoryTraffic(this);
+    }
+
+    /**
+     * Returns the statistics of the repository, such as commit activity. Nothing is requested until a method of the
+     * result is called.
+     *
+     * @return the statistics
+     */
+    public RepositoryStatistics statistics() {
+        return new RepositoryStatistics(this);
+    }
+
+    /**
+     * Loads the community profile ({@code GET /repos/{owner}/{repo}/community/profile}), which says which community
+     * files, such as the code of conduct and the contributing guide, the repository has.
+     *
+     * @return the profile as GitHub returns it
+     * @throws IOException if the transport fails
+     */
+    public GitHubCommunityProfile communityProfile() throws IOException {
+        return sdk.github().metrics().community().getCommunityProfileMetrics(owner, name);
+    }
+
+    /**
+     * Lists the comments on all commits ({@code GET /repos/{owner}/{repo}/comments}). Pages are fetched only as the
+     * stream is consumed; transport failures during iteration are {@link java.io.UncheckedIOException}.
+     *
+     * @return the commit comments
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<CommitComment> commitComments() throws IOException {
+        return sdk
+                .github()
+                .commits()
+                .comments()
+                .listCommitCommentsForRepo(owner, name, GitHubPageRequest.byPage())
+                .stream()
+                .map(listed -> new CommitComment(this, listed));
+    }
+
+    /**
+     * Loads one commit comment ({@code GET /repos/{owner}/{repo}/comments/{comment_id}}).
+     *
+     * @param id the comment id
+     * @return the comment, or empty when GitHub answers HTTP 404
+     * @throws IOException if the transport fails
+     */
+    public Optional<CommitComment> commitComment(final long id) throws IOException {
+        return sdk.github()
+                .commits()
+                .comments()
+                .getCommitComment(owner, name, id)
+                .map(loaded -> new CommitComment(this, loaded));
+    }
+
+    /**
+     * Lists the autolink references ({@code GET /repos/{owner}/{repo}/autolinks}).
+     *
+     * @return the autolinks
+     * @throws IOException if the transport fails
+     */
+    public Stream<Autolink> autolinks() throws IOException {
+        return sdk.github().repositories().autolinks().listAutolinks(owner, name).stream()
+                .map(listed -> new Autolink(this, listed));
+    }
+
+    /**
+     * Loads one autolink reference ({@code GET /repos/{owner}/{repo}/autolinks/{autolink_id}}).
+     *
+     * @param id the autolink id
+     * @return the autolink, or empty when GitHub answers HTTP 404
+     * @throws IOException if the transport fails
+     */
+    public Optional<Autolink> autolink(final long id) throws IOException {
+        return sdk.github()
+                .repositories()
+                .autolinks()
+                .getAutolink(owner, name, id)
+                .map(loaded -> new Autolink(this, loaded));
+    }
+
+    /**
+     * Adds an autolink reference that turns text such as {@code TICKET-123} into a link ({@code POST
+     * /repos/{owner}/{repo}/autolinks}).
+     *
+     * @param keyPrefix the text that starts a reference, for example {@code TICKET-}
+     * @param urlTemplate the link the reference turns into, with {@code <num>} where the number goes
+     * @return the new autolink
+     * @throws NullPointerException if {@code keyPrefix} or {@code urlTemplate} is {@code null}
+     * @throws IllegalArgumentException if {@code keyPrefix} or {@code urlTemplate} is blank
+     * @throws IOException if the transport fails
+     */
+    public Autolink addAutolink(final String keyPrefix, final String urlTemplate) throws IOException {
+        return new Autolink(
+                this,
+                sdk.github()
+                        .repositories()
+                        .autolinks()
+                        .createAutolink(
+                                owner,
+                                name,
+                                new GitHubCreateAutolinkPayload(
+                                        requireNotBlank(keyPrefix, "keyPrefix"),
+                                        requireNotBlank(urlTemplate, "urlTemplate"),
+                                        null)));
+    }
+
+    /**
+     * Loads one check suite ({@code GET /repos/{owner}/{repo}/check-suites/{check_suite_id}}).
+     *
+     * @param id the check suite id
+     * @return the suite, or empty when GitHub answers HTTP 404
+     * @throws IOException if the transport fails
+     */
+    public Optional<CheckSuite> checkSuite(final long id) throws IOException {
+        return sdk.github().checks().suites().getSuite(owner, name, id).map(loaded -> new CheckSuite(this, loaded));
+    }
+
+    /**
+     * Loads the license of the repository ({@code GET /repos/{owner}/{repo}/license}) as GitHub returns it.
+     *
+     * @return the license file with the detected license, or empty when GitHub answers HTTP 404
+     * @throws IOException if the transport fails
+     */
+    public Optional<GitHubLicenseContent> license() throws IOException {
+        return sdk.github().licenses().getForRepo(owner, name);
     }
 
     Repository apply(final GitHubUpdatePayload payload) throws IOException {

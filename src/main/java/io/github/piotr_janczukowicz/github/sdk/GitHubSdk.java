@@ -6,6 +6,8 @@ import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.activity.GitHubListNotificationsForAuthenticatedUserFilter;
 import io.github.piotr_janczukowicz.github.api.gists.GitHubBaseGist;
+import io.github.piotr_janczukowicz.github.api.licenses.GitHubLicense;
+import io.github.piotr_janczukowicz.github.api.licenses.GitHubLicenseSimple;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateForAuthenticatedUserPayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateInOrgPayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubFullRepository;
@@ -15,6 +17,7 @@ import io.github.piotr_janczukowicz.github.sdk.gists.GistDraft;
 import io.github.piotr_janczukowicz.github.sdk.internal.Internals;
 import io.github.piotr_janczukowicz.github.sdk.internal.Lookups;
 import io.github.piotr_janczukowicz.github.sdk.notifications.Notification;
+import io.github.piotr_janczukowicz.github.sdk.utilities.Utilities;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -225,6 +228,40 @@ public final class GitHubSdk {
      */
     public void markNotificationsRead() throws IOException {
         github.activity().notifications().markNotificationsAsRead();
+    }
+
+    /**
+     * Lists the commonly used open source licenses ({@code GET /licenses}) as GitHub returns them. Pages are fetched
+     * only as the stream is consumed; transport failures during iteration are {@link java.io.UncheckedIOException}.
+     *
+     * @return the licenses
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<GitHubLicenseSimple> licenses() throws IOException {
+        return github.licenses().listCommonlyUsed(GitHubPageRequest.byPage()).stream();
+    }
+
+    /**
+     * Loads one license with its full text ({@code GET /licenses/{license}}) as GitHub returns it.
+     *
+     * @param key the license key, for example {@code mit}
+     * @return the license, or empty when GitHub answers HTTP 404
+     * @throws NullPointerException if {@code key} is {@code null}
+     * @throws IllegalArgumentException if {@code key} is blank
+     * @throws IOException if the transport fails
+     */
+    public Optional<GitHubLicense> license(final String key) throws IOException {
+        return github.licenses().get(requireNotBlank(key, "key"));
+    }
+
+    /**
+     * Returns the small endpoints that need no repository: the zen quote, the API overview, emojis, Markdown rendering
+     * and the {@code .gitignore} templates. Nothing is requested until a method of the result is called.
+     *
+     * @return the utilities
+     */
+    public Utilities utilities() {
+        return new Utilities(this);
     }
 
     /**

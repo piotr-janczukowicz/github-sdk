@@ -3,14 +3,17 @@ package io.github.piotr_janczukowicz.github.sdk.content;
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 
+import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.checks.GitHubListForRefFilter;
 import io.github.piotr_janczukowicz.github.api.checks.GitHubListForRefFilterBuilder;
+import io.github.piotr_janczukowicz.github.api.commits.GitHubCreateCommitCommentPayload;
 import io.github.piotr_janczukowicz.github.api.commits.GitHubCreateCommitStatusPayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubCommit;
 import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
 import io.github.piotr_janczukowicz.github.pagination.GitHubPageRequest;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
 import io.github.piotr_janczukowicz.github.sdk.checks.CheckRun;
+import io.github.piotr_janczukowicz.github.sdk.checks.CheckSuite;
 import io.github.piotr_janczukowicz.github.sdk.checks.CombinedStatus;
 import io.github.piotr_janczukowicz.github.sdk.checks.CommitStatus;
 import io.github.piotr_janczukowicz.github.sdk.checks.CommitStatusState;
@@ -183,11 +186,79 @@ public final class Commit {
     }
 
     /**
+     * Lists the comments on the commit ({@code GET /repos/{owner}/{repo}/commits/{commit_sha}/comments}). Pages are
+     * fetched only as the stream is consumed; transport failures during iteration are
+     * {@link java.io.UncheckedIOException}.
+     *
+     * @return the comments, oldest first
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<CommitComment> comments() throws IOException {
+        final GitHub github = Internals.github(repository);
+        return github
+                .commits()
+                .comments()
+                .listCommentsForCommit(repository.owner(), repository.name(), sha(), GitHubPageRequest.byPage())
+                .stream()
+                .map(listed -> new CommitComment(repository, listed));
+    }
+
+    /**
+     * Comments on the commit as a whole ({@code POST /repos/{owner}/{repo}/commits/{commit_sha}/comments}).
+     *
+     * @param body the comment text
+     * @return the new comment
+     * @throws NullPointerException if {@code body} is {@code null}
+     * @throws IllegalArgumentException if {@code body} is blank
+     * @throws IOException if the transport fails
+     */
+    public CommitComment comment(final String body) throws IOException {
+        return createComment(new GitHubCreateCommitCommentPayload(requireNotBlank(body, "body"), null, null, null));
+    }
+
+    /**
+     * Comments on a line of a file in the commit ({@code POST /repos/{owner}/{repo}/commits/{commit_sha}/comments}).
+     *
+     * @param body the comment text
+     * @param path the path of the file
+     * @param line the line of the file
+     * @return the new comment
+     * @throws NullPointerException if {@code body} or {@code path} is {@code null}
+     * @throws IllegalArgumentException if {@code body} or {@code path} is blank
+     * @throws IOException if the transport fails
+     */
+    public CommitComment comment(final String body, final String path, final int line) throws IOException {
+        return createComment(new GitHubCreateCommitCommentPayload(
+                requireNotBlank(body, "body"), requireNotBlank(path, "path"), null, line));
+    }
+
+    /**
+     * Lists the check suites of the commit ({@code GET /repos/{owner}/{repo}/commits/{ref}/check-suites}). Pages are
+     * fetched only as the stream is consumed; transport failures during iteration are
+     * {@link java.io.UncheckedIOException}.
+     *
+     * @return the check suites
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<CheckSuite> checkSuites() throws IOException {
+        final GitHub github = Internals.github(repository);
+        return github.checks().suites().listSuitesForRef(repository.owner(), repository.name(), sha()).stream()
+                .map(listed -> new CheckSuite(repository, listed));
+    }
+
+    /**
      * Returns the complete response this object was built from.
      *
      * @return the response record
      */
     public GitHubCommit response() {
         return response;
+    }
+
+    private CommitComment createComment(final GitHubCreateCommitCommentPayload payload) throws IOException {
+        final GitHub github = Internals.github(repository);
+        return new CommitComment(
+                repository,
+                github.commits().comments().createCommitComment(repository.owner(), repository.name(), sha(), payload));
     }
 }
