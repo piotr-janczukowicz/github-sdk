@@ -99,7 +99,7 @@ sandbox repository. Their behavior against the real GitHub API has not been chec
 | Deployments and Pages | the token has no Deployments or Pages permission; Pages also needs a plan that offers it for private repositories |
 | Security alerts and switches | the token has no Dependabot, secret scanning or code scanning permission, or the feature is off |
 | Notifications | GitHub does not support fine-grained tokens for them |
-| Check runs | fine-grained tokens have no Checks permission |
+| Check runs: create, update, complete, rerequest | only a GitHub App can write check runs, and fine-grained tokens have no Checks permission; the test aborts on HTTP 403 |
 | Stars and watching | the token form does not offer the permissions |
 | Workflow dispatch | `SMOKE_GITHUB_WORKFLOW` is not set |
 | Apps, installations and Marketplace | they need an App JWT from a registered GitHub App and its private key, so they are covered by unit tests only |

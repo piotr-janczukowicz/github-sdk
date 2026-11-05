@@ -3,6 +3,9 @@ package io.github.piotr_janczukowicz.github.sdk.smoke;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
+import io.github.piotr_janczukowicz.github.api.checks.GitHubCheckRunStatus;
+import io.github.piotr_janczukowicz.github.api.checks.GitHubUpdateCheckRunConclusion;
+import io.github.piotr_janczukowicz.github.api.checks.GitHubUpdateCheckRunStatus;
 import io.github.piotr_janczukowicz.github.client.exception.GitHubForbiddenException;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
 import io.github.piotr_janczukowicz.github.sdk.checks.CheckRun;
@@ -90,5 +93,36 @@ class ChecksSmokeIT {
         final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
 
         assertThat(repository.checkRun(Long.MAX_VALUE)).isEmpty();
+    }
+
+    @Test
+    void checkRun_shouldBeCreatedUpdatedCompletedAndRerequested_whenTheCredentialIsAGitHubApp() throws IOException {
+        final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
+        final String base = repository.fetch().orElseThrow().response().defaultBranch();
+        final String sha = repository.branch(base).orElseThrow().commit().sha();
+        final CheckRun created = createCheckRun(repository, "smoke-" + ENV.runId(), sha);
+
+        final CheckRun updated = created.update()
+                .status(GitHubUpdateCheckRunStatus.IN_PROGRESS)
+                .output("Smoke", "Running")
+                .send();
+        final CheckRun completed = updated.complete(GitHubUpdateCheckRunConclusion.SUCCESS);
+        completed.rerequest();
+
+        assertSoftly(softly -> {
+            softly.assertThat(created.name()).isEqualTo("smoke-" + ENV.runId());
+            softly.assertThat(updated.status()).isEqualTo(GitHubCheckRunStatus.IN_PROGRESS);
+            softly.assertThat(completed.isSuccessful()).isTrue();
+        });
+    }
+
+    private static CheckRun createCheckRun(final Repository repository, final String name, final String sha)
+            throws IOException {
+        try {
+            return repository.createCheckRun(name, sha);
+        } catch (final GitHubForbiddenException e) {
+            Assumptions.abort("GitHub lets only a GitHub App create check runs, so a token is refused");
+            throw e;
+        }
     }
 }

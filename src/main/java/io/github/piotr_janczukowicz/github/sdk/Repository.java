@@ -13,6 +13,10 @@ import io.github.piotr_janczukowicz.github.api.activity.GitHubSetRepoSubscriptio
 import io.github.piotr_janczukowicz.github.api.agents.GitHubActionsSecret;
 import io.github.piotr_janczukowicz.github.api.branches.GitHubListBranchesFilter;
 import io.github.piotr_janczukowicz.github.api.branches.GitHubShortBranch;
+import io.github.piotr_janczukowicz.github.api.checks.GitHubCheckSuitePreference;
+import io.github.piotr_janczukowicz.github.api.checks.GitHubCreateCheckRunPayload;
+import io.github.piotr_janczukowicz.github.api.checks.GitHubCreateSuitePayload;
+import io.github.piotr_janczukowicz.github.api.checks.GitHubSetSuitesPreferencesPayload;
 import io.github.piotr_janczukowicz.github.api.codescanning.GitHubCodeScanningAlertItems;
 import io.github.piotr_janczukowicz.github.api.collaborators.GitHubAddCollaboratorPayload;
 import io.github.piotr_janczukowicz.github.api.collaborators.GitHubListCollaboratorsFilter;
@@ -420,6 +424,80 @@ public final class Repository {
      */
     public Optional<CheckRun> checkRun(final long id) throws IOException {
         return sdk.github().checks().runs().getCheckRun(owner, name, id).map(loaded -> new CheckRun(this, loaded));
+    }
+
+    /**
+     * Creates a queued check run on a commit ({@code POST /repos/{owner}/{repo}/check-runs}). GitHub lets only GitHub
+     * Apps create check runs, so this fails with HTTP 403 for any other credential. Change the run with
+     * {@link CheckRun#update()}.
+     *
+     * @param name the name of the check
+     * @param headSha the sha of the commit the check is for
+     * @return the new check run as GitHub returned it
+     * @throws NullPointerException if {@code name} or {@code headSha} is {@code null}
+     * @throws IllegalArgumentException if {@code name} or {@code headSha} is blank
+     * @throws IOException if the transport fails
+     */
+    public CheckRun createCheckRun(final String name, final String headSha) throws IOException {
+        return createCheckRun(new GitHubCreateCheckRunPayload(
+                requireNotBlank(name, NAME_ARGUMENT),
+                requireNotBlank(headSha, SHA),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null));
+    }
+
+    /**
+     * Creates a check run with every option the client offers, such as output, annotations and actions ({@code POST
+     * /repos/{owner}/{repo}/check-runs}). GitHub lets only GitHub Apps create check runs, so this fails with HTTP 403
+     * for any other credential.
+     *
+     * @param payload the check run to create
+     * @return the new check run as GitHub returned it
+     * @throws NullPointerException if {@code payload} is {@code null}
+     * @throws IOException if the transport fails
+     */
+    public CheckRun createCheckRun(final GitHubCreateCheckRunPayload payload) throws IOException {
+        return new CheckRun(
+                this, sdk.github().checks().runs().createCheckRun(owner, name, requireNonNull(payload, PAYLOAD)));
+    }
+
+    /**
+     * Creates a check suite for a commit ({@code POST /repos/{owner}/{repo}/check-suites}). GitHub lets only GitHub
+     * Apps create check suites, so this fails with HTTP 403 for any other credential.
+     *
+     * @param headSha the sha of the commit
+     * @return the new check suite as GitHub returned it
+     * @throws NullPointerException if {@code headSha} is {@code null}
+     * @throws IllegalArgumentException if {@code headSha} is blank
+     * @throws IOException if the transport fails
+     */
+    public CheckSuite createCheckSuite(final String headSha) throws IOException {
+        return new CheckSuite(
+                this,
+                sdk.github()
+                        .checks()
+                        .suites()
+                        .createSuite(owner, name, new GitHubCreateSuitePayload(requireNotBlank(headSha, SHA))));
+    }
+
+    /**
+     * Changes which apps get a check suite automatically when code is pushed ({@code PATCH
+     * /repos/{owner}/{repo}/check-suites/preferences}), as the client defines it.
+     *
+     * @param payload the preferences
+     * @return the preferences as GitHub holds them afterwards
+     * @throws NullPointerException if {@code payload} is {@code null}
+     * @throws IOException if the transport fails
+     */
+    public GitHubCheckSuitePreference changeCheckSuitePreferences(final GitHubSetSuitesPreferencesPayload payload)
+            throws IOException {
+        return sdk.github().checks().suites().updateSuitesPreferences(owner, name, requireNonNull(payload, PAYLOAD));
     }
 
     /**

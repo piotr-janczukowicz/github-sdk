@@ -3,9 +3,12 @@ package io.github.piotr_janczukowicz.github.sdk.checks;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.github.piotr_janczukowicz.github.api.GitHub;
@@ -15,6 +18,9 @@ import io.github.piotr_janczukowicz.github.api.checks.GitHubCheckRunBuilder;
 import io.github.piotr_janczukowicz.github.api.checks.GitHubCheckRunConclusion;
 import io.github.piotr_janczukowicz.github.api.checks.GitHubCheckRunStatus;
 import io.github.piotr_janczukowicz.github.api.checks.GitHubChecksRunsApi;
+import io.github.piotr_janczukowicz.github.api.checks.GitHubUpdateCheckRunConclusion;
+import io.github.piotr_janczukowicz.github.api.checks.GitHubUpdateCheckRunPayload;
+import io.github.piotr_janczukowicz.github.api.checks.GitHubUpdateCheckRunStatus;
 import io.github.piotr_janczukowicz.github.sdk.GitHubSdk;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
 import io.github.piotr_janczukowicz.github.sdk.fixtures.ChecksFixtures;
@@ -24,6 +30,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 @UnitTest
 class CheckRunTest {
@@ -119,5 +126,49 @@ class CheckRunTest {
 
     private CheckRun checkRun(final GitHubCheckRunStatus status, final GitHubCheckRunConclusion conclusion) {
         return new CheckRun(repository, ChecksFixtures.checkRunWith(status, conclusion));
+    }
+
+    @Test
+    void update_shouldSendThePayload_whenCalledWithOne() throws IOException {
+        final GitHubUpdateCheckRunPayload payload =
+                new GitHubUpdateCheckRunPayload("build", null, null, null, null, null, null, null, null);
+        final GitHubCheckRun updated = ChecksFixtures.checkRun();
+        when(github.checks().runs().updateCheckRun(OWNER, NAME, ID, payload)).thenReturn(updated);
+
+        final CheckRun result = sut.update(payload);
+
+        assertThat(result.response()).isSameAs(updated);
+    }
+
+    @Test
+    void update_shouldThrowNullPointerException_whenPayloadIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.update((GitHubUpdateCheckRunPayload) null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("payload");
+    }
+
+    @Test
+    void complete_shouldSendCompletedWithTheConclusion_whenCalled() throws IOException {
+        final GitHubCheckRun updated = ChecksFixtures.checkRun();
+        when(github.checks().runs().updateCheckRun(eq(OWNER), eq(NAME), eq(ID), any()))
+                .thenReturn(updated);
+        final ArgumentCaptor<GitHubUpdateCheckRunPayload> payload =
+                ArgumentCaptor.forClass(GitHubUpdateCheckRunPayload.class);
+
+        final CheckRun result = sut.complete(GitHubUpdateCheckRunConclusion.FAILURE);
+
+        verify(github.checks().runs()).updateCheckRun(eq(OWNER), eq(NAME), eq(ID), payload.capture());
+        assertSoftly(softly -> {
+            softly.assertThat(result.response()).isSameAs(updated);
+            softly.assertThat(payload.getValue().status()).isEqualTo(GitHubUpdateCheckRunStatus.COMPLETED);
+            softly.assertThat(payload.getValue().conclusion()).isEqualTo(GitHubUpdateCheckRunConclusion.FAILURE);
+        });
+    }
+
+    @Test
+    void rerequest_shouldRerequestTheRun_whenCalled() throws IOException {
+        sut.rerequest();
+
+        verify(github.checks().runs()).rerequestRun(OWNER, NAME, ID);
     }
 }

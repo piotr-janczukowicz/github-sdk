@@ -7,6 +7,9 @@ import io.github.piotr_janczukowicz.github.api.checks.GitHubCheckAnnotation;
 import io.github.piotr_janczukowicz.github.api.checks.GitHubCheckRun;
 import io.github.piotr_janczukowicz.github.api.checks.GitHubCheckRunConclusion;
 import io.github.piotr_janczukowicz.github.api.checks.GitHubCheckRunStatus;
+import io.github.piotr_janczukowicz.github.api.checks.GitHubUpdateCheckRunConclusion;
+import io.github.piotr_janczukowicz.github.api.checks.GitHubUpdateCheckRunPayload;
+import io.github.piotr_janczukowicz.github.api.checks.GitHubUpdateCheckRunStatus;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
 import io.github.piotr_janczukowicz.github.sdk.internal.Internals;
 import java.io.IOException;
@@ -15,8 +18,9 @@ import java.util.stream.Stream;
 
 /**
  * A check run of a {@link Repository}, as GitHub returned it. The object is immutable, and {@link #response()} gives
- * the complete response for every field the accessors here do not cover. Check runs are read-only here, because GitHub
- * lets only GitHub Apps create or change them.
+ * the complete response for every field the accessors here do not cover. GitHub lets only GitHub Apps create or change
+ * check runs, so {@link #update()}, {@link #complete(GitHubUpdateCheckRunConclusion)} and {@link #rerequest()} fail
+ * with HTTP 403 for any other credential.
  */
 public final class CheckRun {
 
@@ -150,11 +154,67 @@ public final class CheckRun {
     }
 
     /**
+     * Starts a change of several fields at once; nothing is sent until {@link CheckRunUpdate#send()}.
+     *
+     * @return a new update for this check run
+     */
+    public CheckRunUpdate update() {
+        return new CheckRunUpdate(this);
+    }
+
+    /**
+     * Changes the check run with every option the client offers, such as annotations and actions ({@code PATCH
+     * /repos/{owner}/{repo}/check-runs/{check_run_id}}). This object is not changed.
+     *
+     * @param payload the changes, as the client defines them
+     * @return the check run as GitHub holds it afterwards
+     * @throws NullPointerException if {@code payload} is {@code null}
+     * @throws IOException if the transport fails
+     */
+    public CheckRun update(final GitHubUpdateCheckRunPayload payload) throws IOException {
+        return apply(requireNonNull(payload, "payload"));
+    }
+
+    /**
+     * Marks the check run as completed with a conclusion ({@code PATCH
+     * /repos/{owner}/{repo}/check-runs/{check_run_id}}). This object is not changed.
+     *
+     * @param conclusion how the run ended
+     * @return the check run as GitHub holds it afterwards
+     * @throws NullPointerException if {@code conclusion} is {@code null}
+     * @throws IOException if the transport fails
+     */
+    public CheckRun complete(final GitHubUpdateCheckRunConclusion conclusion) throws IOException {
+        return update().status(GitHubUpdateCheckRunStatus.COMPLETED)
+                .conclusion(conclusion)
+                .send();
+    }
+
+    /**
+     * Asks GitHub to run the check again ({@code POST /repos/{owner}/{repo}/check-runs/{check_run_id}/rerequest}). The
+     * app that created the check run receives a {@code check_run} webhook with the action {@code rerequested}.
+     *
+     * @throws IOException if the transport fails
+     */
+    public void rerequest() throws IOException {
+        Internals.github(repository).checks().runs().rerequestRun(repository.owner(), repository.name(), id());
+    }
+
+    /**
      * Returns the complete response this object was built from.
      *
      * @return the response record
      */
     public GitHubCheckRun response() {
         return response;
+    }
+
+    CheckRun apply(final GitHubUpdateCheckRunPayload payload) throws IOException {
+        return new CheckRun(
+                repository,
+                Internals.github(repository)
+                        .checks()
+                        .runs()
+                        .updateCheckRun(repository.owner(), repository.name(), id(), payload));
     }
 }
