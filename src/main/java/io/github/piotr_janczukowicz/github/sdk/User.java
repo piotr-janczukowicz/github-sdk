@@ -6,6 +6,8 @@ import io.github.piotr_janczukowicz.github.api.organizations.GitHubOrganizationS
 import io.github.piotr_janczukowicz.github.api.users.GitHubAuthenticatedUser;
 import io.github.piotr_janczukowicz.github.api.users.GitHubUser;
 import io.github.piotr_janczukowicz.github.api.users.GitHubUserView;
+import io.github.piotr_janczukowicz.github.pagination.GitHubPageRequest;
+import io.github.piotr_janczukowicz.github.sdk.gists.Gist;
 import io.github.piotr_janczukowicz.github.sdk.internal.Lookups;
 import java.io.IOException;
 import java.util.Optional;
@@ -48,6 +50,20 @@ public final class User {
                     case final GitHubUser user -> user.name();
                     case final GitHubAuthenticatedUser user -> user.name();
                 });
+    }
+
+    /**
+     * Lists the public gists of the user ({@code GET /users/{username}/gists}). GitHub's list holds no file contents,
+     * so each gist is loaded with one more request as the stream reaches it; {@code limit(...)} bounds the cost. Pages
+     * are fetched only as the stream is consumed; transport failures during iteration are
+     * {@link java.io.UncheckedIOException}.
+     *
+     * @return the gists, most recently updated first
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<Gist> gists() throws IOException {
+        return sdk.github().gists().gist().listGistsForUser(login(), GitHubPageRequest.byPage()).stream()
+                .map(sdk::load);
     }
 
     /**

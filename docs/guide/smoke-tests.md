@@ -16,8 +16,8 @@ sandbox repository.
   Variables, Webhooks. The Actions, Administration and Variables tests are skipped, not failed, when GitHub answers
   403.
 - Repository permissions, read: Metadata.
-- Account permissions, read and write: Starring and Watching, when your token form offers them. The star and watch
-  tests are skipped, not failed, when GitHub answers 403.
+- Account permissions, read and write: Gists, and Starring and Watching, when your token form offers them. The gist,
+  star and watch tests are skipped, not failed, when GitHub answers 403.
 
 Reading check runs needs the `checks: read` permission (GitHub names it in the `X-Accepted-GitHub-Permissions` response
 header), but the fine-grained token form does not offer it and no other permission grants it. A classic token with the
@@ -53,6 +53,7 @@ Without `SMOKE_GITHUB_TOKEN` every smoke class is skipped.
 | `RepositoryManagementSmokeIT` | change and restore the description and homepage, replace and restore the topics, list languages and contributors. Create, rename, transfer, archive and delete are not run live: fine-grained tokens cannot create repositories, and GitHub's API cannot unarchive one |
 | `BranchProtectionSmokeIT` | protect a throwaway branch, replace the rule, read and refresh it, remove it. The default branch is never touched. Skipped when GitHub answers 403, which a private repository on a plan without branch protection does |
 | `GitDataSmokeIT` | create a throwaway branch, commit two files and then delete one as separate commits, compare with the default branch, force the ref back, delete it; list refs and load a tree |
+| `GistsSmokeIT` | create a secret gist, update and rename a file, comment (edit, delete), star and unstar, list its revisions and your gists, delete it; 404 on a missing gist. Forking is not run live, because GitHub does not let you fork your own gist. Skipped when GitHub answers 403 |
 | `ContentSmokeIT` | default branch, its head commit, branch and commit lists, 404 on a missing branch |
 | `FilesSmokeIT` | write, update, read, delete a file on a throwaway branch (binary and UTF-8 text), directory and missing paths |
 | `ReleasesSmokeIT` | draft release: create, update, list, refresh, delete; latest release; tags |

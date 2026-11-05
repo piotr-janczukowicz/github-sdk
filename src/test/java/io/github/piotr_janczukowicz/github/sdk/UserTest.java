@@ -3,11 +3,17 @@ package io.github.piotr_janczukowicz.github.sdk;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.github.piotr_janczukowicz.github.api.GitHub;
+import io.github.piotr_janczukowicz.github.api.gists.GitHubBaseGist;
+import io.github.piotr_janczukowicz.github.api.gists.GitHubGistApi;
+import io.github.piotr_janczukowicz.github.api.gists.GitHubGistSimple;
 import io.github.piotr_janczukowicz.github.api.organizations.GitHubOrganizationFull;
 import io.github.piotr_janczukowicz.github.api.organizations.GitHubOrganizationSimple;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubMinimalRepository;
@@ -16,6 +22,9 @@ import io.github.piotr_janczukowicz.github.api.users.GitHubAuthenticatedUser;
 import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
 import io.github.piotr_janczukowicz.github.api.users.GitHubUser;
 import io.github.piotr_janczukowicz.github.api.users.GitHubUserView;
+import io.github.piotr_janczukowicz.github.pagination.GitHubPageRequest;
+import io.github.piotr_janczukowicz.github.sdk.fixtures.GistFixtures;
+import io.github.piotr_janczukowicz.github.sdk.gists.Gist;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -203,5 +212,24 @@ class UserTest {
         final Throwable thrown = catchThrowable(organizations::toList);
 
         assertThat(thrown).isInstanceOf(UncheckedIOException.class).hasCauseInstanceOf(IOException.class);
+    }
+
+    @Test
+    void gists_shouldLoadEachListedGist_whenTheUserHasGists() throws IOException {
+        final GitHubUser response = mock(GitHubUser.class);
+        when(response.login()).thenReturn("octocat");
+        final User sut = new User(sdk, response);
+        final GitHubBaseGist listed = GistFixtures.baseGist();
+        final GitHubGistSimple loaded = GistFixtures.gist();
+        when(github.gists().gist().listGistsForUser(eq("octocat"), any(GitHubPageRequest.class)).stream())
+                .thenReturn(Stream.of(listed));
+        final GitHubGistApi api = github.gists().gist();
+        doReturn(Optional.of(loaded)).when(api).getGist(GistFixtures.ID);
+
+        final List<Gist> gists = sut.gists().toList();
+
+        assertThat(gists)
+                .singleElement()
+                .satisfies(gist -> assertThat(gist.response()).isSameAs(loaded));
     }
 }

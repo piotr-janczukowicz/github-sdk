@@ -59,7 +59,7 @@ try (GitHubClient client = GitHubClients.create(AuthenticationProviders.bearer(S
 
 The entry points (`GitHubSdk`, `Repository`, `User`, `Organization`, `Team`, `Search`, `RateLimit`) are in
 `io.github.piotr_janczukowicz.github.sdk`. The other objects are grouped by area in sub-packages: `issues`, `pulls`,
-`content` (branches, commits, files, releases), `git` (refs, comparisons, multi-file commits), `actions`, `checks`, `collaborators`, `reactions` and `webhooks`. The `internal`
+`content` (branches, commits, files, releases), `git` (refs, comparisons, multi-file commits), `gists`, `actions`, `checks`, `collaborators`, `reactions` and `webhooks`. The `internal`
 package is not exported by the module and is not part of the API.
 
 ## What is covered
@@ -76,6 +76,7 @@ package is not exported by the module and is not part of the API.
 | `PullRequest` | `update()`, `refresh()`, `close()`, `reopen()`, `merge(...)`, `reviews()`, `review(...)`, `draftReview(...)`, `reviewComments()`, `commentOnLine(...)`, reviewers, files, commits, `issue()` |
 | `PullRequestReview` | `edit(...)`, `submit(...)`, `dismiss(...)`, `deletePending()`, `comments()`, `refresh()` |
 | `PullRequestReviewComment` | `edit(...)`, `reply(...)`, `delete()`, `refresh()` |
+| `sdk.gist(id)`, `sdk.gists()`, `sdk.createGist()` | `Gist`: `update()`, `refresh()`, `delete()`, `star()`, `unstar()`, `isStarred()`, `fork()`, `forks()`, `commits()`, `revision(sha)`, `comments()`, `comment(...)`; `GistComment`: `edit(...)`, `delete()`; `sdk.publicGists()`, `sdk.starredGists()` and `user.gists()` list gists |
 | `Repository` (git data) | `commitTo(branch)` collects `write(...)` and `delete(...)` and `send(message)` makes one commit; `compare(base, head)` gives a `Comparison` (status, ahead and behind, commits, files, `diff()`, `patch()`); `refs(prefix)`, `ref(name)`, `createRef(...)` and `createBranch(...)` give `Ref` objects with `update(...)` and `delete()`; `tree(sha)` and `blob(sha)` read git objects |
 | `Branch` (protection) | `protection()` reads the rule (`BranchProtection`: `refresh()`, `remove()`); `protect()` collects status checks, review requirements, admin enforcement, push restrictions and the other options, and `send()` sets the rule. GitHub replaces the whole rule, so anything not chosen is switched off |
 | `Branch`, `Commit`, `RepositoryFile` | read; a file gives `text()` and `bytes()`, and writes with `writeFile(...)` and `delete(...)` |

@@ -4,17 +4,28 @@ import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 
 import io.github.piotr_janczukowicz.github.api.GitHub;
+import io.github.piotr_janczukowicz.github.api.gists.GitHubBaseGist;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateForAuthenticatedUserPayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateInOrgPayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubFullRepository;
+import io.github.piotr_janczukowicz.github.pagination.GitHubPageRequest;
+import io.github.piotr_janczukowicz.github.sdk.gists.Gist;
+import io.github.piotr_janczukowicz.github.sdk.gists.GistDraft;
+import io.github.piotr_janczukowicz.github.sdk.internal.Internals;
+import io.github.piotr_janczukowicz.github.sdk.internal.Lookups;
 import java.io.IOException;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 /**
  * Entry point of the object layer. It wraps an existing {@link GitHub} client, so authentication, flavor, GHES version
  * and limits are configured on the client as usual; the SDK has no configuration of its own.
  */
 public final class GitHubSdk {
+
+    static {
+        Internals.registerSdkAccess(GitHubSdk::github);
+    }
 
     private final GitHub github;
 
@@ -100,6 +111,65 @@ public final class GitHubSdk {
     }
 
     /**
+     * Loads a gist ({@code GET /gists/{gist_id}}).
+     *
+     * @param id the gist id
+     * @return the gist, or empty when GitHub answers HTTP 404
+     * @throws NullPointerException if {@code id} is {@code null}
+     * @throws IllegalArgumentException if {@code id} is blank
+     * @throws IOException if the transport fails
+     */
+    public Optional<Gist> gist(final String id) throws IOException {
+        return github.gists().gist().getGist(requireNotBlank(id, "id")).map(loaded -> new Gist(this, loaded));
+    }
+
+    /**
+     * Lists the gists of the authenticated user ({@code GET /gists}). GitHub's list holds no file contents, so each
+     * gist is loaded with one more request as the stream reaches it; {@code limit(...)} bounds the cost. Pages are
+     * fetched only as the stream is consumed; transport failures during iteration are
+     * {@link java.io.UncheckedIOException}.
+     *
+     * @return the gists, most recently updated first
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<Gist> gists() throws IOException {
+        return github.gists().gist().listGists(GitHubPageRequest.byPage()).stream()
+                .map(this::load);
+    }
+
+    /**
+     * Lists the public gists of everyone ({@code GET /gists/public}). See {@link #gists()} for the cost per gist.
+     *
+     * @return the gists, most recently updated first
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<Gist> publicGists() throws IOException {
+        return github.gists().gist().listPublicGists(GitHubPageRequest.byPage()).stream()
+                .map(this::load);
+    }
+
+    /**
+     * Lists the gists the authenticated user starred ({@code GET /gists/starred}). See {@link #gists()} for the cost
+     * per gist.
+     *
+     * @return the starred gists
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<Gist> starredGists() throws IOException {
+        return github.gists().gist().listStarredGists(GitHubPageRequest.byPage()).stream()
+                .map(this::load);
+    }
+
+    /**
+     * Starts a new gist; nothing is sent until {@link GistDraft#send()}.
+     *
+     * @return a new, empty draft
+     */
+    public GistDraft createGist() {
+        return new GistDraft(this);
+    }
+
+    /**
      * Returns the search of this SDK.
      *
      * @return the search
@@ -125,5 +195,9 @@ public final class GitHubSdk {
      */
     GitHub github() {
         return github;
+    }
+
+    Gist load(final GitHubBaseGist listed) {
+        return Lookups.require(() -> gist(listed.id()), () -> "Gist " + listed.id() + " is gone");
     }
 }

@@ -25,6 +25,16 @@ class InternalsTest {
     }
 
     @Test
+    void github_shouldReturnTheClientOfTheSdk_whenTheSdkIsCreated() {
+        final GitHub github = mock(GitHub.class);
+        final GitHubSdk sdk = GitHubSdk.of(github);
+
+        final GitHub result = Internals.github(sdk);
+
+        assertThat(result).isSameAs(github);
+    }
+
+    @Test
     void constructor_shouldThrowUnsupportedOperationException_whenCalled() throws ReflectiveOperationException {
         final Constructor<Internals> constructor = Internals.class.getDeclaredConstructor();
         constructor.setAccessible(true);
