@@ -13,9 +13,13 @@ import static org.mockito.Mockito.when;
 import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.releases.GitHubCreateReleasePayload;
 import io.github.piotr_janczukowicz.github.api.releases.GitHubCreateReleasePayloadBuilder;
+import io.github.piotr_janczukowicz.github.api.releases.GitHubGenerateReleaseNotesPayload;
 import io.github.piotr_janczukowicz.github.api.releases.GitHubRelease;
+import io.github.piotr_janczukowicz.github.api.releases.GitHubReleaseAsset;
+import io.github.piotr_janczukowicz.github.api.releases.GitHubReleaseNotesContent;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryTag;
 import io.github.piotr_janczukowicz.github.sdk.content.Release;
+import io.github.piotr_janczukowicz.github.sdk.content.ReleaseAsset;
 import io.github.piotr_janczukowicz.github.sdk.fixtures.RepositoryContentFixtures;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.io.IOException;
@@ -143,5 +147,70 @@ class RepositoryReleasesTest {
         final List<GitHubRepositoryTag> tags = sut.tags().toList();
 
         assertThat(tags).containsExactly(tag);
+    }
+
+    @Test
+    void releaseAsset_shouldWrapTheAsset_whenGitHubHasIt() throws IOException {
+        final GitHubReleaseAsset loaded = RepositoryContentFixtures.releaseAsset();
+        when(github.releases().assets().getReleaseAsset(OWNER, NAME, 77L)).thenReturn(Optional.of(loaded));
+
+        final Optional<ReleaseAsset> asset = sut.releaseAsset(77L);
+
+        assertThat(asset)
+                .hasValueSatisfying(found -> assertThat(found.response()).isSameAs(loaded));
+    }
+
+    @Test
+    void releaseAsset_shouldReturnEmpty_whenGitHubHasNone() throws IOException {
+        when(github.releases().assets().getReleaseAsset(OWNER, NAME, 77L)).thenReturn(Optional.empty());
+
+        final Optional<ReleaseAsset> asset = sut.releaseAsset(77L);
+
+        assertThat(asset).isEmpty();
+    }
+
+    @Test
+    void generateReleaseNotes_shouldSendTheTag_whenCalledWithATagName() throws IOException {
+        final GitHubReleaseNotesContent notes = new GitHubReleaseNotesContent("v2.0.0", "What changed");
+        when(github.releases().release().generateReleaseNotes(eq(OWNER), eq(NAME), any()))
+                .thenReturn(notes);
+        final ArgumentCaptor<GitHubGenerateReleaseNotesPayload> payload =
+                ArgumentCaptor.forClass(GitHubGenerateReleaseNotesPayload.class);
+
+        final GitHubReleaseNotesContent result = sut.generateReleaseNotes("v2.0.0");
+
+        verify(github.releases().release()).generateReleaseNotes(eq(OWNER), eq(NAME), payload.capture());
+        assertSoftly(softly -> {
+            softly.assertThat(result).isSameAs(notes);
+            softly.assertThat(payload.getValue().tagName()).isEqualTo("v2.0.0");
+        });
+    }
+
+    @Test
+    void generateReleaseNotes_shouldSendThePayload_whenCalledWithOne() throws IOException {
+        final GitHubGenerateReleaseNotesPayload payload =
+                new GitHubGenerateReleaseNotesPayload("v2.0.0", null, "v1.0.0", null);
+        final GitHubReleaseNotesContent notes = new GitHubReleaseNotesContent("v2.0.0", "What changed");
+        when(github.releases().release().generateReleaseNotes(OWNER, NAME, payload))
+                .thenReturn(notes);
+
+        final GitHubReleaseNotesContent result = sut.generateReleaseNotes(payload);
+
+        assertThat(result).isSameAs(notes);
+    }
+
+    @Test
+    void generateReleaseNotes_shouldThrowIllegalArgumentException_whenTagNameIsBlank() {
+        final Throwable thrown = catchThrowable(() -> sut.generateReleaseNotes(" "));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("tagName");
+    }
+
+    @Test
+    void generateReleaseNotes_shouldThrowNullPointerException_whenPayloadIsNull() {
+        final Throwable thrown =
+                catchThrowable(() -> sut.generateReleaseNotes((GitHubGenerateReleaseNotesPayload) null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("payload");
     }
 }

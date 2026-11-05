@@ -42,6 +42,8 @@ import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubCreatePullRequ
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubListPullRequestsFilter;
 import io.github.piotr_janczukowicz.github.api.releases.GitHubCreateReleasePayload;
 import io.github.piotr_janczukowicz.github.api.releases.GitHubCreateReleasePayloadBuilder;
+import io.github.piotr_janczukowicz.github.api.releases.GitHubGenerateReleaseNotesPayload;
+import io.github.piotr_janczukowicz.github.api.releases.GitHubReleaseNotesContent;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubContentDirectory;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubContentFile;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubContentSubmodule;
@@ -88,6 +90,7 @@ import io.github.piotr_janczukowicz.github.sdk.content.Branch;
 import io.github.piotr_janczukowicz.github.sdk.content.Commit;
 import io.github.piotr_janczukowicz.github.sdk.content.CommitComment;
 import io.github.piotr_janczukowicz.github.sdk.content.Release;
+import io.github.piotr_janczukowicz.github.sdk.content.ReleaseAsset;
 import io.github.piotr_janczukowicz.github.sdk.content.RepositoryFile;
 import io.github.piotr_janczukowicz.github.sdk.dependencies.RepositoryDependencies;
 import io.github.piotr_janczukowicz.github.sdk.deploykeys.DeployKey;
@@ -756,6 +759,51 @@ public final class Repository {
     public Release createRelease(final GitHubCreateReleasePayload payload) throws IOException {
         return new Release(
                 this, sdk.github().releases().release().createRelease(owner, name, requireNonNull(payload, PAYLOAD)));
+    }
+
+    /**
+     * Loads a release asset by its id ({@code GET /repos/{owner}/{repo}/releases/assets/{asset_id}}). Asset ids are
+     * unique in the repository, so no release is needed.
+     *
+     * @param assetId the asset id
+     * @return the asset, or empty when GitHub answers HTTP 404
+     * @throws IOException if the transport fails
+     */
+    public Optional<ReleaseAsset> releaseAsset(final long assetId) throws IOException {
+        return sdk.github()
+                .releases()
+                .assets()
+                .getReleaseAsset(owner, name, assetId)
+                .map(loaded -> new ReleaseAsset(this, loaded));
+    }
+
+    /**
+     * Generates the notes for a release on a tag ({@code POST /repos/{owner}/{repo}/releases/generate-notes}) from the
+     * merged pull requests. Nothing is created: pass the text to {@link #createRelease(GitHubCreateReleasePayload)}.
+     *
+     * @param tagName the tag the notes are for; it need not exist yet
+     * @return the generated name and body as GitHub returns them
+     * @throws NullPointerException if {@code tagName} is {@code null}
+     * @throws IllegalArgumentException if {@code tagName} is blank
+     * @throws IOException if the transport fails
+     */
+    public GitHubReleaseNotesContent generateReleaseNotes(final String tagName) throws IOException {
+        return generateReleaseNotes(
+                new GitHubGenerateReleaseNotesPayload(requireNotBlank(tagName, "tagName"), null, null, null));
+    }
+
+    /**
+     * Generates the notes for a release with every option the client offers, such as the previous tag ({@code POST
+     * /repos/{owner}/{repo}/releases/generate-notes}). Nothing is created.
+     *
+     * @param payload the tag and options
+     * @return the generated name and body as GitHub returns them
+     * @throws NullPointerException if {@code payload} is {@code null}
+     * @throws IOException if the transport fails
+     */
+    public GitHubReleaseNotesContent generateReleaseNotes(final GitHubGenerateReleaseNotesPayload payload)
+            throws IOException {
+        return sdk.github().releases().release().generateReleaseNotes(owner, name, requireNonNull(payload, PAYLOAD));
     }
 
     /**

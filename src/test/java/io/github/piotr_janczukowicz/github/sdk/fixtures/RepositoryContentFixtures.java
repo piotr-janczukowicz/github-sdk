@@ -10,6 +10,9 @@ import io.github.piotr_janczukowicz.github.api.branches.GitHubBranchWithProtecti
 import io.github.piotr_janczukowicz.github.api.issues.GitHubLabel;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubLabelBuilder;
 import io.github.piotr_janczukowicz.github.api.releases.GitHubRelease;
+import io.github.piotr_janczukowicz.github.api.releases.GitHubReleaseAsset;
+import io.github.piotr_janczukowicz.github.api.releases.GitHubReleaseAssetBuilder;
+import io.github.piotr_janczukowicz.github.api.releases.GitHubReleaseAssetState;
 import io.github.piotr_janczukowicz.github.api.releases.GitHubReleaseBuilder;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubCommit;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubCommitBuilder;
@@ -109,6 +112,22 @@ public final class RepositoryContentFixtures {
                 .testUrl(API + "/hooks/7007/test")
                 .pingUrl(API + "/hooks/7007/pings")
                 .lastResponse(mock(GitHubHookResponse.class))
+                .build();
+    }
+
+    public static GitHubReleaseAsset releaseAsset() {
+        return GitHubReleaseAssetBuilder.builder()
+                .url(API + "/releases/assets/77")
+                .browserDownloadUrl("https://github.com/octocat/hello-world/releases/download/v1.0.0/app.zip")
+                .id(77L)
+                .nodeId("RA_kwDOA")
+                .name("app.zip")
+                .state(GitHubReleaseAssetState.UPLOADED)
+                .contentType("application/zip")
+                .size(1024L)
+                .downloadCount(3L)
+                .createdAt(Instant.parse("2026-03-04T05:06:07Z"))
+                .updatedAt(Instant.parse("2026-03-04T05:06:07Z"))
                 .build();
     }
 

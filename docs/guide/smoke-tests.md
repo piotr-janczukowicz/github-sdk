@@ -69,7 +69,7 @@ Without `SMOKE_GITHUB_TOKEN` every smoke class is skipped.
 | `MeSmokeIT` | add, list, reload and delete a throwaway SSH key and a throwaway signing key; read your profile, emails, followers, following, blocked users and social accounts, and the public keys of your own user. Following, blocking and email changes are never run live, because they would affect real accounts. Key tests skip on 403 |
 | `ContentSmokeIT` | default branch, its head commit, branch and commit lists, 404 on a missing branch |
 | `FilesSmokeIT` | write, update, read, delete a file on a throwaway branch (binary and UTF-8 text), directory and missing paths |
-| `ReleasesSmokeIT` | draft release: create, update, list, refresh, delete; latest release; tags |
+| `ReleasesSmokeIT` | draft release: create, update, list, refresh, delete; asset: upload, list, relabel, download, delete; generated release notes; latest release; tags |
 | `LabelsAndMilestonesSmokeIT` | labels and milestones: create, read, list, update, refresh, close, reopen, delete; a milestone on an issue |
 | `WebhooksSmokeIT` | create, list, update, refresh, delete a webhook |
 | `AccountsSmokeIT` | current user, user lookup, public repositories of a user |

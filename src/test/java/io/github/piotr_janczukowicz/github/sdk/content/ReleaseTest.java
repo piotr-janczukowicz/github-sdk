@@ -10,13 +10,17 @@ import static org.mockito.Mockito.when;
 
 import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.releases.GitHubRelease;
+import io.github.piotr_janczukowicz.github.api.releases.GitHubReleaseAsset;
 import io.github.piotr_janczukowicz.github.api.releases.GitHubReleaseBuilder;
 import io.github.piotr_janczukowicz.github.sdk.GitHubSdk;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
 import io.github.piotr_janczukowicz.github.sdk.fixtures.RepositoryContentFixtures;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 @UnitTest
@@ -41,6 +45,64 @@ class ReleaseTest {
             softly.assertThat(sut.isPrerelease()).isFalse();
             softly.assertThat(sut.response()).isSameAs(response);
         });
+    }
+
+    @Test
+    void assets_shouldWrapTheListedAssets_whenTheReleaseHasThem() throws IOException {
+        final GitHubReleaseAsset listed = RepositoryContentFixtures.releaseAsset();
+        when(github.releases().assets().listReleaseAssets(OWNER, NAME, ID).stream())
+                .thenReturn(Stream.of(listed));
+
+        final List<ReleaseAsset> assets = sut.assets().toList();
+
+        assertThat(assets)
+                .singleElement()
+                .satisfies(asset -> assertThat(asset.response()).isSameAs(listed));
+    }
+
+    @Test
+    void uploadAsset_shouldSendTheFileWithTheGivenValues_whenCalledWithAllArguments() throws IOException {
+        final Path file = Path.of("build/app.zip");
+        final GitHubReleaseAsset uploaded = RepositoryContentFixtures.releaseAsset();
+        when(github.releases()
+                        .assets()
+                        .uploadReleaseAsset(response.uploadUrl(), file, "application/zip", "tool.zip", "Tool"))
+                .thenReturn(uploaded);
+
+        final ReleaseAsset asset = sut.uploadAsset(file, "application/zip", "tool.zip", "Tool");
+
+        assertThat(asset.response()).isSameAs(uploaded);
+    }
+
+    @Test
+    void uploadAsset_shouldNameTheAssetAfterTheFile_whenCalledWithOnlyAFile() throws IOException {
+        final Path file = Path.of("build/payload.unknownext");
+        final GitHubReleaseAsset uploaded = RepositoryContentFixtures.releaseAsset();
+        when(github.releases()
+                        .assets()
+                        .uploadReleaseAsset(
+                                response.uploadUrl(), file, "application/octet-stream", "payload.unknownext", null))
+                .thenReturn(uploaded);
+
+        final ReleaseAsset asset = sut.uploadAsset(file);
+
+        assertThat(asset.response()).isSameAs(uploaded);
+    }
+
+    @Test
+    void uploadAsset_shouldThrowIllegalArgumentException_whenNameIsBlank() {
+        final Path file = Path.of("build/app.zip");
+
+        final Throwable thrown = catchThrowable(() -> sut.uploadAsset(file, "application/zip", " ", null));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("name");
+    }
+
+    @Test
+    void uploadAsset_shouldThrowNullPointerException_whenFileIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.uploadAsset(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("file");
     }
 
     @Test

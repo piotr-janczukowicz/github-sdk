@@ -1,6 +1,7 @@
 package io.github.piotr_janczukowicz.github.sdk.content;
 
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
+import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 
 import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.releases.GitHubRelease;
@@ -8,13 +9,19 @@ import io.github.piotr_janczukowicz.github.api.releases.GitHubUpdateReleasePaylo
 import io.github.piotr_janczukowicz.github.sdk.Repository;
 import io.github.piotr_janczukowicz.github.sdk.internal.Internals;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Optional;
+import java.util.stream.Stream;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A release of a {@link Repository}, as GitHub returned it. The object is immutable: it keeps the data of the moment it
  * was loaded, and {@link #response()} gives the complete response for every field the accessors here do not cover.
  */
 public final class Release {
+
+    private static final String OCTET_STREAM = "application/octet-stream";
 
     private final Repository repository;
     private final GitHubRelease response;
@@ -75,6 +82,67 @@ public final class Release {
      */
     public boolean isPrerelease() {
         return response.prerelease();
+    }
+
+    /**
+     * Lists the files attached to the release ({@code GET /repos/{owner}/{repo}/releases/{release_id}/assets}). Pages
+     * are fetched only as the stream is consumed; transport failures during iteration are
+     * {@link java.io.UncheckedIOException}.
+     *
+     * @return the assets
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<ReleaseAsset> assets() throws IOException {
+        return github()
+                .releases()
+                .assets()
+                .listReleaseAssets(repository.owner(), repository.name(), response.id())
+                .stream()
+                .map(listed -> new ReleaseAsset(repository, listed));
+    }
+
+    /**
+     * Attaches a file to the release. The asset is named after the file, and its media type is guessed from the file
+     * name, {@code application/octet-stream} when that fails. See {@link #uploadAsset(Path, String, String, String)}.
+     *
+     * @param file the file to upload
+     * @return the new asset as GitHub returned it
+     * @throws NullPointerException if {@code file} is {@code null}
+     * @throws IOException if the file cannot be read or the transport fails
+     */
+    public ReleaseAsset uploadAsset(final Path file) throws IOException {
+        final Path validFile = requireNonNull(file, "file");
+        final String contentType =
+                Optional.ofNullable(Files.probeContentType(validFile)).orElse(OCTET_STREAM);
+        return uploadAsset(validFile, contentType, String.valueOf(validFile.getFileName()), null);
+    }
+
+    /**
+     * Attaches a file to the release ({@code POST} to the {@code upload_url} of the release, on GitHub's upload host).
+     * GitHub rejects a name that the release already has an asset for.
+     *
+     * @param file the file to upload
+     * @param contentType the media type of the file
+     * @param name the file name GitHub stores
+     * @param label the label GitHub shows instead of the name, or {@code null} for none
+     * @return the new asset as GitHub returned it
+     * @throws NullPointerException if {@code file}, {@code contentType} or {@code name} is {@code null}
+     * @throws IllegalArgumentException if {@code contentType} or {@code name} is blank
+     * @throws IOException if the file cannot be read or the transport fails
+     */
+    public ReleaseAsset uploadAsset(
+            final Path file, final String contentType, final String name, final @Nullable String label)
+            throws IOException {
+        return new ReleaseAsset(
+                repository,
+                github().releases()
+                        .assets()
+                        .uploadReleaseAsset(
+                                response.uploadUrl(),
+                                requireNonNull(file, "file"),
+                                requireNotBlank(contentType, "contentType"),
+                                requireNotBlank(name, "name"),
+                                label));
     }
 
     /**
