@@ -56,6 +56,7 @@ class RulesetTest {
         final Ruleset bare = new Ruleset(repository, RulesetFixtures.rulesetWithoutRulesAndActors());
 
         assertSoftly(softly -> {
+            softly.assertThat(bare.target()).isEqualTo(GitHubRepositoryRulesetTarget.BRANCH);
             softly.assertThat(bare.rules()).isEmpty();
             softly.assertThat(bare.bypassActors()).isEmpty();
         });

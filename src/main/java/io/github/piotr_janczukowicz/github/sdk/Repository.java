@@ -133,6 +133,8 @@ import org.jspecify.annotations.Nullable;
 public final class Repository {
 
     private static final String PAYLOAD = "payload";
+    private static final String BRANCH = "branch";
+    private static final String TITLE = "title";
     private static final String FILTER = "filter";
     private static final String LOGIN = "login";
     private static final String VARIABLE_NAME = "variableName";
@@ -214,7 +216,7 @@ public final class Repository {
      */
     public Issue createIssue(final String title) throws IOException {
         return createIssue(GitHubCreatePayloadBuilder.builder()
-                .title(requireNonNull(title, "title"))
+                .title(requireNonNull(title, TITLE))
                 .build());
     }
 
@@ -269,7 +271,7 @@ public final class Repository {
      * @throws IOException if the transport fails
      */
     public Optional<Issue> issue(final int number) throws IOException {
-        return sdk.github().issues().issue().get(owner, name, number).map(response -> new Issue(this, response));
+        return sdk.github().issues().issue().get(owner, name, number).map(loaded -> new Issue(this, loaded));
     }
 
     /**
@@ -677,7 +679,7 @@ public final class Repository {
      */
     public RepositoryFile writeFile(final String path, final String message, final byte[] content, final String branch)
             throws IOException {
-        return write(path, message, content, Arguments.requireSafePath(branch, "branch"));
+        return write(path, message, content, Arguments.requireSafePath(branch, BRANCH));
     }
 
     /**
@@ -853,7 +855,7 @@ public final class Repository {
      * @throws IOException if the transport fails
      */
     public Milestone createMilestone(final String title) throws IOException {
-        return createMilestone(new GitHubCreateMilestonePayload(requireNotBlank(title, "title"), null, null, null));
+        return createMilestone(new GitHubCreateMilestonePayload(requireNotBlank(title, TITLE), null, null, null));
     }
 
     /**
@@ -1493,7 +1495,7 @@ public final class Repository {
      * @throws IllegalStateException if GitHub does not have the branch it just created
      */
     public Branch createBranch(final String branch, final String sha) throws IOException {
-        final String validBranch = Arguments.requireSafePath(branch, "branch");
+        final String validBranch = Arguments.requireSafePath(branch, BRANCH);
         createRef("refs/heads/" + validBranch, sha);
         return branch(validBranch).orElseThrow(() -> new IllegalStateException("Branch " + validBranch + IS_GONE));
     }
@@ -1651,7 +1653,7 @@ public final class Repository {
                                 owner,
                                 name,
                                 new GitHubCreateDeployKeyPayload(
-                                        requireNotBlank(title, "title"), requireNotBlank(key, "key"), isReadOnly)));
+                                        requireNotBlank(title, TITLE), requireNotBlank(key, "key"), isReadOnly)));
     }
 
     /**
@@ -1738,12 +1740,11 @@ public final class Repository {
     public Deployment deploy(final GitHubCreateDeploymentPayload payload) throws IOException {
         final GitHubCreateDeploymentResult result =
                 sdk.github().deployments().deployment().createDeployment(owner, name, requireNonNull(payload, PAYLOAD));
-        if (result instanceof final GitHubCreateDeploymentResult.Created created) {
-            return new Deployment(this, created.deployment());
-        }
-        throw new IllegalStateException(((GitHubCreateDeploymentResult.MergedBranch) result)
-                .mergedBranch()
-                .message());
+        return switch (result) {
+            case GitHubCreateDeploymentResult.Created(final var deployment) -> new Deployment(this, deployment);
+            case GitHubCreateDeploymentResult.MergedBranch(final var merged) ->
+                throw new IllegalStateException(merged.message());
+        };
     }
 
     /**
@@ -1850,7 +1851,7 @@ public final class Repository {
         return enablePages(new GitHubCreatePagesSitePayload(
                 null,
                 new GitHubCreatePagesSiteSource(
-                        Arguments.requireSafePath(branch, "branch"), GitHubPagesSourcePath.ROOT)));
+                        Arguments.requireSafePath(branch, BRANCH), GitHubPagesSourcePath.ROOT)));
     }
 
     /**

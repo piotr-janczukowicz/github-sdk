@@ -70,10 +70,12 @@ public final class Ruleset {
     /**
      * Returns what the ruleset applies to.
      *
-     * @return the target
+     * @return the target, {@link GitHubRepositoryRulesetTarget#BRANCH} when the response names none, which is GitHub's
+     *     default
      */
     public GitHubRepositoryRulesetTarget target() {
-        return response.target();
+        final GitHubRepositoryRulesetTarget target = response.target();
+        return target == null ? GitHubRepositoryRulesetTarget.BRANCH : target;
     }
 
     /**
@@ -90,6 +92,7 @@ public final class Ruleset {
      *
      * @return the rules, empty when the ruleset has none
      */
+    @SuppressWarnings("java:S2637") // the client record is not null-marked; null is handled or passed through
     public List<GitHubRepositoryRule> rules() {
         return Objects.requireNonNullElse(response.rules(), List.of());
     }
@@ -99,6 +102,7 @@ public final class Ruleset {
      *
      * @return the bypass actors, empty when there are none
      */
+    @SuppressWarnings("java:S2637") // the client record is not null-marked; null is handled or passed through
     public List<GitHubRepositoryRulesetBypassActor> bypassActors() {
         return Objects.requireNonNullElse(response.bypassActors(), List.of());
     }

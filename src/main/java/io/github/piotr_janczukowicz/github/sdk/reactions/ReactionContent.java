@@ -17,5 +17,5 @@ public enum ReactionContent {
     /** Rocket. */
     ROCKET,
     /** Eyes. */
-    EYES;
+    EYES
 }

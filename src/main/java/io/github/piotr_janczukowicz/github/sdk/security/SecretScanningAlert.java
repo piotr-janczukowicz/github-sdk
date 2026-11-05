@@ -53,18 +53,20 @@ public final class SecretScanningAlert {
      * Returns the alert number.
      *
      * @return the number
+     * @throws NullPointerException if the response has no number
      */
     public int number() {
-        return response.number();
+        return requireNonNull(response.number(), "number");
     }
 
     /**
      * Returns the state, as the client decoded it.
      *
      * @return the state
+     * @throws NullPointerException if the response has no state
      */
     public GitHubSecretScanningAlertState state() {
-        return response.state();
+        return requireNonNull(response.state(), "state");
     }
 
     /**
@@ -88,10 +90,10 @@ public final class SecretScanningAlert {
     /**
      * Returns the type of the detected secret, for example {@code github_personal_access_token}.
      *
-     * @return the secret type
+     * @return the secret type, or empty when the response has none
      */
-    public String secretType() {
-        return response.secretType();
+    public Optional<String> secretType() {
+        return Optional.ofNullable(response.secretType());
     }
 
     /**
@@ -106,10 +108,10 @@ public final class SecretScanningAlert {
     /**
      * Returns the link to the alert on GitHub.
      *
-     * @return the URL
+     * @return the URL, or empty when the response has none
      */
-    public String htmlUrl() {
-        return response.htmlUrl();
+    public Optional<String> htmlUrl() {
+        return Optional.ofNullable(response.htmlUrl());
     }
 
     /**

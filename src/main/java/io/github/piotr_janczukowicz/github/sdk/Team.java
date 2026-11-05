@@ -24,6 +24,7 @@ import java.util.stream.Stream;
 public final class Team {
 
     private static final String LOGIN = "login";
+    private static final String REPOSITORY = "repository";
 
     private final Organization organization;
     private final GitHubTeamFull response;
@@ -195,7 +196,7 @@ public final class Team {
      * @throws IOException if the transport fails
      */
     public void addRepository(final Repository repository) throws IOException {
-        final Repository target = requireNonNull(repository, "repository");
+        final Repository target = requireNonNull(repository, REPOSITORY);
         github().teams().team().upsertRepositoryPermission(organization.login(), slug(), target.owner(), target.name());
     }
 
@@ -209,7 +210,7 @@ public final class Team {
      * @throws IOException if the transport fails
      */
     public void addRepository(final Repository repository, final RepositoryPermission permission) throws IOException {
-        final Repository target = requireNonNull(repository, "repository");
+        final Repository target = requireNonNull(repository, REPOSITORY);
         github().teams()
                 .team()
                 .upsertRepositoryPermission(
@@ -230,7 +231,7 @@ public final class Team {
      * @throws IOException if the transport fails
      */
     public void removeRepository(final Repository repository) throws IOException {
-        final Repository target = requireNonNull(repository, "repository");
+        final Repository target = requireNonNull(repository, REPOSITORY);
         github().teams().team().removeRepository(organization.login(), slug(), target.owner(), target.name());
     }
 

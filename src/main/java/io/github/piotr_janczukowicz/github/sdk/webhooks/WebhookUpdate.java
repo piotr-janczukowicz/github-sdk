@@ -16,7 +16,7 @@ import org.jspecify.annotations.Nullable;
  */
 public final class WebhookUpdate {
 
-    private static final String EVENTS = "events";
+    private static final String EVENTS_ARGUMENT = "events";
 
     private final Webhook webhook;
     private @Nullable List<String> events;
@@ -45,7 +45,7 @@ public final class WebhookUpdate {
      * @throws IllegalArgumentException if an event name is blank
      */
     public WebhookUpdate events(final List<String> events) {
-        this.events = Arguments.requireNotBlankElements(events, EVENTS);
+        this.events = Arguments.requireNotBlankElements(events, EVENTS_ARGUMENT);
         return changed();
     }
 
@@ -58,7 +58,7 @@ public final class WebhookUpdate {
      * @throws IllegalArgumentException if an event name is blank
      */
     public WebhookUpdate addEvents(final List<String> events) {
-        this.addEvents = Arguments.requireNotBlankElements(events, EVENTS);
+        this.addEvents = Arguments.requireNotBlankElements(events, EVENTS_ARGUMENT);
         return changed();
     }
 
@@ -71,7 +71,7 @@ public final class WebhookUpdate {
      * @throws IllegalArgumentException if an event name is blank
      */
     public WebhookUpdate removeEvents(final List<String> events) {
-        this.removeEvents = Arguments.requireNotBlankElements(events, EVENTS);
+        this.removeEvents = Arguments.requireNotBlankElements(events, EVENTS_ARGUMENT);
         return changed();
     }
 

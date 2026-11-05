@@ -11,5 +11,5 @@ public enum CommitStatusState {
     /** The check has not finished. */
     PENDING,
     /** The check ran and passed. */
-    SUCCESS;
+    SUCCESS
 }

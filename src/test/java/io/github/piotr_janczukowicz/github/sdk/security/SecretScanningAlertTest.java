@@ -50,9 +50,10 @@ class SecretScanningAlertTest {
             softly.assertThat(sut.state()).isEqualTo(GitHubSecretScanningAlertState.OPEN);
             softly.assertThat(sut.isOpen()).isTrue();
             softly.assertThat(sut.resolution()).isEmpty();
-            softly.assertThat(sut.secretType()).isEqualTo("github_personal_access_token");
+            softly.assertThat(sut.secretType()).contains("github_personal_access_token");
             softly.assertThat(sut.isPubliclyLeaked()).isTrue();
-            softly.assertThat(sut.htmlUrl()).endsWith("secret-scanning/5");
+            softly.assertThat(sut.htmlUrl())
+                    .hasValueSatisfying(url -> assertThat(url).endsWith("secret-scanning/5"));
             softly.assertThat(sut.response()).isSameAs(response);
         });
     }

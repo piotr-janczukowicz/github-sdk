@@ -56,7 +56,8 @@ class SecuritySmokeIT {
         final List<SecretScanningAlert> alerts = readSecrets(repository);
 
         assertThat(alerts).allSatisfy(alert -> {
-            assertThat(alert.secretType()).isNotBlank();
+            assertThat(alert.secretType())
+                    .hasValueSatisfying(type -> assertThat(type).isNotBlank());
             assertThat(alert.locations().limit(1).count()).isLessThanOrEqualTo(1);
         });
     }

@@ -6,6 +6,7 @@ import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.commits.GitHubCommitApi;
@@ -43,6 +44,14 @@ class ComparisonTest {
             softly.assertThat(sut.files()).hasSize(1);
             softly.assertThat(sut.response()).isSameAs(response);
         });
+    }
+
+    @Test
+    void files_shouldBeEmpty_whenTheResponseHasNoFiles() {
+        final GitHubCommitComparison bare = mock(GitHubCommitComparison.class);
+        when(bare.files()).thenReturn(null);
+
+        assertThat(new Comparison(repository, BASE_HEAD, bare).files()).isEmpty();
     }
 
     @Test

@@ -51,6 +51,7 @@ import org.jspecify.annotations.Nullable;
  */
 public final class Organization {
 
+    private static final String PAYLOAD = "payload";
     private static final String LOGIN = "login";
     private static final String ROLE = "role";
     private static final String VARIABLE_NAME = "variableName";
@@ -105,7 +106,7 @@ public final class Organization {
      */
     public Repository createRepository(final GitHubCreateInOrgPayload payload) throws IOException {
         final GitHubFullRepository created =
-                sdk.github().repositories().repository().createInOrg(login(), requireNonNull(payload, "payload"));
+                sdk.github().repositories().repository().createInOrg(login(), requireNonNull(payload, PAYLOAD));
         return new Repository(sdk, login(), created.name(), created);
     }
 
@@ -295,7 +296,7 @@ public final class Organization {
      * @throws IOException if the transport fails
      */
     public Team createTeam(final GitHubCreateTeamPayload payload) throws IOException {
-        return new Team(this, sdk.github().teams().team().create(login(), requireNonNull(payload, "payload")));
+        return new Team(this, sdk.github().teams().team().create(login(), requireNonNull(payload, PAYLOAD)));
     }
 
     /**
@@ -337,7 +338,7 @@ public final class Organization {
         return new OrganizationWebhook(
                 sdk,
                 login(),
-                sdk.github().organizations().webhooks().createWebhook(login(), requireNonNull(payload, "payload")));
+                sdk.github().organizations().webhooks().createWebhook(login(), requireNonNull(payload, PAYLOAD)));
     }
 
     /**

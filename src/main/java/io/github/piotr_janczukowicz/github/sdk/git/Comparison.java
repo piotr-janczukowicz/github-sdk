@@ -103,10 +103,11 @@ public final class Comparison {
     /**
      * Returns the changed files that GitHub embedded in the comparison.
      *
-     * @return the changed files
+     * @return the changed files, empty when GitHub returned none
      */
     public List<GitHubDiffEntry> files() {
-        return response.files();
+        final List<GitHubDiffEntry> files = response.files();
+        return files == null ? List.of() : files;
     }
 
     /**
