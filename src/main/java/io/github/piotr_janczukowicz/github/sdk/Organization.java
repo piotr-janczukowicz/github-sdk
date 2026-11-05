@@ -6,6 +6,10 @@ import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 import io.github.piotr_janczukowicz.github.api.actions.GitHubActionsCacheUsageByRepository;
 import io.github.piotr_janczukowicz.github.api.actions.GitHubActionsCacheUsageOrgEnterprise;
 import io.github.piotr_janczukowicz.github.api.actions.GitHubCreateOrgVariablePayload;
+import io.github.piotr_janczukowicz.github.api.actions.GitHubOidcCustomPropertyInclusion;
+import io.github.piotr_janczukowicz.github.api.actions.GitHubOidcCustomPropertyInclusionInput;
+import io.github.piotr_janczukowicz.github.api.actions.GitHubOidcCustomSub;
+import io.github.piotr_janczukowicz.github.api.actions.GitHubUpdateOidcCustomSubTemplateForOrgPayload;
 import io.github.piotr_janczukowicz.github.api.activity.GitHubEvent;
 import io.github.piotr_janczukowicz.github.api.organizations.GitHubCreateOrgWebhookPayload;
 import io.github.piotr_janczukowicz.github.api.organizations.GitHubCreateOrganizationInvitationPayload;
@@ -21,6 +25,7 @@ import io.github.piotr_janczukowicz.github.api.teams.GitHubCreateTeamPayload;
 import io.github.piotr_janczukowicz.github.api.teams.GitHubTeam;
 import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
 import io.github.piotr_janczukowicz.github.pagination.GitHubPageRequest;
+import io.github.piotr_janczukowicz.github.sdk.actions.SelfHostedRunners;
 import io.github.piotr_janczukowicz.github.sdk.internal.ClientValues;
 import io.github.piotr_janczukowicz.github.sdk.internal.Lookups;
 import io.github.piotr_janczukowicz.github.sdk.organizations.InvitationRole;
@@ -34,8 +39,10 @@ import io.github.piotr_janczukowicz.github.sdk.packages.RegistryPackages;
 import io.github.piotr_janczukowicz.github.sdk.projects.Project;
 import io.github.piotr_janczukowicz.github.sdk.projects.Projects;
 import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A GitHub organization, as GitHub returned it. The object is immutable, and {@link #response()} gives the complete
@@ -485,6 +492,93 @@ public final class Organization {
      */
     public Stream<GitHubActionsCacheUsageByRepository> actionsCacheUsageByRepository() throws IOException {
         return sdk.github().actions().cache().listOrgCacheUsageByRepository(login()).stream();
+    }
+
+    /**
+     * Returns the self-hosted runners of the organization. Nothing is requested until a method of the result is called.
+     *
+     * @return the runners
+     */
+    public SelfHostedRunners selfHostedRunners() {
+        return SelfHostedRunners.forOrganization(sdk, login());
+    }
+
+    /**
+     * Loads the OpenID Connect subject claim template of the organization ({@code GET
+     * /orgs/{org}/actions/oidc/customization/sub}) as GitHub returns it.
+     *
+     * @return the template
+     * @throws IOException if the transport fails
+     */
+    public GitHubOidcCustomSub oidcSubjectTemplate() throws IOException {
+        return sdk.github().actions().oidc().getOidcCustomSubTemplateForOrg(login());
+    }
+
+    /**
+     * Sets the OpenID Connect subject claim template of the organization ({@code PUT
+     * /orgs/{org}/actions/oidc/customization/sub}).
+     *
+     * @param includeClaimKeys the claim keys that make up the subject
+     * @param isImmutableSubjectUsed {@code true} to use the immutable subject, or {@code null} to leave it unset
+     * @throws NullPointerException if {@code includeClaimKeys} is {@code null}
+     * @throws IOException if the transport fails
+     */
+    public void updateOidcSubjectTemplate(
+            final List<String> includeClaimKeys, final @Nullable Boolean isImmutableSubjectUsed) throws IOException {
+        sdk.github()
+                .actions()
+                .oidc()
+                .updateOidcCustomSubTemplateForOrg(
+                        login(),
+                        new GitHubUpdateOidcCustomSubTemplateForOrgPayload(
+                                List.copyOf(requireNonNull(includeClaimKeys, "includeClaimKeys")),
+                                isImmutableSubjectUsed));
+    }
+
+    /**
+     * Lists the repository custom properties that are included in the OpenID Connect token ({@code GET
+     * /orgs/{org}/actions/oidc/customization/properties/repo}) as GitHub returns them.
+     *
+     * @return the included custom properties
+     * @throws IOException if the transport fails
+     */
+    public List<GitHubOidcCustomPropertyInclusion> oidcCustomProperties() throws IOException {
+        return sdk.github().actions().oidc().listOidcCustomPropertyInclusionsForOrg(login());
+    }
+
+    /**
+     * Includes a repository custom property in the OpenID Connect token ({@code POST
+     * /orgs/{org}/actions/oidc/customization/properties/repo}).
+     *
+     * @param propertyName the name of the custom property
+     * @return the inclusion as GitHub returns it
+     * @throws NullPointerException if {@code propertyName} is {@code null}
+     * @throws IllegalArgumentException if {@code propertyName} is blank
+     * @throws IOException if the transport fails
+     */
+    public GitHubOidcCustomPropertyInclusion includeOidcCustomProperty(final String propertyName) throws IOException {
+        return sdk.github()
+                .actions()
+                .oidc()
+                .createOidcCustomPropertyInclusionForOrg(
+                        login(),
+                        new GitHubOidcCustomPropertyInclusionInput(requireNotBlank(propertyName, "propertyName")));
+    }
+
+    /**
+     * Stops including a repository custom property in the OpenID Connect token ({@code DELETE
+     * /orgs/{org}/actions/oidc/customization/properties/repo/{custom_property_name}}).
+     *
+     * @param propertyName the name of the custom property
+     * @throws NullPointerException if {@code propertyName} is {@code null}
+     * @throws IllegalArgumentException if {@code propertyName} is blank
+     * @throws IOException if the transport fails
+     */
+    public void excludeOidcCustomProperty(final String propertyName) throws IOException {
+        sdk.github()
+                .actions()
+                .oidc()
+                .deleteOidcCustomPropertyInclusionForOrg(login(), requireNotBlank(propertyName, "propertyName"));
     }
 
     /**

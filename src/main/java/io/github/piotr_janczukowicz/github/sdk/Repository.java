@@ -5,6 +5,8 @@ import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 
 import io.github.piotr_janczukowicz.github.api.actions.GitHubCreateRepoVariablePayload;
 import io.github.piotr_janczukowicz.github.api.actions.GitHubListWorkflowRunsForRepoFilter;
+import io.github.piotr_janczukowicz.github.api.actions.GitHubOidcCustomSubRepo;
+import io.github.piotr_janczukowicz.github.api.actions.GitHubSetCustomOidcSubClaimForRepoPayload;
 import io.github.piotr_janczukowicz.github.api.activity.GitHubEvent;
 import io.github.piotr_janczukowicz.github.api.activity.GitHubListRepoNotificationsForAuthenticatedUserFilter;
 import io.github.piotr_janczukowicz.github.api.activity.GitHubSetRepoSubscriptionPayload;
@@ -66,6 +68,7 @@ import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
 import io.github.piotr_janczukowicz.github.pagination.GitHubPageRequest;
 import io.github.piotr_janczukowicz.github.sdk.actions.Artifact;
 import io.github.piotr_janczukowicz.github.sdk.actions.RepositoryActionsCache;
+import io.github.piotr_janczukowicz.github.sdk.actions.SelfHostedRunners;
 import io.github.piotr_janczukowicz.github.sdk.actions.Variable;
 import io.github.piotr_janczukowicz.github.sdk.actions.Workflow;
 import io.github.piotr_janczukowicz.github.sdk.actions.WorkflowRun;
@@ -2007,6 +2010,53 @@ public final class Repository {
      */
     public RepositoryCodeScanning codeScanning() {
         return new RepositoryCodeScanning(this);
+    }
+
+    /**
+     * Returns the self-hosted runners of the repository. Nothing is requested until a method of the result is called.
+     *
+     * @return the runners
+     */
+    public SelfHostedRunners selfHostedRunners() {
+        return SelfHostedRunners.forRepository(this);
+    }
+
+    /**
+     * Loads the OpenID Connect subject claim customization of the repository ({@code GET
+     * /repos/{owner}/{repo}/actions/oidc/customization/sub}) as GitHub returns it.
+     *
+     * @return the customization
+     * @throws IOException if the transport fails
+     */
+    public GitHubOidcCustomSubRepo oidcSubjectClaim() throws IOException {
+        return sdk.github().actions().oidc().getCustomOidcSubClaimForRepo(owner, name);
+    }
+
+    /**
+     * Sets the OpenID Connect subject claim customization of the repository ({@code PUT
+     * /repos/{owner}/{repo}/actions/oidc/customization/sub}). It needs the Administration permission.
+     *
+     * @param isDefaultUsed {@code true} to use the organization default, which ignores the claim keys
+     * @param includeClaimKeys the claim keys that make up the subject when the default is not used
+     * @param isImmutableSubjectUsed {@code true} to use the immutable subject, or {@code null} to leave it unset
+     * @throws NullPointerException if {@code includeClaimKeys} is {@code null}
+     * @throws IOException if the transport fails
+     */
+    public void setOidcSubjectClaim(
+            final boolean isDefaultUsed,
+            final List<String> includeClaimKeys,
+            final @Nullable Boolean isImmutableSubjectUsed)
+            throws IOException {
+        sdk.github()
+                .actions()
+                .oidc()
+                .setCustomOidcSubClaimForRepo(
+                        owner,
+                        name,
+                        new GitHubSetCustomOidcSubClaimForRepoPayload(
+                                isDefaultUsed,
+                                List.copyOf(requireNonNull(includeClaimKeys, "includeClaimKeys")),
+                                isImmutableSubjectUsed));
     }
 
     /**
