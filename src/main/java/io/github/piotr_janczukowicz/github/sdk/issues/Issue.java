@@ -42,6 +42,14 @@ public final class Issue {
     private final Repository repository;
     private final GitHubIssue response;
 
+    /**
+     * Wraps a response. Applications normally get this object from the object that owns it; call the constructor only
+     * to wrap a response that was loaded some other way.
+     *
+     * @param repository the repository the object belongs to
+     * @param response the response record the object is built from
+     * @throws NullPointerException if an argument is {@code null}
+     */
     public Issue(final Repository repository, final GitHubIssue response) {
         this.repository = requireNonNull(repository, "repository");
         this.response = requireNonNull(response, "response");
@@ -137,11 +145,12 @@ public final class Issue {
      *
      * @param names the label names; an empty list removes all labels
      * @return the issue as GitHub holds it after the change
-     * @throws NullPointerException if {@code names} is {@code null}
+     * @throws NullPointerException if {@code names} or a name is {@code null}
+     * @throws IllegalArgumentException if a name is blank
      * @throws IOException if the transport fails
      */
     public Issue setLabels(final List<String> names) throws IOException {
-        final List<GitHubSetLabelsLabel> labels = requireNonNull(names, "names").stream()
+        final List<GitHubSetLabelsLabel> labels = Arguments.requireNotBlankElements(names, "names").stream()
                 .map(GitHubSetLabelsLabel::ofName)
                 .toList();
         github().issues()

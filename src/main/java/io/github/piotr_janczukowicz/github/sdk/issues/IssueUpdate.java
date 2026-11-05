@@ -6,6 +6,7 @@ import io.github.piotr_janczukowicz.github.api.issues.GitHubIssueMilestoneRefere
 import io.github.piotr_janczukowicz.github.api.issues.GitHubUpdateIssueAssignee;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubUpdateIssueLabel;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubUpdatePayloadBuilder;
+import io.github.piotr_janczukowicz.github.sdk.internal.Arguments;
 import io.github.piotr_janczukowicz.github.sdk.internal.UpdateState;
 import io.github.piotr_janczukowicz.json.OptionalNull;
 import java.io.IOException;
@@ -21,6 +22,13 @@ public final class IssueUpdate {
     private final GitHubUpdatePayloadBuilder payload = GitHubUpdatePayloadBuilder.builder();
     private final UpdateState state = new UpdateState();
 
+    /**
+     * Wraps a response. Applications normally get this object from the object that owns it; call the constructor only
+     * to wrap a response that was loaded some other way.
+     *
+     * @param issue the issue the object belongs to
+     * @throws NullPointerException if an argument is {@code null}
+     */
     public IssueUpdate(final Issue issue) {
         this.issue = requireNonNull(issue, "issue");
     }
@@ -85,10 +93,11 @@ public final class IssueUpdate {
      *
      * @param names the label names
      * @return this update
-     * @throws NullPointerException if {@code names} is {@code null}
+     * @throws NullPointerException if {@code names} or a name is {@code null}
+     * @throws IllegalArgumentException if a name is blank
      */
     public IssueUpdate labels(final List<String> names) {
-        payload.labels(requireNonNull(names, "names").stream()
+        payload.labels(Arguments.requireNotBlankElements(names, "names").stream()
                 .map(GitHubUpdateIssueLabel::ofName)
                 .toList());
         return changed();
@@ -99,10 +108,11 @@ public final class IssueUpdate {
      *
      * @param logins the user logins
      * @return this update
-     * @throws NullPointerException if {@code logins} is {@code null}
+     * @throws NullPointerException if {@code logins} or a login is {@code null}
+     * @throws IllegalArgumentException if a login is blank
      */
     public IssueUpdate assignees(final List<String> logins) {
-        payload.assignees(requireNonNull(logins, "logins").stream()
+        payload.assignees(Arguments.requireNotBlankElements(logins, "logins").stream()
                 .map(GitHubUpdateIssueAssignee::ofLogin)
                 .toList());
         return changed();

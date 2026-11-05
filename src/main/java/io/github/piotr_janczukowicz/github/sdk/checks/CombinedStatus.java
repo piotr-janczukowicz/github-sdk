@@ -20,6 +20,14 @@ public final class CombinedStatus {
     private final Commit commit;
     private final GitHubCombinedCommitStatus response;
 
+    /**
+     * Wraps a response. Applications normally get this object from the object that owns it; call the constructor only
+     * to wrap a response that was loaded some other way.
+     *
+     * @param commit the commit
+     * @param response the response record the object is built from
+     * @throws NullPointerException if an argument is {@code null}
+     */
     public CombinedStatus(final Commit commit, final GitHubCombinedCommitStatus response) {
         this.commit = requireNonNull(commit, "commit");
         this.response = requireNonNull(response, "response");

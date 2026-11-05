@@ -25,6 +25,15 @@ public final class Comparison {
     private final String baseHead;
     private final GitHubCommitComparison response;
 
+    /**
+     * Wraps a response. Applications normally get this object from the object that owns it; call the constructor only
+     * to wrap a response that was loaded some other way.
+     *
+     * @param repository the repository the object belongs to
+     * @param baseHead the base head
+     * @param response the response record the object is built from
+     * @throws NullPointerException if an argument is {@code null}
+     */
     public Comparison(final Repository repository, final String baseHead, final GitHubCommitComparison response) {
         this.repository = requireNonNull(repository, "repository");
         this.baseHead = requireNonNull(baseHead, "baseHead");

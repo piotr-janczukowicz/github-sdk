@@ -285,4 +285,17 @@ class WorkflowRunTest {
         doReturn(Optional.of(reloaded)).when(runs).getWorkflowRun(OWNER, NAME, ID);
         return runs;
     }
+
+    @Test
+    void attemptNumbers_shouldThrowIllegalArgumentException_whenTheAttemptIsBelowOne() {
+        final Throwable attempt = catchThrowable(() -> sut.attempt(0));
+        final Throwable jobs = catchThrowable(() -> sut.jobs(-1));
+
+        assertSoftly(softly -> {
+            softly.assertThat(attempt)
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("attempt");
+            softly.assertThat(jobs).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("attempt");
+        });
+    }
 }

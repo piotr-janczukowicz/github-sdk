@@ -24,6 +24,12 @@ public final class WebhookUpdate {
     private @Nullable Boolean active;
     private final UpdateState state = new UpdateState();
 
+    /**
+     * Wraps a response. Applications normally get this object from the object that owns it; call the constructor only
+     * to wrap a response that was loaded some other way.
+     *
+     * @param webhook the webhook
+     */
     public WebhookUpdate(final Webhook webhook) {
         this.webhook = webhook;
     }

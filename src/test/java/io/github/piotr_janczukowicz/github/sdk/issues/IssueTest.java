@@ -399,4 +399,11 @@ class IssueTest {
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("logins");
     }
+
+    @Test
+    void setLabels_shouldThrowIllegalArgumentException_whenALabelIsBlank() {
+        final Throwable thrown = catchThrowable(() -> sut.setLabels(List.of("bug", " ")));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("names");
+    }
 }

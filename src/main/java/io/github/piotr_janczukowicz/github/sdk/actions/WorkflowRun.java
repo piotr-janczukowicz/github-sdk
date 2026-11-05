@@ -24,12 +24,22 @@ import java.util.stream.Stream;
  */
 public final class WorkflowRun {
 
+    private static final long FIRST_ATTEMPT = 1;
+
     private static final String COMPLETED = "completed";
     private static final String SUCCESS = "success";
 
     private final Repository repository;
     private final GitHubWorkflowRun response;
 
+    /**
+     * Wraps a response. Applications normally get this object from the object that owns it; call the constructor only
+     * to wrap a response that was loaded some other way.
+     *
+     * @param repository the repository the object belongs to
+     * @param response the response record the object is built from
+     * @throws NullPointerException if an argument is {@code null}
+     */
     public WorkflowRun(final Repository repository, final GitHubWorkflowRun response) {
         this.repository = requireNonNull(repository, "repository");
         this.response = requireNonNull(response, "response");
@@ -180,11 +190,13 @@ public final class WorkflowRun {
     /**
      * Loads one earlier attempt of the run ({@code GET /repos/{owner}/{repo}/actions/runs/{run_id}/attempts/{n}}).
      *
-     * @param attempt the attempt number
+     * @param attempt the attempt number, at least 1
      * @return the attempt, or empty when GitHub answers HTTP 404
+     * @throws IllegalArgumentException if {@code attempt} is below 1
      * @throws IOException if the transport fails
      */
     public Optional<WorkflowRun> attempt(final long attempt) throws IOException {
+        requireAttempt(attempt);
         return github().actions()
                 .workflowRuns()
                 .getWorkflowRunAttempt(repository.owner(), repository.name(), id(), attempt)
@@ -315,11 +327,13 @@ public final class WorkflowRun {
      * are fetched only as the stream is consumed; transport failures during iteration are
      * {@link java.io.UncheckedIOException}.
      *
-     * @param attempt the attempt number
+     * @param attempt the attempt number, at least 1
      * @return the jobs of that attempt
+     * @throws IllegalArgumentException if {@code attempt} is below 1
      * @throws IOException if the first page cannot be loaded
      */
     public Stream<WorkflowJob> jobs(final long attempt) throws IOException {
+        requireAttempt(attempt);
         return github()
                 .actions()
                 .workflowJobs()
@@ -377,5 +391,11 @@ public final class WorkflowRun {
 
     private GitHub github() {
         return Internals.github(repository);
+    }
+
+    private static void requireAttempt(final long attempt) {
+        if (attempt < FIRST_ATTEMPT) {
+            throw new IllegalArgumentException("attempt must be at least " + FIRST_ATTEMPT + ": " + attempt);
+        }
     }
 }

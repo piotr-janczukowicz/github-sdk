@@ -23,6 +23,13 @@ public final class RepositoryTraffic {
 
     private final Repository repository;
 
+    /**
+     * Wraps a response. Applications normally get this object from the object that owns it; call the constructor only
+     * to wrap a response that was loaded some other way.
+     *
+     * @param repository the repository the object belongs to
+     * @throws NullPointerException if an argument is {@code null}
+     */
     public RepositoryTraffic(final Repository repository) {
         this.repository = requireNonNull(repository, "repository");
     }

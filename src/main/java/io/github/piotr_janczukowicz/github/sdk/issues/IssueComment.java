@@ -26,6 +26,14 @@ public final class IssueComment {
     private final Issue issue;
     private final GitHubIssueComment response;
 
+    /**
+     * Wraps a response. Applications normally get this object from the object that owns it; call the constructor only
+     * to wrap a response that was loaded some other way.
+     *
+     * @param issue the issue the object belongs to
+     * @param response the response record the object is built from
+     * @throws NullPointerException if an argument is {@code null}
+     */
     public IssueComment(final Issue issue, final GitHubIssueComment response) {
         this.issue = requireNonNull(issue, "issue");
         this.response = requireNonNull(response, "response");

@@ -125,4 +125,17 @@ class IssueUpdateTest {
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("issue");
     }
+
+    @Test
+    void labelsAndAssignees_shouldThrowIllegalArgumentException_whenAValueIsBlank() {
+        final IssueUpdate update = issue.update();
+
+        final Throwable labels = catchThrowable(() -> update.labels(List.of(" ")));
+        final Throwable assignees = catchThrowable(() -> update.assignees(List.of(" ")));
+
+        assertSoftly(softly -> {
+            softly.assertThat(labels).isInstanceOf(IllegalArgumentException.class);
+            softly.assertThat(assignees).isInstanceOf(IllegalArgumentException.class);
+        });
+    }
 }

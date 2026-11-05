@@ -19,6 +19,14 @@ public final class BranchProtection {
     private final Branch branch;
     private final GitHubBranchProtection response;
 
+    /**
+     * Wraps a response. Applications normally get this object from the object that owns it; call the constructor only
+     * to wrap a response that was loaded some other way.
+     *
+     * @param branch the branch the object belongs to
+     * @param response the response record the object is built from
+     * @throws NullPointerException if an argument is {@code null}
+     */
     public BranchProtection(final Branch branch, final GitHubBranchProtection response) {
         this.branch = requireNonNull(branch, "branch");
         this.response = requireNonNull(response, "response");

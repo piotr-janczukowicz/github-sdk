@@ -6,6 +6,7 @@ import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 import io.github.piotr_janczukowicz.github.api.actions.GitHubRunner;
 import io.github.piotr_janczukowicz.github.api.actions.GitHubRunnerLabel;
 import io.github.piotr_janczukowicz.github.api.actions.GitHubRunnerLabels;
+import io.github.piotr_janczukowicz.github.sdk.internal.Arguments;
 import java.io.IOException;
 import java.util.List;
 
@@ -91,25 +92,27 @@ public final class SelfHostedRunner {
     /**
      * Adds custom labels ({@code POST .../actions/runners/{runner_id}/labels}).
      *
-     * @param labels the labels to add
+     * @param labels the labels to add, at least one
      * @return the labels of the runner afterwards
-     * @throws NullPointerException if {@code labels} is {@code null}
+     * @throws NullPointerException if {@code labels} or a label is {@code null}
+     * @throws IllegalArgumentException if {@code labels} is empty or a label is blank
      * @throws IOException if the transport fails
      */
     public GitHubRunnerLabels addLabels(final List<String> labels) throws IOException {
-        return runners.gateway().addLabels(id(), List.copyOf(requireNonNull(labels, "labels")));
+        return runners.gateway().addLabels(id(), Arguments.requireNotBlankValues(labels, "labels"));
     }
 
     /**
      * Replaces all custom labels ({@code PUT .../actions/runners/{runner_id}/labels}).
      *
-     * @param labels the new custom labels
+     * @param labels the new custom labels; an empty list removes all of them
      * @return the labels of the runner afterwards
-     * @throws NullPointerException if {@code labels} is {@code null}
+     * @throws NullPointerException if {@code labels} or a label is {@code null}
+     * @throws IllegalArgumentException if a label is blank
      * @throws IOException if the transport fails
      */
     public GitHubRunnerLabels replaceLabels(final List<String> labels) throws IOException {
-        return runners.gateway().replaceLabels(id(), List.copyOf(requireNonNull(labels, "labels")));
+        return runners.gateway().replaceLabels(id(), Arguments.requireNotBlankElements(labels, "labels"));
     }
 
     /**

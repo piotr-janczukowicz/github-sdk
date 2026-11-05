@@ -23,6 +23,14 @@ public final class Reaction {
     private final GitHubReaction response;
     private final IoLongConsumer deletion;
 
+    /**
+     * Wraps a response. Applications normally get this object from the object that owns it; call the constructor only
+     * to wrap a response that was loaded some other way.
+     *
+     * @param response the response record the object is built from
+     * @param deletion the deletion
+     * @throws NullPointerException if an argument is {@code null}
+     */
     public Reaction(final GitHubReaction response, final IoLongConsumer deletion) {
         this.response = requireNonNull(response, "response");
         this.deletion = requireNonNull(deletion, "deletion");

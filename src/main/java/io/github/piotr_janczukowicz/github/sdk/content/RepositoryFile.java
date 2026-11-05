@@ -27,6 +27,15 @@ public final class RepositoryFile {
     private final GitHubContentFile response;
     private final @Nullable String ref;
 
+    /**
+     * Wraps a response. Applications normally get this object from the object that owns it; call the constructor only
+     * to wrap a response that was loaded some other way.
+     *
+     * @param repository the repository the object belongs to
+     * @param response the response record the object is built from
+     * @param ref the ref the object was read at, or {@code null} for the default branch
+     * @throws NullPointerException if {@code repository} or {@code response} is {@code null}
+     */
     public RepositoryFile(final Repository repository, final GitHubContentFile response, final @Nullable String ref) {
         this.repository = requireNonNull(repository, "repository");
         this.response = requireNonNull(response, "response");

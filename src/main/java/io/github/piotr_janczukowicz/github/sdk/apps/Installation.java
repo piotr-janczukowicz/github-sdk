@@ -20,6 +20,14 @@ public final class Installation {
     private final GitHubSdk sdk;
     private final GitHubInstallation response;
 
+    /**
+     * Wraps a response. Applications normally get this object from the object that owns it; call the constructor only
+     * to wrap a response that was loaded some other way.
+     *
+     * @param sdk the SDK that makes the calls
+     * @param response the response record the object is built from
+     * @throws NullPointerException if an argument is {@code null}
+     */
     public Installation(final GitHubSdk sdk, final GitHubInstallation response) {
         this.sdk = requireNonNull(sdk, "sdk");
         this.response = requireNonNull(response, "response");

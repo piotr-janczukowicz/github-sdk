@@ -20,6 +20,12 @@ public final class MilestoneUpdate {
     private @Nullable Instant dueOn;
     private final UpdateState state = new UpdateState();
 
+    /**
+     * Wraps a response. Applications normally get this object from the object that owns it; call the constructor only
+     * to wrap a response that was loaded some other way.
+     *
+     * @param milestone the milestone
+     */
     public MilestoneUpdate(final Milestone milestone) {
         this.milestone = milestone;
     }

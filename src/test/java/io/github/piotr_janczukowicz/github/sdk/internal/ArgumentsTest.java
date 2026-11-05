@@ -50,4 +50,41 @@ class ArgumentsTest {
 
         assertThat(thrown).hasCauseInstanceOf(UnsupportedOperationException.class);
     }
+
+    @Test
+    void requireNotBlankElements_shouldReturnTheValues_whenTheListMayBeEmpty() {
+        final List<String> empty = Arguments.requireNotBlankElements(List.of(), "labels");
+        final List<String> some = Arguments.requireNotBlankElements(List.of("a", "b"), "labels");
+
+        assertThat(empty).isEmpty();
+        assertThat(some).containsExactly("a", "b");
+    }
+
+    @Test
+    void requireNotBlankElements_shouldThrowIllegalArgumentException_whenAValueIsBlank() {
+        final Throwable thrown = catchThrowable(() -> Arguments.requireNotBlankElements(List.of("a", " "), "labels"));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("labels");
+    }
+
+    @Test
+    void requireNotBlankElements_shouldThrowNullPointerException_whenTheListIsNull() {
+        final Throwable thrown = catchThrowable(() -> Arguments.requireNotBlankElements(null, "labels"));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("labels");
+    }
+
+    @Test
+    void requireNotBlankValues_shouldThrowIllegalArgumentException_whenTheListIsEmpty() {
+        final Throwable thrown = catchThrowable(() -> Arguments.requireNotBlankValues(List.of(), "labels"));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("labels");
+    }
+
+    @Test
+    void requireNotBlankValues_shouldReturnTheValues_whenTheListHasValues() {
+        final List<String> values = Arguments.requireNotBlankValues(List.of("gpu"), "labels");
+
+        assertThat(values).containsExactly("gpu");
+    }
 }

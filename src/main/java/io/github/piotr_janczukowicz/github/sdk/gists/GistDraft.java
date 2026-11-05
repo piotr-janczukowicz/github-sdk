@@ -23,6 +23,13 @@ public final class GistDraft {
     private @Nullable String description;
     private boolean isListed;
 
+    /**
+     * Wraps a response. Applications normally get this object from the object that owns it; call the constructor only
+     * to wrap a response that was loaded some other way.
+     *
+     * @param sdk the SDK that makes the calls
+     * @throws NullPointerException if an argument is {@code null}
+     */
     public GistDraft(final GitHubSdk sdk) {
         this.sdk = requireNonNull(sdk, "sdk");
     }

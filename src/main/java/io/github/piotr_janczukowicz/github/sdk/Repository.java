@@ -92,6 +92,7 @@ import io.github.piotr_janczukowicz.github.sdk.git.Comparison;
 import io.github.piotr_janczukowicz.github.sdk.git.FileChanges;
 import io.github.piotr_janczukowicz.github.sdk.git.Ref;
 import io.github.piotr_janczukowicz.github.sdk.interactions.RepositoryInteractions;
+import io.github.piotr_janczukowicz.github.sdk.internal.Arguments;
 import io.github.piotr_janczukowicz.github.sdk.internal.ClientValues;
 import io.github.piotr_janczukowicz.github.sdk.internal.Internals;
 import io.github.piotr_janczukowicz.github.sdk.internal.Lookups;
@@ -2040,7 +2041,8 @@ public final class Repository {
      * @param isDefaultUsed {@code true} to use the organization default, which ignores the claim keys
      * @param includeClaimKeys the claim keys that make up the subject when the default is not used
      * @param isImmutableSubjectUsed {@code true} to use the immutable subject, or {@code null} to leave it unset
-     * @throws NullPointerException if {@code includeClaimKeys} is {@code null}
+     * @throws NullPointerException if {@code includeClaimKeys} or a key is {@code null}
+     * @throws IllegalArgumentException if a key is blank
      * @throws IOException if the transport fails
      */
     public void setOidcSubjectClaim(
@@ -2056,7 +2058,7 @@ public final class Repository {
                         name,
                         new GitHubSetCustomOidcSubClaimForRepoPayload(
                                 isDefaultUsed,
-                                List.copyOf(requireNonNull(includeClaimKeys, "includeClaimKeys")),
+                                Arguments.requireNotBlankElements(includeClaimKeys, "includeClaimKeys"),
                                 isImmutableSubjectUsed));
     }
 

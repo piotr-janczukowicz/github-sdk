@@ -165,4 +165,18 @@ class OidcSettingsTest {
         lenient().when(response.login()).thenReturn("acme");
         return new Organization(sdk, response);
     }
+
+    @Test
+    void oidcClaimKeys_shouldThrowIllegalArgumentException_whenAKeyIsBlank() {
+        final Organization organization = organization();
+
+        final Throwable template =
+                catchThrowable(() -> organization.updateOidcSubjectTemplate(List.of("repo", " "), null));
+        final Throwable claim = catchThrowable(() -> repository.setOidcSubjectClaim(false, List.of(" "), null));
+
+        assertSoftly(softly -> {
+            softly.assertThat(template).isInstanceOf(IllegalArgumentException.class);
+            softly.assertThat(claim).isInstanceOf(IllegalArgumentException.class);
+        });
+    }
 }

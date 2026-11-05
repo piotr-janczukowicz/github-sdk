@@ -32,6 +32,17 @@ public final class RulesetDraft {
     private final List<GitHubRepositoryRule> rules = new ArrayList<>();
     private final List<GitHubRepositoryRulesetBypassActor> bypassActors = new ArrayList<>();
 
+    /**
+     * Wraps a response. Applications normally get this object from the object that owns it; call the constructor only
+     * to wrap a response that was loaded some other way.
+     *
+     * @param repository the repository the object belongs to
+     * @param name the name
+     * @param target the target
+     * @param enforcement the enforcement
+     * @throws NullPointerException if an argument is {@code null}
+     * @throws IllegalArgumentException if a text argument is blank
+     */
     public RulesetDraft(
             final Repository repository,
             final String name,

@@ -23,6 +23,16 @@ public final class OrganizationWebhook {
     private final String organization;
     private final GitHubOrgHook response;
 
+    /**
+     * Wraps a response. Applications normally get this object from the object that owns it; call the constructor only
+     * to wrap a response that was loaded some other way.
+     *
+     * @param sdk the SDK that makes the calls
+     * @param organization the login of the organization the object belongs to
+     * @param response the response record the object is built from
+     * @throws NullPointerException if an argument is {@code null}
+     * @throws IllegalArgumentException if a text argument is blank
+     */
     public OrganizationWebhook(final GitHubSdk sdk, final String organization, final GitHubOrgHook response) {
         this.sdk = requireNonNull(sdk, "sdk");
         this.organization = requireNotBlank(organization, "organization");

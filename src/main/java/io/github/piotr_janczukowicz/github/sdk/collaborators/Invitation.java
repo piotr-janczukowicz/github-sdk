@@ -22,6 +22,14 @@ public final class Invitation {
     private final Repository repository;
     private final GitHubRepositoryInvitation response;
 
+    /**
+     * Wraps a response. Applications normally get this object from the object that owns it; call the constructor only
+     * to wrap a response that was loaded some other way.
+     *
+     * @param repository the repository the object belongs to
+     * @param response the response record the object is built from
+     * @throws NullPointerException if an argument is {@code null}
+     */
     public Invitation(final Repository repository, final GitHubRepositoryInvitation response) {
         this.repository = requireNonNull(repository, "repository");
         this.response = requireNonNull(response, "response");

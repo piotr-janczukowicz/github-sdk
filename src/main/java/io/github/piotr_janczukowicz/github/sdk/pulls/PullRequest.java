@@ -37,6 +37,14 @@ public final class PullRequest {
     private final Repository repository;
     private final GitHubPullRequest response;
 
+    /**
+     * Wraps a response. Applications normally get this object from the object that owns it; call the constructor only
+     * to wrap a response that was loaded some other way.
+     *
+     * @param repository the repository the object belongs to
+     * @param response the response record the object is built from
+     * @throws NullPointerException if an argument is {@code null}
+     */
     public PullRequest(final Repository repository, final GitHubPullRequest response) {
         this.repository = requireNonNull(repository, "repository");
         this.response = requireNonNull(response, "response");

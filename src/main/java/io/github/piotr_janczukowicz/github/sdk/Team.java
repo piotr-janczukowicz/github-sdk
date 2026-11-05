@@ -3,6 +3,7 @@ package io.github.piotr_janczukowicz.github.sdk;
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 
+import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.teams.GitHubTeamFull;
 import io.github.piotr_janczukowicz.github.api.teams.GitHubTeamMember;
 import io.github.piotr_janczukowicz.github.api.teams.GitHubTeamMembership;
@@ -67,7 +68,7 @@ public final class Team {
      * @throws IOException if the first page cannot be loaded
      */
     public Stream<GitHubTeamMember> members() throws IOException {
-        return organization.sdk().github().teams().members().listMembers(organization.login(), slug()).stream();
+        return github().teams().members().listMembers(organization.login(), slug()).stream();
     }
 
     /**
@@ -80,7 +81,7 @@ public final class Team {
      * @throws IOException if the first page cannot be loaded
      */
     public Stream<Repository> repositories() throws IOException {
-        return organization.sdk().github().teams().team().listRepositories(organization.login(), slug()).stream()
+        return github().teams().team().listRepositories(organization.login(), slug()).stream()
                 .map(listed -> organization.sdk().repository(listed.owner().login(), listed.name()));
     }
 
@@ -94,7 +95,7 @@ public final class Team {
      * @throws IOException if the first page cannot be loaded
      */
     public Stream<Team> childTeams() throws IOException {
-        return organization.sdk().github().teams().team().listChildTeams(organization.login(), slug()).stream()
+        return github().teams().team().listChildTeams(organization.login(), slug()).stream()
                 .map(organization::loadTeam);
     }
 
@@ -109,12 +110,7 @@ public final class Team {
     public Team update(final GitHubUpdateTeamPayload payload) throws IOException {
         return new Team(
                 organization,
-                organization
-                        .sdk()
-                        .github()
-                        .teams()
-                        .team()
-                        .update(organization.login(), slug(), requireNonNull(payload, "payload")));
+                github().teams().team().update(organization.login(), slug(), requireNonNull(payload, "payload")));
     }
 
     /**
@@ -123,7 +119,7 @@ public final class Team {
      * @throws IOException if the transport fails
      */
     public void delete() throws IOException {
-        organization.sdk().github().teams().team().delete(organization.login(), slug());
+        github().teams().team().delete(organization.login(), slug());
     }
 
     /**
@@ -136,12 +132,7 @@ public final class Team {
      * @throws IOException if the transport fails
      */
     public GitHubTeamMembership addMember(final String login) throws IOException {
-        return organization
-                .sdk()
-                .github()
-                .teams()
-                .members()
-                .upsertMembership(organization.login(), slug(), requireNotBlank(login, LOGIN));
+        return github().teams().members().upsertMembership(organization.login(), slug(), requireNotBlank(login, LOGIN));
     }
 
     /**
@@ -157,10 +148,7 @@ public final class Team {
      * @throws IOException if the transport fails
      */
     public GitHubTeamMembership addMember(final String login, final TeamRole role) throws IOException {
-        return organization
-                .sdk()
-                .github()
-                .teams()
+        return github().teams()
                 .members()
                 .upsertMembership(
                         organization.login(),
@@ -179,12 +167,7 @@ public final class Team {
      * @throws IOException if the transport fails
      */
     public void removeMember(final String login) throws IOException {
-        organization
-                .sdk()
-                .github()
-                .teams()
-                .members()
-                .removeMembership(organization.login(), slug(), requireNotBlank(login, LOGIN));
+        github().teams().members().removeMembership(organization.login(), slug(), requireNotBlank(login, LOGIN));
     }
 
     /**
@@ -198,12 +181,7 @@ public final class Team {
      * @throws IOException if the transport fails
      */
     public Optional<GitHubTeamMembership> membership(final String login) throws IOException {
-        return organization
-                .sdk()
-                .github()
-                .teams()
-                .members()
-                .getMembership(organization.login(), slug(), requireNotBlank(login, LOGIN));
+        return github().teams().members().getMembership(organization.login(), slug(), requireNotBlank(login, LOGIN));
     }
 
     /**
@@ -216,12 +194,7 @@ public final class Team {
      */
     public void addRepository(final Repository repository) throws IOException {
         final Repository target = requireNonNull(repository, "repository");
-        organization
-                .sdk()
-                .github()
-                .teams()
-                .team()
-                .upsertRepositoryPermission(organization.login(), slug(), target.owner(), target.name());
+        github().teams().team().upsertRepositoryPermission(organization.login(), slug(), target.owner(), target.name());
     }
 
     /**
@@ -235,10 +208,7 @@ public final class Team {
      */
     public void addRepository(final Repository repository, final RepositoryPermission permission) throws IOException {
         final Repository target = requireNonNull(repository, "repository");
-        organization
-                .sdk()
-                .github()
-                .teams()
+        github().teams()
                 .team()
                 .upsertRepositoryPermission(
                         organization.login(),
@@ -259,12 +229,7 @@ public final class Team {
      */
     public void removeRepository(final Repository repository) throws IOException {
         final Repository target = requireNonNull(repository, "repository");
-        organization
-                .sdk()
-                .github()
-                .teams()
-                .team()
-                .removeRepository(organization.login(), slug(), target.owner(), target.name());
+        github().teams().team().removeRepository(organization.login(), slug(), target.owner(), target.name());
     }
 
     /**
@@ -274,5 +239,9 @@ public final class Team {
      */
     public GitHubTeamFull response() {
         return response;
+    }
+
+    private GitHub github() {
+        return organization.sdk().github();
     }
 }

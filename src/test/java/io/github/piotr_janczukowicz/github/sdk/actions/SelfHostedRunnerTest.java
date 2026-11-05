@@ -269,4 +269,26 @@ class SelfHostedRunnerTest {
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("repository");
     }
+
+    @Test
+    void addLabels_shouldThrowIllegalArgumentException_whenTheListIsEmptyOrHasABlankLabel() {
+        final Throwable empty = catchThrowable(() -> sut.addLabels(List.of()));
+        final Throwable blank = catchThrowable(() -> sut.addLabels(List.of("gpu", " ")));
+
+        assertSoftly(softly -> {
+            softly.assertThat(empty)
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("labels");
+            softly.assertThat(blank)
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("labels");
+        });
+    }
+
+    @Test
+    void replaceLabels_shouldThrowIllegalArgumentException_whenALabelIsBlank() {
+        final Throwable thrown = catchThrowable(() -> sut.replaceLabels(List.of(" ")));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("labels");
+    }
 }

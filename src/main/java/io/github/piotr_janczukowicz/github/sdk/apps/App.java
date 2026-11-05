@@ -29,6 +29,14 @@ public final class App {
     private final GitHubSdk sdk;
     private final GitHubIntegration response;
 
+    /**
+     * Wraps a response. Applications normally get this object from the object that owns it; call the constructor only
+     * to wrap a response that was loaded some other way.
+     *
+     * @param sdk the SDK that makes the calls
+     * @param response the response record the object is built from
+     * @throws NullPointerException if an argument is {@code null}
+     */
     public App(final GitHubSdk sdk, final GitHubIntegration response) {
         this.sdk = requireNonNull(sdk, "sdk");
         this.response = requireNonNull(response, "response");

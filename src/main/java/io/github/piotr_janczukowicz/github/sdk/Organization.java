@@ -26,6 +26,7 @@ import io.github.piotr_janczukowicz.github.api.teams.GitHubTeam;
 import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
 import io.github.piotr_janczukowicz.github.pagination.GitHubPageRequest;
 import io.github.piotr_janczukowicz.github.sdk.actions.SelfHostedRunners;
+import io.github.piotr_janczukowicz.github.sdk.internal.Arguments;
 import io.github.piotr_janczukowicz.github.sdk.internal.ClientValues;
 import io.github.piotr_janczukowicz.github.sdk.internal.Lookups;
 import io.github.piotr_janczukowicz.github.sdk.organizations.InvitationRole;
@@ -124,6 +125,7 @@ public final class Organization {
      *
      * @param slug the team slug
      * @return the team, or empty when GitHub answers HTTP 404
+     * @throws NullPointerException if {@code slug} is {@code null}
      * @throws IllegalArgumentException if {@code slug} is blank
      * @throws IOException if the transport fails
      */
@@ -520,7 +522,8 @@ public final class Organization {
      *
      * @param includeClaimKeys the claim keys that make up the subject
      * @param isImmutableSubjectUsed {@code true} to use the immutable subject, or {@code null} to leave it unset
-     * @throws NullPointerException if {@code includeClaimKeys} is {@code null}
+     * @throws NullPointerException if {@code includeClaimKeys} or a key is {@code null}
+     * @throws IllegalArgumentException if a key is blank
      * @throws IOException if the transport fails
      */
     public void updateOidcSubjectTemplate(
@@ -531,7 +534,7 @@ public final class Organization {
                 .updateOidcCustomSubTemplateForOrg(
                         login(),
                         new GitHubUpdateOidcCustomSubTemplateForOrgPayload(
-                                List.copyOf(requireNonNull(includeClaimKeys, "includeClaimKeys")),
+                                Arguments.requireNotBlankElements(includeClaimKeys, "includeClaimKeys"),
                                 isImmutableSubjectUsed));
     }
 

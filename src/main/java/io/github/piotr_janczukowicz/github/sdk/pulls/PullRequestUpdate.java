@@ -20,6 +20,12 @@ public final class PullRequestUpdate {
     private @Nullable Boolean maintainerCanModify;
     private final UpdateState state = new UpdateState();
 
+    /**
+     * Wraps a response. Applications normally get this object from the object that owns it; call the constructor only
+     * to wrap a response that was loaded some other way.
+     *
+     * @param pullRequest the pull request the object belongs to
+     */
     public PullRequestUpdate(final PullRequest pullRequest) {
         this.pullRequest = pullRequest;
     }

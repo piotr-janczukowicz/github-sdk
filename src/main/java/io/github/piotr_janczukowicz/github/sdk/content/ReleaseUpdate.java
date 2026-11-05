@@ -21,6 +21,12 @@ public final class ReleaseUpdate {
     private @Nullable Boolean prerelease;
     private final UpdateState state = new UpdateState();
 
+    /**
+     * Wraps a response. Applications normally get this object from the object that owns it; call the constructor only
+     * to wrap a response that was loaded some other way.
+     *
+     * @param release the release
+     */
     public ReleaseUpdate(final Release release) {
         this.release = release;
     }

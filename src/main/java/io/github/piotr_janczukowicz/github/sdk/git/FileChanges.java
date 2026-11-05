@@ -46,6 +46,15 @@ public final class FileChanges {
     private final String branch;
     private final Map<String, byte @Nullable []> changes = new LinkedHashMap<>();
 
+    /**
+     * Wraps a response. Applications normally get this object from the object that owns it; call the constructor only
+     * to wrap a response that was loaded some other way.
+     *
+     * @param repository the repository the object belongs to
+     * @param branch the branch the object belongs to
+     * @throws NullPointerException if an argument is {@code null}
+     * @throws IllegalArgumentException if a text argument is blank
+     */
     public FileChanges(final Repository repository, final String branch) {
         this.repository = requireNonNull(repository, "repository");
         this.branch = requireNotBlank(branch, "branch");
