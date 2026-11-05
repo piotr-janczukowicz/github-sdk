@@ -163,11 +163,7 @@ public final class Workflow {
      * @throws IllegalStateException if GitHub does not have the run it reported
      */
     public WorkflowRun dispatch(final String ref, final Map<String, Object> inputs) throws IOException {
-        requireNonNull(inputs, "inputs").forEach((key, value) -> {
-            if (value == null) {
-                throw new NullPointerException("inputs[" + key + "]");
-            }
-        });
+        requireNonNull(inputs, "inputs").forEach((key, value) -> requireNonNull(value, "inputs[" + key + "]"));
         final GitHubCreateWorkflowDispatchPayload payload =
                 new GitHubCreateWorkflowDispatchPayload(requireNotBlank(ref, REF), Map.copyOf(inputs));
         final long runId = github().actions()
