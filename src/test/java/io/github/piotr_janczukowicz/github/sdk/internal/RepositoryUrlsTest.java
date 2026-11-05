@@ -40,6 +40,20 @@ class RepositoryUrlsTest {
     }
 
     @Test
+    void parse_shouldThrowIllegalArgumentException_whenTheUrlHasNoOwner() {
+        final Throwable thrown = catchThrowable(() -> RepositoryUrls.parse("/hello-world"));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("hello-world");
+    }
+
+    @Test
+    void parse_shouldThrowNullPointerException_whenTheUrlIsNull() {
+        final Throwable thrown = catchThrowable(() -> RepositoryUrls.parse(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("url");
+    }
+
+    @Test
     void constructor_shouldThrowUnsupportedOperationException_whenCalled() throws ReflectiveOperationException {
         final Constructor<RepositoryUrls> constructor = RepositoryUrls.class.getDeclaredConstructor();
         constructor.setAccessible(true);

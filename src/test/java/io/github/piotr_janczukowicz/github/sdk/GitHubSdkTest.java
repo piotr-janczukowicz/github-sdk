@@ -52,7 +52,7 @@ class GitHubSdkTest {
     }
 
     @Test
-    void of_shouldWrapTheClient_whenCalledWithAClient() {
+    void of_shouldReturnAnEntryPoint_whenCalledWithAClient() {
         try (GitHubClient client =
                 GitHubClients.create(AuthenticationProviders.bearer("token-for-a-test"), "my-app/1.0")) {
             final GitHubSdk sdk = GitHubSdk.of(client);
@@ -62,7 +62,7 @@ class GitHubSdkTest {
     }
 
     @Test
-    void of_shouldWrapTheCaller_whenCalledWithACaller() {
+    void of_shouldReturnAnEntryPoint_whenCalledWithACaller() {
         try (GitHubClient client =
                 GitHubClients.create(AuthenticationProviders.bearer("token-for-a-test"), "my-app/1.0")) {
             final GitHubCaller caller = GitHubCaller.of(client);

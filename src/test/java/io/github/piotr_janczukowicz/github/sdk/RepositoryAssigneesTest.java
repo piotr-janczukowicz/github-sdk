@@ -2,6 +2,7 @@ package io.github.piotr_janczukowicz.github.sdk;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -69,7 +70,10 @@ class RepositoryAssigneesTest {
 
         final Issue issue = sut.issueOf(foreign);
 
-        assertThat(issue.repository().name()).isEqualTo("linguist");
+        assertSoftly(softly -> {
+            softly.assertThat(issue.repository().owner()).isEqualTo("hubot");
+            softly.assertThat(issue.repository().name()).isEqualTo("linguist");
+        });
     }
 
     @Test
@@ -88,5 +92,27 @@ class RepositoryAssigneesTest {
         final Throwable thrown = catchThrowable(() -> sut.issueOf(null));
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("response");
+    }
+
+    @Test
+    void issueOf_shouldBindAnotherRepository_whenOnlyTheOwnerDiffers() {
+        final GitHubIssue sibling = GitHubIssueBuilder.builder(IssuesFixtures.issue())
+                .repositoryUrl("https://api.github.com/repos/hubot/hello-world")
+                .build();
+
+        final Issue issue = sut.issueOf(sibling);
+
+        assertThat(issue.repository().owner()).isEqualTo("hubot");
+    }
+
+    @Test
+    void issueOf_shouldThrowIllegalArgumentException_whenTheRepositoryUrlIsMalformed() {
+        final GitHubIssue malformed = GitHubIssueBuilder.builder(IssuesFixtures.issue())
+                .repositoryUrl("hello-world")
+                .build();
+
+        final Throwable thrown = catchThrowable(() -> sut.issueOf(malformed));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("hello-world");
     }
 }

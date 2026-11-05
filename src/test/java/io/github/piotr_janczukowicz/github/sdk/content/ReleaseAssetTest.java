@@ -188,4 +188,36 @@ class ReleaseAssetTest {
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("response");
     }
+
+    @Test
+    void update_shouldSendOnlyTheName_whenOnlyTheNameIsSet() throws IOException {
+        when(github.releases().assets().updateReleaseAsset(any(), any(), any(Long.class), any()))
+                .thenReturn(response);
+        final ArgumentCaptor<GitHubUpdateReleaseAssetPayload> payload =
+                ArgumentCaptor.forClass(GitHubUpdateReleaseAssetPayload.class);
+
+        sut.update().name("tool.zip").send();
+
+        verify(github.releases().assets()).updateReleaseAsset(any(), any(), any(Long.class), payload.capture());
+        assertSoftly(softly -> {
+            softly.assertThat(payload.getValue().name()).isEqualTo("tool.zip");
+            softly.assertThat(payload.getValue().label()).isNull();
+        });
+    }
+
+    @Test
+    void update_shouldSendOnlyTheLabel_whenOnlyTheLabelIsSet() throws IOException {
+        when(github.releases().assets().updateReleaseAsset(any(), any(), any(Long.class), any()))
+                .thenReturn(response);
+        final ArgumentCaptor<GitHubUpdateReleaseAssetPayload> payload =
+                ArgumentCaptor.forClass(GitHubUpdateReleaseAssetPayload.class);
+
+        sut.update().label("Tool").send();
+
+        verify(github.releases().assets()).updateReleaseAsset(any(), any(), any(Long.class), payload.capture());
+        assertSoftly(softly -> {
+            softly.assertThat(payload.getValue().label()).isEqualTo("Tool");
+            softly.assertThat(payload.getValue().name()).isNull();
+        });
+    }
 }

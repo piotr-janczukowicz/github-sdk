@@ -10,8 +10,8 @@ import io.github.piotr_janczukowicz.github.sdk.organizations.InvitationRole;
 import io.github.piotr_janczukowicz.github.sdk.organizations.VariableVisibility;
 
 /**
- * Converts the SDK's enums to the client's enums for the values that more than one package needs. Enums that only their
- * own package converts keep a package-private conversion of their own.
+ * Converts the few SDK enums and client values that more than one package needs to the client's enums. Enums that only
+ * their own package converts keep a package-private conversion of their own.
  */
 public final class ClientValues {
 
@@ -22,8 +22,9 @@ public final class ClientValues {
     /**
      * Converts a reaction emoji to the client value for a release, which accepts only six of the eight emojis.
      *
-     * @param content the SDK value
-     * @return the client value of the same name
+     * @param content the emoji
+     * @return the release value of the same name
+     * @throws NullPointerException if {@code content} is {@code null}
      * @throws IllegalArgumentException if the emoji is {@code MINUS_ONE} or {@code CONFUSED}, which GitHub does not
      *     accept on a release
      */

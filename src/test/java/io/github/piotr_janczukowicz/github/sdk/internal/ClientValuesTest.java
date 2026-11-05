@@ -71,4 +71,12 @@ class ClientValuesTest {
 
         assertThat(thrown).hasCauseInstanceOf(UnsupportedOperationException.class);
     }
+
+    @Test
+    void releaseReactionToClient_shouldThrowIllegalArgumentException_whenTheEmojiIsMinusOne() {
+        final Throwable thrown =
+                catchThrowable(() -> ClientValues.releaseReactionToClient(GitHubReactionContent.MINUS_ONE));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("MINUS_ONE");
+    }
 }

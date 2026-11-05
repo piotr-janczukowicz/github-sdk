@@ -150,4 +150,46 @@ class PullRequestDiffAndMergeTest {
 
         assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("uuid");
     }
+
+    @Test
+    void diff_shouldReturnEmpty_whenGitHubAnswersNotFound() throws IOException {
+        when(github.pullRequests().pullRequest().getDiff(OWNER, NAME, NUMBER)).thenReturn(Optional.empty());
+
+        final Optional<String> diff = sut.diff();
+
+        assertThat(diff).isEmpty();
+    }
+
+    @Test
+    void patch_shouldReturnEmpty_whenGitHubAnswersNotFound() throws IOException {
+        when(github.pullRequests().pullRequest().getPatch(OWNER, NAME, NUMBER)).thenReturn(Optional.empty());
+
+        final Optional<String> patch = sut.patch();
+
+        assertThat(patch).isEmpty();
+    }
+
+    @Test
+    void mergeAsyncResult_shouldReturnEmpty_whenGitHubAnswersNotFound() throws IOException {
+        when(github.pullRequests().pullRequest().getMergeAsyncResult(OWNER, NAME, NUMBER, "uuid-1"))
+                .thenReturn(Optional.empty());
+
+        final Optional<GitHubPullRequestMergeAsyncResult> result = sut.mergeAsyncResult("uuid-1");
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void updateBranch_shouldThrowNullPointerException_whenTheShaIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.updateBranch(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("expectedHeadSha");
+    }
+
+    @Test
+    void mergeAsyncResult_shouldThrowNullPointerException_whenTheUuidIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.mergeAsyncResult(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("uuid");
+    }
 }

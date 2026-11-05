@@ -214,9 +214,9 @@ public final class PullRequestReview {
     /**
      * Lists the inline comments of the review ({@code GET
      * /repos/{owner}/{repo}/pulls/{pull_number}/reviews/{review_id}/comments}). GitHub lists only a summary of each
-     * comment, so every comment is loaded again as the stream reaches it, which costs one request per comment. Pages
-     * are fetched only as the stream is consumed; transport failures during iteration are
-     * {@link java.io.UncheckedIOException}.
+     * comment, so every comment is loaded again as the stream reaches it, which costs one request per comment. A
+     * comment that is gone before it is loaded is skipped. Pages are fetched only as the stream is consumed; transport
+     * failures during iteration are {@link java.io.UncheckedIOException}.
      *
      * @return the comments, oldest first
      * @throws IOException if the first page cannot be loaded

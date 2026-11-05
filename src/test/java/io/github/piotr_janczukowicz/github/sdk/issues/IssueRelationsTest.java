@@ -82,20 +82,39 @@ class IssueRelationsTest {
     }
 
     @Test
-    void addSubIssue_shouldSendTheIdAndKeepTheParent_whenCalledWithAChild() throws IOException {
+    void addSubIssue_shouldSendTheIdOfTheChild_whenCalledWithAChild() throws IOException {
         when(github.issues().subIssues().addSubIssue(eq(OWNER), eq(NAME), eq(NUMBER), any()))
                 .thenReturn(response);
         final ArgumentCaptor<GitHubAddSubIssuePayload> payload =
                 ArgumentCaptor.forClass(GitHubAddSubIssuePayload.class);
 
-        final Issue result = sut.addSubIssue(other);
+        sut.addSubIssue(other);
 
         verify(github.issues().subIssues()).addSubIssue(eq(OWNER), eq(NAME), eq(NUMBER), payload.capture());
-        assertSoftly(softly -> {
-            softly.assertThat(payload.getValue().subIssueId()).isEqualTo(2002L);
-            softly.assertThat(payload.getValue().replaceParent()).isFalse();
-            softly.assertThat(result.repository()).isSameAs(repository);
-        });
+        assertThat(payload.getValue().subIssueId()).isEqualTo(2002L);
+    }
+
+    @Test
+    void addSubIssue_shouldNotReplaceTheParent_whenCalledWithOnlyAChild() throws IOException {
+        when(github.issues().subIssues().addSubIssue(eq(OWNER), eq(NAME), eq(NUMBER), any()))
+                .thenReturn(response);
+        final ArgumentCaptor<GitHubAddSubIssuePayload> payload =
+                ArgumentCaptor.forClass(GitHubAddSubIssuePayload.class);
+
+        sut.addSubIssue(other);
+
+        verify(github.issues().subIssues()).addSubIssue(eq(OWNER), eq(NAME), eq(NUMBER), payload.capture());
+        assertThat(payload.getValue().replaceParent()).isFalse();
+    }
+
+    @Test
+    void addSubIssue_shouldReturnTheParentInItsRepository_whenCalledWithAChild() throws IOException {
+        when(github.issues().subIssues().addSubIssue(eq(OWNER), eq(NAME), eq(NUMBER), any()))
+                .thenReturn(response);
+
+        final Issue result = sut.addSubIssue(other);
+
+        assertThat(result.repository()).isSameAs(repository);
     }
 
     @Test
@@ -216,5 +235,74 @@ class IssueRelationsTest {
         final Issue result = sut.removeBlockedBy(other);
 
         assertThat(result.number()).isEqualTo(NUMBER);
+    }
+
+    @Test
+    void subIssues_shouldBindEachToItsOwnRepository_whenOneIsInAnotherRepository() throws IOException {
+        when(github.issues().subIssues().listSubIssues(OWNER, NAME, NUMBER).stream())
+                .thenReturn(Stream.of(otherResponse));
+
+        final List<Issue> subIssues = sut.subIssues().toList();
+
+        assertThat(subIssues)
+                .singleElement()
+                .satisfies(found -> assertThat(found.repository().owner()).isEqualTo("hubot"));
+    }
+
+    @Test
+    void parent_shouldKeepTheRepository_whenTheParentIsInTheSameRepository() throws IOException {
+        when(github.issues().subIssues().getParent(OWNER, NAME, NUMBER)).thenReturn(Optional.of(response));
+
+        final Optional<Issue> parent = sut.parent();
+
+        assertThat(parent)
+                .hasValueSatisfying(found -> assertThat(found.repository()).isSameAs(repository));
+    }
+
+    @Test
+    void blockedBy_shouldKeepTheRepository_whenTheBlockerIsInTheSameRepository() throws IOException {
+        when(github.issues().issueDependencies().listDependenciesBlockedBy(OWNER, NAME, NUMBER).stream())
+                .thenReturn(Stream.of(response));
+
+        final List<Issue> blockers = sut.blockedBy().toList();
+
+        assertThat(blockers)
+                .singleElement()
+                .satisfies(found -> assertThat(found.repository()).isSameAs(repository));
+    }
+
+    @Test
+    void moveSubIssueAfter_shouldThrowNullPointerException_whenTheOtherIssueIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.moveSubIssueAfter(other, null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("issue");
+    }
+
+    @Test
+    void moveSubIssueBefore_shouldThrowNullPointerException_whenTheOtherIssueIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.moveSubIssueBefore(other, null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("issue");
+    }
+
+    @Test
+    void removeSubIssue_shouldThrowNullPointerException_whenTheChildIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.removeSubIssue(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("issue");
+    }
+
+    @Test
+    void addBlockedBy_shouldThrowNullPointerException_whenTheBlockerIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.addBlockedBy(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("issue");
+    }
+
+    @Test
+    void removeBlockedBy_shouldThrowNullPointerException_whenTheBlockerIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.removeBlockedBy(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("issue");
     }
 }

@@ -98,7 +98,7 @@ class RepositoryChecksTest {
 
     @Test
     void createCheckRun_shouldThrowNullPointerException_whenPayloadIsNull() {
-        final Throwable thrown = catchThrowable(() -> sut.createCheckRun((GitHubCreateCheckRunPayload) null));
+        final Throwable thrown = catchThrowable(() -> sut.createCheckRun(null));
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("payload");
     }

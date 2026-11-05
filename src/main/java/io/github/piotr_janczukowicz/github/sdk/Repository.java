@@ -1660,7 +1660,8 @@ public final class Repository {
      * @param commitSha the sha of the commit the tag points at
      * @return the tag object as GitHub returned it
      * @throws NullPointerException if an argument is {@code null}
-     * @throws IllegalArgumentException if an argument is blank
+     * @throws IllegalArgumentException if an argument is blank, or {@code commitSha} has a control character or a
+     *     {@code .} or {@code ..} segment
      * @throws IOException if the transport fails
      */
     public GitHubGitTag createTag(final String tag, final String message, final String commitSha) throws IOException {
@@ -1705,7 +1706,8 @@ public final class Repository {
      * @param sha the sha of the tag object
      * @return the tag object, or empty when GitHub answers HTTP 404
      * @throws NullPointerException if {@code sha} is {@code null}
-     * @throws IllegalArgumentException if {@code sha} is blank
+     * @throws IllegalArgumentException if {@code sha} is blank, has a control character or has a {@code .} or
+     *     {@code ..} segment
      * @throws IOException if the transport fails
      */
     public Optional<GitHubGitTag> tagObject(final String sha) throws IOException {
@@ -2263,8 +2265,8 @@ public final class Repository {
     /**
      * Lists the secret scanning alerts ({@code GET /repos/{owner}/{repo}/secret-scanning/alerts}). GitHub's list holds
      * less than a single lookup, so each alert is loaded with one more request as the stream reaches it;
-     * {@code limit(...)} bounds the cost. Pages are fetched only as the stream is consumed; transport failures during
-     * iteration are {@link java.io.UncheckedIOException}.
+     * {@code limit(...)} bounds the cost. An alert that is gone before it is loaded is skipped. Pages are fetched only
+     * as the stream is consumed; transport failures during iteration are {@link java.io.UncheckedIOException}.
      *
      * @param filter the filter for state, secret type, provider and more
      * @return the alerts
@@ -2301,8 +2303,8 @@ public final class Repository {
     /**
      * Lists the code scanning alerts ({@code GET /repos/{owner}/{repo}/code-scanning/alerts}). GitHub's list holds less
      * than a single lookup, so each alert is loaded with one more request as the stream reaches it; {@code limit(...)}
-     * bounds the cost. Pages are fetched only as the stream is consumed; transport failures during iteration are
-     * {@link java.io.UncheckedIOException}.
+     * bounds the cost. An alert that is gone before it is loaded is skipped. Pages are fetched only as the stream is
+     * consumed; transport failures during iteration are {@link java.io.UncheckedIOException}.
      *
      * @return the alerts
      * @throws IOException if the first page cannot be loaded
@@ -2564,7 +2566,8 @@ public final class Repository {
     /**
      * Lists the rulesets that apply to the repository, including those inherited from the organization ({@code GET
      * /repos/{owner}/{repo}/rulesets}). GitHub lists them without their rules, so each ruleset is loaded again as the
-     * stream reaches it; the stream is lazy and can be used once.
+     * stream reaches it; a ruleset that is gone before it is loaded is skipped. The stream is lazy and can be used
+     * once.
      *
      * @return the rulesets
      * @throws IOException if the transport fails
@@ -2706,7 +2709,6 @@ public final class Repository {
         return Lookups.find(() -> pullRequest(number));
     }
 
-    @SuppressWarnings("java:S2259")
     private Optional<SecretScanningAlert> loadSecretScanningAlert(final GitHubSecretScanningAlert listed) {
         final int number = requireNonNull(listed.number(), NUMBER_ARGUMENT);
         return Lookups.find(() -> secretScanningAlert(number));

@@ -113,13 +113,18 @@ public final class Release {
      * @param file the file to upload
      * @return the new asset as GitHub returned it
      * @throws NullPointerException if {@code file} is {@code null}
+     * @throws IllegalArgumentException if {@code file} has no file name, such as a root path
      * @throws IOException if the file cannot be read or the transport fails
      */
     public ReleaseAsset uploadAsset(final Path file) throws IOException {
         final Path validFile = requireNonNull(file, "file");
+        final Path fileName = validFile.getFileName();
+        if (fileName == null) {
+            throw new IllegalArgumentException("file has no file name: " + validFile);
+        }
         final String contentType =
                 Optional.ofNullable(Files.probeContentType(validFile)).orElse(OCTET_STREAM);
-        return uploadAsset(validFile, contentType, String.valueOf(validFile.getFileName()), null);
+        return uploadAsset(validFile, contentType, fileName.toString(), null);
     }
 
     /**

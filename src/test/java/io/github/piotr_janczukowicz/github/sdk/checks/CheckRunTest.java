@@ -142,7 +142,7 @@ class CheckRunTest {
 
     @Test
     void update_shouldThrowNullPointerException_whenPayloadIsNull() {
-        final Throwable thrown = catchThrowable(() -> sut.update((GitHubUpdateCheckRunPayload) null));
+        final Throwable thrown = catchThrowable(() -> sut.update(null));
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("payload");
     }

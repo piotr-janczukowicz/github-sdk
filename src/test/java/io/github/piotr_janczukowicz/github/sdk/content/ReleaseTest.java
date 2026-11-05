@@ -159,4 +159,47 @@ class ReleaseTest {
 
         verify(github.releases().release()).deleteRelease(OWNER, NAME, ID);
     }
+
+    @Test
+    void uploadAsset_shouldThrowIllegalArgumentException_whenContentTypeIsBlank() {
+        final Path file = Path.of("build/app.zip");
+
+        final Throwable thrown = catchThrowable(() -> sut.uploadAsset(file, " ", "app.zip", null));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("contentType");
+    }
+
+    @Test
+    void uploadAsset_shouldThrowNullPointerException_whenContentTypeIsNull() {
+        final Path file = Path.of("build/app.zip");
+
+        final Throwable thrown = catchThrowable(() -> sut.uploadAsset(file, null, "app.zip", null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("contentType");
+    }
+
+    @Test
+    void uploadAsset_shouldThrowNullPointerException_whenNameIsNull() {
+        final Path file = Path.of("build/app.zip");
+
+        final Throwable thrown = catchThrowable(() -> sut.uploadAsset(file, "application/zip", null, null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("name");
+    }
+
+    @Test
+    void uploadAsset_shouldThrowNullPointerException_whenFileIsNullInTheLongForm() {
+        final Throwable thrown = catchThrowable(() -> sut.uploadAsset(null, "application/zip", "app.zip", null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("file");
+    }
+
+    @Test
+    void uploadAsset_shouldThrowIllegalArgumentException_whenTheFileHasNoFileName() {
+        final Path root = Path.of("/").toAbsolutePath().getRoot();
+
+        final Throwable thrown = catchThrowable(() -> sut.uploadAsset(root));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("file name");
+    }
 }

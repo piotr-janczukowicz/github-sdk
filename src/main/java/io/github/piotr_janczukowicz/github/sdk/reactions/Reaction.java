@@ -15,7 +15,7 @@ import java.util.Optional;
  * A reaction to an {@link Issue}, an {@link IssueComment}, a {@link PullRequestReviewComment}, a commit comment or a
  * release, as GitHub returned it. The object is immutable, and {@link #response()} gives the complete response for
  * every field the accessors here do not cover. Unlike the other objects it does not navigate to a parent, because the
- * same type serves three kinds of parent.
+ * same type serves several kinds of parent.
  */
 public final class Reaction {
 

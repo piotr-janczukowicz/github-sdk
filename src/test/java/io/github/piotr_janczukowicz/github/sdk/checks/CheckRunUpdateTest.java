@@ -107,30 +107,100 @@ class CheckRunUpdateTest {
     }
 
     @Test
-    void setters_shouldThrowNullPointerException_whenAValueIsNull() {
-        final CheckRunUpdate update = sut.update();
-
-        final Throwable detailsUrl = catchThrowable(() -> update.detailsUrl(null));
-        final Throwable externalId = catchThrowable(() -> update.externalId(null));
-        final Throwable startedAt = catchThrowable(() -> update.startedAt(null));
-        final Throwable status = catchThrowable(() -> update.status(null));
-        final Throwable conclusion = catchThrowable(() -> update.conclusion(null));
-        final Throwable completedAt = catchThrowable(() -> update.completedAt(null));
-
-        assertSoftly(softly -> {
-            softly.assertThat(detailsUrl).isInstanceOf(NullPointerException.class);
-            softly.assertThat(externalId).isInstanceOf(NullPointerException.class);
-            softly.assertThat(startedAt).isInstanceOf(NullPointerException.class);
-            softly.assertThat(status).isInstanceOf(NullPointerException.class);
-            softly.assertThat(conclusion).isInstanceOf(NullPointerException.class);
-            softly.assertThat(completedAt).isInstanceOf(NullPointerException.class);
-        });
-    }
-
-    @Test
     void constructor_shouldThrowNullPointerException_whenCheckRunIsNull() {
         final Throwable thrown = catchThrowable(() -> new CheckRunUpdate(null));
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("checkRun");
+    }
+
+    @Test
+    void detailsUrl_shouldThrowNullPointerException_whenTheValueIsNull() {
+        final CheckRunUpdate update = sut.update();
+
+        final Throwable thrown = catchThrowable(() -> update.detailsUrl(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("detailsUrl");
+    }
+
+    @Test
+    void externalId_shouldThrowNullPointerException_whenTheValueIsNull() {
+        final CheckRunUpdate update = sut.update();
+
+        final Throwable thrown = catchThrowable(() -> update.externalId(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("externalId");
+    }
+
+    @Test
+    void startedAt_shouldThrowNullPointerException_whenTheValueIsNull() {
+        final CheckRunUpdate update = sut.update();
+
+        final Throwable thrown = catchThrowable(() -> update.startedAt(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("startedAt");
+    }
+
+    @Test
+    void status_shouldThrowNullPointerException_whenTheValueIsNull() {
+        final CheckRunUpdate update = sut.update();
+
+        final Throwable thrown = catchThrowable(() -> update.status(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("status");
+    }
+
+    @Test
+    void conclusion_shouldThrowNullPointerException_whenTheValueIsNull() {
+        final CheckRunUpdate update = sut.update();
+
+        final Throwable thrown = catchThrowable(() -> update.conclusion(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("conclusion");
+    }
+
+    @Test
+    void completedAt_shouldThrowNullPointerException_whenTheValueIsNull() {
+        final CheckRunUpdate update = sut.update();
+
+        final Throwable thrown = catchThrowable(() -> update.completedAt(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("completedAt");
+    }
+
+    @Test
+    void output_shouldThrowIllegalArgumentException_whenTitleIsBlank() {
+        final CheckRunUpdate update = sut.update();
+
+        final Throwable thrown = catchThrowable(() -> update.output(" ", "Summary"));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("title");
+    }
+
+    @Test
+    void output_shouldThrowNullPointerException_whenTitleIsNull() {
+        final CheckRunUpdate update = sut.update();
+
+        final Throwable thrown = catchThrowable(() -> update.output(null, "Summary"));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("title");
+    }
+
+    @Test
+    void output_shouldThrowNullPointerException_whenSummaryIsNull() {
+        final CheckRunUpdate update = sut.update();
+
+        final Throwable thrown = catchThrowable(() -> update.output("Title", null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("summary");
+    }
+
+    @Test
+    void output_shouldThrowIllegalArgumentException_whenSummaryIsTooLong() {
+        final CheckRunUpdate update = sut.update();
+        final String summary = "x".repeat(65_536);
+
+        final Throwable thrown = catchThrowable(() -> update.output("Title", summary));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("summary");
     }
 }

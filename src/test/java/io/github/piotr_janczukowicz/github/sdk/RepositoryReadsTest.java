@@ -206,4 +206,68 @@ class RepositoryReadsTest {
 
         assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("sha");
     }
+
+    @Test
+    void codeownersErrors_shouldReturnEmpty_whenGitHubAnswersNotFound() throws IOException {
+        final GitHubRepositoryApi api = github.repositories().repository();
+        doReturn(Optional.empty()).when(api).codeownersErrors(OWNER, NAME);
+
+        final Optional<GitHubCodeownersErrors> result = sut.codeownersErrors();
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void readme_shouldReturnEmpty_whenTheDirectoryHasNone() throws IOException {
+        when(github.repositories().contents().getReadmeInDirectory(OWNER, NAME, "docs"))
+                .thenReturn(Optional.empty());
+
+        final Optional<RepositoryFile> readme = sut.readme("docs");
+
+        assertThat(readme).isEmpty();
+    }
+
+    @Test
+    void tagObject_shouldReturnEmpty_whenGitHubAnswersNotFound() throws IOException {
+        when(github.gitDatabase().tags().getTag(OWNER, NAME, TAG_SHA)).thenReturn(Optional.empty());
+
+        final Optional<GitHubGitTag> tag = sut.tagObject(TAG_SHA);
+
+        assertThat(tag).isEmpty();
+    }
+
+    @Test
+    void createTag_shouldThrowIllegalArgumentException_whenTheTagIsBlank() {
+        final Throwable thrown = catchThrowable(() -> sut.createTag(" ", "First", "abc123"));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("tag");
+    }
+
+    @Test
+    void createTag_shouldThrowIllegalArgumentException_whenTheCommitShaIsBlank() {
+        final Throwable thrown = catchThrowable(() -> sut.createTag("v1", "First", " "));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("sha");
+    }
+
+    @Test
+    void createTag_shouldThrowNullPointerException_whenTheTagIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.createTag(null, "First", "abc123"));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("tag");
+    }
+
+    @Test
+    void createAnnotatedTag_shouldThrowIllegalArgumentException_whenTheMessageIsBlank() {
+        final Throwable thrown = catchThrowable(() -> sut.createAnnotatedTag("v1", " ", "abc123"));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("message");
+    }
+
+    @Test
+    void createAnnotatedTag_shouldThrowIllegalArgumentException_whenTheCommitShaIsBlank() {
+        final Throwable thrown = catchThrowable(() -> sut.createAnnotatedTag("v1", "First", " "));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("sha");
+    }
 }
