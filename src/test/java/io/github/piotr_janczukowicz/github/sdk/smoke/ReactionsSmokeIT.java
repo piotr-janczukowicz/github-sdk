@@ -11,6 +11,7 @@ import io.github.piotr_janczukowicz.github.sdk.Repository;
 import io.github.piotr_janczukowicz.github.sdk.content.Commit;
 import io.github.piotr_janczukowicz.github.sdk.content.CommitComment;
 import io.github.piotr_janczukowicz.github.sdk.content.Release;
+import io.github.piotr_janczukowicz.github.sdk.git.Ref;
 import io.github.piotr_janczukowicz.github.sdk.issues.Issue;
 import io.github.piotr_janczukowicz.github.sdk.issues.IssueComment;
 import io.github.piotr_janczukowicz.github.sdk.pulls.PullRequest;
@@ -19,6 +20,7 @@ import io.github.piotr_janczukowicz.github.sdk.reactions.Reaction;
 import io.github.piotr_janczukowicz.github.sdk.reactions.ReactionContent;
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
@@ -169,13 +171,14 @@ class ReactionsSmokeIT {
             });
         } finally {
             release.delete();
-            repository.ref("tags/" + release.tagName()).ifPresent(tag -> {
-                try {
-                    tag.delete();
-                } catch (final IOException e) {
-                    throw new java.io.UncheckedIOException(e);
-                }
-            });
+            deleteTag(repository, release.tagName());
+        }
+    }
+
+    private static void deleteTag(final Repository repository, final String tagName) throws IOException {
+        final Optional<Ref> tag = repository.ref("tags/" + tagName);
+        if (tag.isPresent()) {
+            tag.get().delete();
         }
     }
 
