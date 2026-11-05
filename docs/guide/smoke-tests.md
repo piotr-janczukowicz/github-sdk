@@ -12,8 +12,9 @@ refuse any other repository.
 Create a fine-grained personal access token. Resource owner: the owner of the sandbox. Repository access: only the
 sandbox repository.
 
-- Repository permissions, read and write: Actions, Commit statuses, Contents, Issues, Pull requests, Variables,
-  Webhooks. The Actions and Variables tests are skipped, not failed, when GitHub answers 403.
+- Repository permissions, read and write: Actions, Administration, Commit statuses, Contents, Issues, Pull requests,
+  Variables, Webhooks. The Actions, Administration and Variables tests are skipped, not failed, when GitHub answers
+  403.
 - Repository permissions, read: Metadata.
 - Account permissions, read and write: Starring and Watching, when your token form offers them. The star and watch
   tests are skipped, not failed, when GitHub answers 403.
@@ -49,6 +50,7 @@ Without `SMOKE_GITHUB_TOKEN` every smoke class is skipped.
 | `CollaboratorsSmokeIT` | list collaborators, check membership, the owner's permission level, list invitations. Adding, removing and changing collaborators are not run live, because an invitation goes to a real account |
 | `ActivitySmokeIT` | star, check, list stargazers and starred repositories, unstar; watch, ignore and unwatch; list watchers and forks. The tests restore your original star and subscription. Forking is not run live, because a user cannot fork their own repository |
 | `ActionsSmokeIT` | create, list, update, delete an Actions variable; list workflows and runs, reload runs, list their jobs and log links; 404 on a missing run. Dispatching a workflow and cancelling the run runs only when `SMOKE_GITHUB_WORKFLOW` names the file of a `workflow_dispatch` workflow already on the sandbox default branch, so the tests never commit workflow files |
+| `RepositoryManagementSmokeIT` | change and restore the description and homepage, replace and restore the topics, list languages and contributors. Create, rename, transfer, archive and delete are not run live: fine-grained tokens cannot create repositories, and GitHub's API cannot unarchive one |
 | `ContentSmokeIT` | default branch, its head commit, branch and commit lists, 404 on a missing branch |
 | `FilesSmokeIT` | write, update, read, delete a file on a throwaway branch (binary and UTF-8 text), directory and missing paths |
 | `ReleasesSmokeIT` | draft release: create, update, list, refresh, delete; latest release; tags |

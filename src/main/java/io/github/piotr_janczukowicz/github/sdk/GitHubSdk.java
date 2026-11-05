@@ -4,6 +4,9 @@ import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 
 import io.github.piotr_janczukowicz.github.api.GitHub;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateForAuthenticatedUserPayload;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateInOrgPayload;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubFullRepository;
 import java.io.IOException;
 import java.util.Optional;
 
@@ -52,6 +55,21 @@ public final class GitHubSdk {
      */
     public User currentUser() throws IOException {
         return new User(this, github.users().user().getAuthenticatedUser());
+    }
+
+    /**
+     * Creates a repository in the account of the authenticated user ({@code POST /user/repos}). To create one in an
+     * organization, use {@link Organization#createRepository(GitHubCreateInOrgPayload)}.
+     *
+     * @param payload the name and settings of the new repository
+     * @return the new repository
+     * @throws NullPointerException if {@code payload} is {@code null}
+     * @throws IOException if the transport fails
+     */
+    public Repository createRepository(final GitHubCreateForAuthenticatedUserPayload payload) throws IOException {
+        requireNonNull(payload, "payload");
+        final GitHubFullRepository created = github.repositories().repository().createForAuthenticatedUser(payload);
+        return new Repository(this, created.owner().login(), created.name(), created);
     }
 
     /**

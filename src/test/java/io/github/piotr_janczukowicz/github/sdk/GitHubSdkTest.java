@@ -12,6 +12,9 @@ import static org.mockito.Mockito.when;
 import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.organizations.GitHubOrganizationFull;
 import io.github.piotr_janczukowicz.github.api.ratelimit.GitHubRateLimitOverview;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateForAuthenticatedUserPayload;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubFullRepository;
+import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
 import io.github.piotr_janczukowicz.github.api.users.GitHubUser;
 import io.github.piotr_janczukowicz.github.api.users.GitHubUserApi;
 import io.github.piotr_janczukowicz.github.api.users.GitHubUserView;
@@ -169,5 +172,36 @@ class GitHubSdkTest {
         final Optional<RateLimit> rateLimit = sut.rateLimit();
 
         assertThat(rateLimit).isEmpty();
+    }
+
+    @Test
+    void createRepository_shouldReturnTheLoadedRepository_whenGitHubCreatesIt() throws IOException {
+        final GitHub github = mock(GitHub.class, RETURNS_DEEP_STUBS);
+        final GitHubCreateForAuthenticatedUserPayload payload = mock(GitHubCreateForAuthenticatedUserPayload.class);
+        final GitHubSimpleUser owner = mock(GitHubSimpleUser.class);
+        when(owner.login()).thenReturn("octocat");
+        final GitHubFullRepository created = mock(GitHubFullRepository.class);
+        when(created.owner()).thenReturn(owner);
+        when(created.name()).thenReturn("new-repo");
+        when(github.repositories().repository().createForAuthenticatedUser(payload))
+                .thenReturn(created);
+        final GitHubSdk sut = GitHubSdk.of(github);
+
+        final Repository repository = sut.createRepository(payload);
+
+        assertSoftly(softly -> {
+            softly.assertThat(repository.owner()).isEqualTo("octocat");
+            softly.assertThat(repository.name()).isEqualTo("new-repo");
+            softly.assertThat(repository.response()).isSameAs(created);
+        });
+    }
+
+    @Test
+    void createRepository_shouldThrowNullPointerException_whenPayloadIsNull() {
+        final GitHubSdk sut = GitHubSdk.of(mock(GitHub.class));
+
+        final Throwable thrown = catchThrowable(() -> sut.createRepository(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("payload");
     }
 }

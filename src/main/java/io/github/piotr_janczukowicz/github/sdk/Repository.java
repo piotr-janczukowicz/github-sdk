@@ -23,15 +23,23 @@ import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubListPullReques
 import io.github.piotr_janczukowicz.github.api.releases.GitHubCreateReleasePayload;
 import io.github.piotr_janczukowicz.github.api.releases.GitHubCreateReleasePayloadBuilder;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubContentFile;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubContributor;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateDispatchEventPayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateForkPayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateOrUpdateFileContentsPayload;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateUsingTemplatePayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateWebhookPayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubFullRepository;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubGetContentFilter;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubListForksFilter;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubMinimalRepository;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubPullRequestSimple;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubReplaceAllTopicsPayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositorySubscription;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryTag;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubTransferPayload;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubUpdatePayload;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubUpdatePayloadBuilder;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubWebhookConfig;
 import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
 import io.github.piotr_janczukowicz.github.pagination.GitHubPageRequest;
@@ -58,6 +66,7 @@ import io.github.piotr_janczukowicz.github.sdk.webhooks.Webhook;
 import java.io.IOException;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
@@ -1118,6 +1127,209 @@ public final class Repository {
      */
     public Repository fork(final GitHubCreateForkPayload payload) throws IOException {
         return createFork(requireNonNull(payload, PAYLOAD));
+    }
+
+    /**
+     * Starts a change of several settings at once; nothing is sent until {@link RepositoryUpdate#send()}.
+     *
+     * @return a new update for this repository
+     */
+    public RepositoryUpdate update() {
+        return new RepositoryUpdate(this);
+    }
+
+    /**
+     * Archives the repository ({@code PATCH /repos/{owner}/{repo}}), which makes it read-only. GitHub's API has no way
+     * to undo this; only the web interface can unarchive a repository. This object is not changed.
+     *
+     * @return the repository as GitHub returned it after the change
+     * @throws IOException if the transport fails
+     */
+    public Repository archive() throws IOException {
+        return apply(GitHubUpdatePayloadBuilder.builder().archived(true).build());
+    }
+
+    /**
+     * Deletes the repository ({@code DELETE /repos/{owner}/{repo}}). This cannot be undone.
+     *
+     * @throws IOException if the transport fails
+     */
+    public void delete() throws IOException {
+        sdk.github().repositories().repository().delete(owner, name);
+    }
+
+    /**
+     * Transfers the repository to another owner and keeps its name. See {@link #transfer(String, String)}.
+     *
+     * @param newOwner the login of the user or organization that receives the repository
+     * @return a handle to the repository under its new owner
+     * @throws NullPointerException if {@code newOwner} is {@code null}
+     * @throws IllegalArgumentException if {@code newOwner} is blank
+     * @throws IOException if the transport fails
+     */
+    public Repository transfer(final String newOwner) throws IOException {
+        return transferTo(newOwner, null);
+    }
+
+    /**
+     * Transfers the repository to another owner and renames it ({@code POST /repos/{owner}/{repo}/transfer}). GitHub
+     * completes the transfer asynchronously, and a transfer to a user needs that user to accept it, so the returned
+     * handle may not be usable at once. This object is not changed.
+     *
+     * @param newOwner the login of the user or organization that receives the repository
+     * @param newName the new name of the repository
+     * @return a handle to the repository under its new owner
+     * @throws NullPointerException if {@code newOwner} or {@code newName} is {@code null}
+     * @throws IllegalArgumentException if {@code newOwner} or {@code newName} is blank
+     * @throws IOException if the transport fails
+     */
+    public Repository transfer(final String newOwner, final String newName) throws IOException {
+        return transferTo(newOwner, requireNotBlank(newName, "newName"));
+    }
+
+    /**
+     * Lists the topics ({@code GET /repos/{owner}/{repo}/topics}).
+     *
+     * @return the topic names
+     * @throws IOException if the transport fails
+     */
+    public List<String> topics() throws IOException {
+        return sdk.github()
+                .repositories()
+                .repository()
+                .getAllTopics(owner, name)
+                .names();
+    }
+
+    /**
+     * Replaces all topics ({@code PUT /repos/{owner}/{repo}/topics}). An empty list removes them all.
+     *
+     * @param topics the topic names
+     * @return the topics as GitHub holds them afterwards
+     * @throws NullPointerException if {@code topics} is {@code null}
+     * @throws IOException if the transport fails
+     */
+    public List<String> replaceTopics(final List<String> topics) throws IOException {
+        return sdk.github()
+                .repositories()
+                .repository()
+                .replaceAllTopics(
+                        owner, name, new GitHubReplaceAllTopicsPayload(List.copyOf(requireNonNull(topics, "topics"))))
+                .names();
+    }
+
+    /**
+     * Lists the languages of the repository ({@code GET /repos/{owner}/{repo}/languages}).
+     *
+     * @return the number of bytes of code per language
+     * @throws IOException if the transport fails
+     */
+    public Map<String, Integer> languages() throws IOException {
+        return sdk.github()
+                .repositories()
+                .repository()
+                .listLanguages(owner, name)
+                .languages();
+    }
+
+    /**
+     * Lists the contributors ({@code GET /repos/{owner}/{repo}/contributors}) as GitHub returns them. Pages are fetched
+     * only as the stream is consumed; transport failures during iteration are {@link java.io.UncheckedIOException}.
+     *
+     * @return the contributors, most commits first
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<GitHubContributor> contributors() throws IOException {
+        return sdk
+                .github()
+                .repositories()
+                .repository()
+                .listContributors(owner, name, GitHubPageRequest.byPage())
+                .stream();
+    }
+
+    /**
+     * Triggers workflows that listen to a {@code repository_dispatch} event. See {@link #dispatchEvent(String, Map)}.
+     *
+     * @param eventType the custom event type
+     * @throws NullPointerException if {@code eventType} is {@code null}
+     * @throws IllegalArgumentException if {@code eventType} is blank
+     * @throws IOException if the transport fails
+     */
+    public void dispatchEvent(final String eventType) throws IOException {
+        dispatch(eventType, null);
+    }
+
+    /**
+     * Triggers workflows that listen to a {@code repository_dispatch} event ({@code POST
+     * /repos/{owner}/{repo}/dispatches}). GitHub answers with no body, so no run is returned.
+     *
+     * @param eventType the custom event type
+     * @param clientPayload the data the workflows read from {@code github.event.client_payload}
+     * @throws NullPointerException if {@code eventType} or {@code clientPayload} is {@code null}
+     * @throws IllegalArgumentException if {@code eventType} is blank
+     * @throws IOException if the transport fails
+     */
+    public void dispatchEvent(final String eventType, final Map<String, Object> clientPayload) throws IOException {
+        dispatch(eventType, Map.copyOf(requireNonNull(clientPayload, "clientPayload")));
+    }
+
+    /**
+     * Creates a new repository from this one, which must be a template. See
+     * {@link #generate(GitHubCreateUsingTemplatePayload)}.
+     *
+     * @param newOwner the owner of the new repository
+     * @param newName the name of the new repository
+     * @return the new repository
+     * @throws NullPointerException if {@code newOwner} or {@code newName} is {@code null}
+     * @throws IllegalArgumentException if {@code newOwner} or {@code newName} is blank
+     * @throws IOException if the transport fails
+     */
+    public Repository generate(final String newOwner, final String newName) throws IOException {
+        return generate(new GitHubCreateUsingTemplatePayload(
+                requireNotBlank(newOwner, "newOwner"), requireNotBlank(newName, "newName"), null, null, null));
+    }
+
+    /**
+     * Creates a new repository from this one, which must be a template ({@code POST
+     * /repos/{template_owner}/{template_repo}/generate}).
+     *
+     * @param payload the owner, name and options of the new repository
+     * @return the new repository
+     * @throws NullPointerException if {@code payload} is {@code null}
+     * @throws IOException if the transport fails
+     */
+    public Repository generate(final GitHubCreateUsingTemplatePayload payload) throws IOException {
+        final GitHubFullRepository created = sdk.github()
+                .repositories()
+                .repository()
+                .createUsingTemplate(owner, name, requireNonNull(payload, PAYLOAD));
+        return new Repository(sdk, payload.owner(), created.name(), created);
+    }
+
+    Repository apply(final GitHubUpdatePayload payload) throws IOException {
+        final GitHubFullRepository updated =
+                sdk.github().repositories().repository().update(owner, name, payload);
+        return new Repository(sdk, owner, updated.name(), updated);
+    }
+
+    private Repository transferTo(final String newOwner, final @Nullable String newName) throws IOException {
+        final GitHubMinimalRepository moved = sdk.github()
+                .repositories()
+                .repository()
+                .transfer(owner, name, new GitHubTransferPayload(requireNotBlank(newOwner, "newOwner"), newName, null));
+        return sdk.repository(moved.owner().login(), moved.name());
+    }
+
+    private void dispatch(final String eventType, final @Nullable Map<String, Object> clientPayload)
+            throws IOException {
+        sdk.github()
+                .repositories()
+                .repository()
+                .createDispatchEvent(
+                        owner,
+                        name,
+                        new GitHubCreateDispatchEventPayload(requireNotBlank(eventType, "eventType"), clientPayload));
     }
 
     private PullRequest loadPullRequest(final GitHubPullRequestSimple listed) {
