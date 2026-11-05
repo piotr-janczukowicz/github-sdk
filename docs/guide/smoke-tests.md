@@ -52,6 +52,7 @@ Without `SMOKE_GITHUB_TOKEN` every smoke class is skipped.
 | `ActionsSmokeIT` | create, list, update, delete an Actions variable; list workflows and runs, reload runs, list their jobs and log links; 404 on a missing run. Dispatching a workflow and cancelling the run runs only when `SMOKE_GITHUB_WORKFLOW` names the file of a `workflow_dispatch` workflow already on the sandbox default branch, so the tests never commit workflow files |
 | `RepositoryManagementSmokeIT` | change and restore the description and homepage, replace and restore the topics, list languages and contributors. Create, rename, transfer, archive and delete are not run live: fine-grained tokens cannot create repositories, and GitHub's API cannot unarchive one |
 | `BranchProtectionSmokeIT` | protect a throwaway branch, replace the rule, read and refresh it, remove it. The default branch is never touched. Skipped when GitHub answers 403, which a private repository on a plan without branch protection does |
+| `GitDataSmokeIT` | create a throwaway branch, commit two files and then delete one as separate commits, compare with the default branch, force the ref back, delete it; list refs and load a tree |
 | `ContentSmokeIT` | default branch, its head commit, branch and commit lists, 404 on a missing branch |
 | `FilesSmokeIT` | write, update, read, delete a file on a throwaway branch (binary and UTF-8 text), directory and missing paths |
 | `ReleasesSmokeIT` | draft release: create, update, list, refresh, delete; latest release; tags |

@@ -13,6 +13,10 @@ import io.github.piotr_janczukowicz.github.api.collaborators.GitHubAddCollaborat
 import io.github.piotr_janczukowicz.github.api.collaborators.GitHubListCollaboratorsFilter;
 import io.github.piotr_janczukowicz.github.api.collaborators.GitHubRepositoryCollaboratorPermission;
 import io.github.piotr_janczukowicz.github.api.commits.GitHubListCommitsFilter;
+import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubBlob;
+import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubCreateRefPayload;
+import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubGetTreeFilter;
+import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubGitTree;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubCreateLabelPayload;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubCreateMilestonePayload;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubCreatePayload;
@@ -55,6 +59,9 @@ import io.github.piotr_janczukowicz.github.sdk.content.Branch;
 import io.github.piotr_janczukowicz.github.sdk.content.Commit;
 import io.github.piotr_janczukowicz.github.sdk.content.Release;
 import io.github.piotr_janczukowicz.github.sdk.content.RepositoryFile;
+import io.github.piotr_janczukowicz.github.sdk.git.Comparison;
+import io.github.piotr_janczukowicz.github.sdk.git.FileChanges;
+import io.github.piotr_janczukowicz.github.sdk.git.Ref;
 import io.github.piotr_janczukowicz.github.sdk.internal.ClientValues;
 import io.github.piotr_janczukowicz.github.sdk.internal.Internals;
 import io.github.piotr_janczukowicz.github.sdk.internal.Lookups;
@@ -82,6 +89,8 @@ public final class Repository {
     private static final String FILTER = "filter";
     private static final String LOGIN = "login";
     private static final String VARIABLE_NAME = "variableName";
+    private static final String SHA = "sha";
+    private static final String IS_GONE = " is gone";
 
     static {
         Internals.registerRepositoryAccess(repository -> repository.sdk.github());
@@ -332,7 +341,7 @@ public final class Repository {
         return sdk.github()
                 .commits()
                 .commit()
-                .getCommit(owner, name, requireNotBlank(sha, "sha"))
+                .getCommit(owner, name, requireNotBlank(sha, SHA))
                 .map(loaded -> new Commit(this, loaded));
     }
 
@@ -496,7 +505,7 @@ public final class Repository {
                 .variables()
                 .createRepoVariable(
                         owner, name, new GitHubCreateRepoVariablePayload(validName, requireNonNull(value, "value")));
-        return variable(validName).orElseThrow(() -> new IllegalStateException("Variable " + validName + " is gone"));
+        return variable(validName).orElseThrow(() -> new IllegalStateException("Variable " + validName + IS_GONE));
     }
 
     /**
@@ -1307,6 +1316,163 @@ public final class Repository {
         return new Repository(sdk, payload.owner(), created.name(), created);
     }
 
+    /**
+     * Starts a commit of several file changes to a branch; nothing is sent until {@link FileChanges#send(String)}.
+     *
+     * @param branch the name of the branch that receives the commit
+     * @return a new, empty set of changes
+     * @throws NullPointerException if {@code branch} is {@code null}
+     * @throws IllegalArgumentException if {@code branch} is blank
+     */
+    public FileChanges commitTo(final String branch) {
+        return new FileChanges(this, branch);
+    }
+
+    /**
+     * Compares two commits, branches or tags ({@code GET /repos/{owner}/{repo}/compare/{base}...{head}}).
+     *
+     * @param base the base, such as a branch name or a sha
+     * @param head the head, such as a branch name or a sha
+     * @return the comparison, or empty when GitHub answers HTTP 404
+     * @throws NullPointerException if {@code base} or {@code head} is {@code null}
+     * @throws IllegalArgumentException if {@code base} or {@code head} is blank
+     * @throws IOException if the transport fails
+     */
+    public Optional<Comparison> compare(final String base, final String head) throws IOException {
+        final String baseHead = requireNotBlank(base, "base") + "..." + requireNotBlank(head, "head");
+        return sdk.github()
+                .commits()
+                .commit()
+                .compareCommits(owner, name, baseHead)
+                .map(loaded -> new Comparison(this, baseHead, loaded));
+    }
+
+    /**
+     * Lists the references that start with a prefix ({@code GET /repos/{owner}/{repo}/git/matching-refs/{ref}}). Pages
+     * are fetched only as the stream is consumed; transport failures during iteration are
+     * {@link java.io.UncheckedIOException}.
+     *
+     * @param prefix the start of the reference name without {@code refs/}, such as {@code heads/} or {@code tags/}
+     * @return the references
+     * @throws NullPointerException if {@code prefix} is {@code null}
+     * @throws IllegalArgumentException if {@code prefix} is blank
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<Ref> refs(final String prefix) throws IOException {
+        return sdk
+                .github()
+                .gitDatabase()
+                .refs()
+                .listMatchingRefs(owner, name, requireNotBlank(prefix, "prefix"))
+                .stream()
+                .map(listed -> new Ref(this, listed));
+    }
+
+    /**
+     * Loads one reference ({@code GET /repos/{owner}/{repo}/git/ref/{ref}}).
+     *
+     * @param ref the reference name without {@code refs/}, such as {@code heads/main} or {@code tags/v1}
+     * @return the reference, or empty when GitHub answers HTTP 404
+     * @throws NullPointerException if {@code ref} is {@code null}
+     * @throws IllegalArgumentException if {@code ref} is blank
+     * @throws IOException if the transport fails
+     */
+    public Optional<Ref> ref(final String ref) throws IOException {
+        return sdk.github()
+                .gitDatabase()
+                .refs()
+                .getRef(owner, name, requireNotBlank(ref, "ref"))
+                .map(loaded -> new Ref(this, loaded));
+    }
+
+    /**
+     * Creates a reference ({@code POST /repos/{owner}/{repo}/git/refs}).
+     *
+     * @param ref the full reference name, such as {@code refs/heads/feature} or {@code refs/tags/v1}
+     * @param sha the sha of the object it points to
+     * @return the new reference
+     * @throws NullPointerException if {@code ref} or {@code sha} is {@code null}
+     * @throws IllegalArgumentException if {@code ref} or {@code sha} is blank
+     * @throws IOException if the transport fails
+     */
+    public Ref createRef(final String ref, final String sha) throws IOException {
+        return new Ref(
+                this,
+                sdk.github()
+                        .gitDatabase()
+                        .refs()
+                        .createRef(
+                                owner,
+                                name,
+                                new GitHubCreateRefPayload(requireNotBlank(ref, "ref"), requireNotBlank(sha, SHA))));
+    }
+
+    /**
+     * Creates a branch that starts at a commit. See {@link #createRef(String, String)}.
+     *
+     * @param branch the name of the new branch
+     * @param sha the sha of the commit it starts at
+     * @return the new branch
+     * @throws NullPointerException if {@code branch} or {@code sha} is {@code null}
+     * @throws IllegalArgumentException if {@code branch} or {@code sha} is blank
+     * @throws IOException if the transport fails
+     * @throws IllegalStateException if GitHub does not have the branch it just created
+     */
+    public Branch createBranch(final String branch, final String sha) throws IOException {
+        final String validBranch = requireNotBlank(branch, "branch");
+        createRef("refs/heads/" + validBranch, sha);
+        return branch(validBranch).orElseThrow(() -> new IllegalStateException("Branch " + validBranch + IS_GONE));
+    }
+
+    /**
+     * Loads a git tree ({@code GET /repos/{owner}/{repo}/git/trees/{tree_sha}}) as GitHub returns it, with the direct
+     * entries only. See {@link #tree(String, boolean)}.
+     *
+     * @param sha the sha of the tree, or of a commit or branch that points to it
+     * @return the tree, or empty when GitHub answers HTTP 404
+     * @throws NullPointerException if {@code sha} is {@code null}
+     * @throws IllegalArgumentException if {@code sha} is blank
+     * @throws IOException if the transport fails
+     */
+    public Optional<GitHubGitTree> tree(final String sha) throws IOException {
+        return tree(sha, false);
+    }
+
+    /**
+     * Loads a git tree ({@code GET /repos/{owner}/{repo}/git/trees/{tree_sha}}) as GitHub returns it. GitHub cuts a
+     * very large tree off and says so in {@code truncated()}.
+     *
+     * @param sha the sha of the tree, or of a commit or branch that points to it
+     * @param isRecursive {@code true} to include the entries of all subdirectories
+     * @return the tree, or empty when GitHub answers HTTP 404
+     * @throws NullPointerException if {@code sha} is {@code null}
+     * @throws IllegalArgumentException if {@code sha} is blank
+     * @throws IOException if the transport fails
+     */
+    public Optional<GitHubGitTree> tree(final String sha, final boolean isRecursive) throws IOException {
+        return sdk.github()
+                .gitDatabase()
+                .trees()
+                .getTree(
+                        owner,
+                        name,
+                        requireNotBlank(sha, SHA),
+                        isRecursive ? GitHubGetTreeFilter.recursively() : GitHubGetTreeFilter.empty());
+    }
+
+    /**
+     * Loads a git blob ({@code GET /repos/{owner}/{repo}/git/blobs/{file_sha}}) as GitHub returns it.
+     *
+     * @param sha the sha of the blob
+     * @return the blob, or empty when GitHub answers HTTP 404
+     * @throws NullPointerException if {@code sha} is {@code null}
+     * @throws IllegalArgumentException if {@code sha} is blank
+     * @throws IOException if the transport fails
+     */
+    public Optional<GitHubBlob> blob(final String sha) throws IOException {
+        return sdk.github().gitDatabase().blobs().getBlob(owner, name, requireNotBlank(sha, SHA));
+    }
+
     Repository apply(final GitHubUpdatePayload payload) throws IOException {
         final GitHubFullRepository updated =
                 sdk.github().repositories().repository().update(owner, name, payload);
@@ -1333,12 +1499,11 @@ public final class Repository {
     }
 
     private PullRequest loadPullRequest(final GitHubPullRequestSimple listed) {
-        return Lookups.require(
-                () -> pullRequest(listed.number()), () -> "Pull request " + listed.number() + " is gone");
+        return Lookups.require(() -> pullRequest(listed.number()), () -> "Pull request " + listed.number() + IS_GONE);
     }
 
     private Branch loadBranch(final GitHubShortBranch listed) {
-        return Lookups.require(() -> branch(listed.name()), () -> "Branch " + listed.name() + " is gone");
+        return Lookups.require(() -> branch(listed.name()), () -> "Branch " + listed.name() + IS_GONE);
     }
 
     private Repository createFork(final @Nullable GitHubCreateForkPayload payload) throws IOException {
