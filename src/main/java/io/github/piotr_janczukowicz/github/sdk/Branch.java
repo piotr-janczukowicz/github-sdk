@@ -6,17 +6,17 @@ import io.github.piotr_janczukowicz.github.api.branches.GitHubBranchWithProtecti
 import java.io.IOException;
 
 /**
- * A branch of a {@link Repository}, as GitHub returned it. The object is immutable, and {@link #record()} gives the
+ * A branch of a {@link Repository}, as GitHub returned it. The object is immutable, and {@link #response()} gives the
  * complete response for every field the accessors here do not cover.
  */
 public final class Branch {
 
     private final Repository repository;
-    private final GitHubBranchWithProtection record;
+    private final GitHubBranchWithProtection response;
 
-    Branch(final Repository repository, final GitHubBranchWithProtection record) {
+    Branch(final Repository repository, final GitHubBranchWithProtection response) {
         this.repository = requireNonNull(repository, "repository");
-        this.record = requireNonNull(record, "record");
+        this.response = requireNonNull(response, "response");
     }
 
     /**
@@ -34,7 +34,7 @@ public final class Branch {
      * @return the name
      */
     public String name() {
-        return record.name();
+        return response.name();
     }
 
     /**
@@ -43,7 +43,7 @@ public final class Branch {
      * @return {@code true} when protected
      */
     public boolean isProtected() {
-        return record.protectedBranch();
+        return response.protectedBranch();
     }
 
     /**
@@ -52,7 +52,7 @@ public final class Branch {
      * @return the head commit
      */
     public Commit commit() {
-        return new Commit(repository, record.commit());
+        return new Commit(repository, response.commit());
     }
 
     /**
@@ -71,7 +71,7 @@ public final class Branch {
      *
      * @return the response record
      */
-    public GitHubBranchWithProtection record() {
-        return record;
+    public GitHubBranchWithProtection response() {
+        return response;
     }
 }

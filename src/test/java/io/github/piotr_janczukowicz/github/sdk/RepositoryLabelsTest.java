@@ -42,7 +42,7 @@ class RepositoryLabelsTest {
 
         assertThat(found).isPresent();
         assertSoftly(softly -> {
-            softly.assertThat(found.orElseThrow().record()).isSameAs(label);
+            softly.assertThat(found.orElseThrow().response()).isSameAs(label);
             softly.assertThat(found.orElseThrow().repository()).isSameAs(sut);
         });
     }
@@ -69,7 +69,7 @@ class RepositoryLabelsTest {
 
         final List<Label> labels = sut.labels().toList();
 
-        assertThat(labels).extracting(Label::record).containsExactly(label);
+        assertThat(labels).extracting(Label::response).containsExactly(label);
     }
 
     @Test
@@ -85,7 +85,7 @@ class RepositoryLabelsTest {
         assertSoftly(softly -> {
             softly.assertThat(payload.getValue().name()).isEqualTo("bug");
             softly.assertThat(payload.getValue().color()).isEqualTo("d73a4a");
-            softly.assertThat(created.record()).isSameAs(label);
+            softly.assertThat(created.response()).isSameAs(label);
         });
     }
 
@@ -96,7 +96,7 @@ class RepositoryLabelsTest {
 
         final Label created = sut.createLabel(payload);
 
-        assertThat(created.record()).isSameAs(label);
+        assertThat(created.response()).isSameAs(label);
     }
 
     @Test
@@ -121,7 +121,7 @@ class RepositoryLabelsTest {
 
         assertThat(found).isPresent();
         assertSoftly(softly -> {
-            softly.assertThat(found.orElseThrow().record()).isSameAs(milestone);
+            softly.assertThat(found.orElseThrow().response()).isSameAs(milestone);
             softly.assertThat(found.orElseThrow().repository()).isSameAs(sut);
         });
     }
@@ -141,7 +141,7 @@ class RepositoryLabelsTest {
 
         final List<Milestone> milestones = sut.milestones().toList();
 
-        assertThat(milestones).extracting(Milestone::record).containsExactly(milestone);
+        assertThat(milestones).extracting(Milestone::response).containsExactly(milestone);
     }
 
     @Test
@@ -157,7 +157,7 @@ class RepositoryLabelsTest {
         assertSoftly(softly -> {
             softly.assertThat(payload.getValue().title()).isEqualTo("v1.0");
             softly.assertThat(payload.getValue().state()).isNull();
-            softly.assertThat(created.record()).isSameAs(milestone);
+            softly.assertThat(created.response()).isSameAs(milestone);
         });
     }
 
@@ -168,7 +168,7 @@ class RepositoryLabelsTest {
 
         final Milestone created = sut.createMilestone(payload);
 
-        assertThat(created.record()).isSameAs(milestone);
+        assertThat(created.response()).isSameAs(milestone);
     }
 
     @Test

@@ -33,12 +33,12 @@ class IssueUpdateTest {
     private static final int NUMBER = 42;
 
     private final GitHub github = mock(GitHub.class, RETURNS_DEEP_STUBS);
-    private final GitHubIssue record = IssuesFixtures.issue();
-    private final Issue issue = new Issue(GitHubSdk.of(github).repository(OWNER, NAME), record);
+    private final GitHubIssue response = IssuesFixtures.issue();
+    private final Issue issue = new Issue(GitHubSdk.of(github).repository(OWNER, NAME), response);
 
     @Test
     void send_shouldSendOnlyTheSetFields_whenTitleAndLabelsAreSet() throws IOException {
-        when(github.issues().issue().get(OWNER, NAME, NUMBER)).thenReturn(Optional.of(record));
+        when(github.issues().issue().get(OWNER, NAME, NUMBER)).thenReturn(Optional.of(response));
         final ArgumentCaptor<GitHubUpdatePayload> payload = ArgumentCaptor.forClass(GitHubUpdatePayload.class);
 
         issue.update().title("New title").labels(List.of("bug")).send();
@@ -55,7 +55,7 @@ class IssueUpdateTest {
 
     @Test
     void send_shouldSendAssigneesAndMilestone_whenTheyAreSet() throws IOException {
-        when(github.issues().issue().get(OWNER, NAME, NUMBER)).thenReturn(Optional.of(record));
+        when(github.issues().issue().get(OWNER, NAME, NUMBER)).thenReturn(Optional.of(response));
         final ArgumentCaptor<GitHubUpdatePayload> payload = ArgumentCaptor.forClass(GitHubUpdatePayload.class);
 
         issue.update().assignees(List.of("hubot")).milestone(7).body("Details").send();
@@ -72,7 +72,7 @@ class IssueUpdateTest {
 
     @Test
     void send_shouldSendNullBodyAndMilestone_whenTheyAreCleared() throws IOException {
-        when(github.issues().issue().get(OWNER, NAME, NUMBER)).thenReturn(Optional.of(record));
+        when(github.issues().issue().get(OWNER, NAME, NUMBER)).thenReturn(Optional.of(response));
         final ArgumentCaptor<GitHubUpdatePayload> payload = ArgumentCaptor.forClass(GitHubUpdatePayload.class);
 
         issue.update().clearBody().clearMilestone().send();
@@ -87,13 +87,13 @@ class IssueUpdateTest {
     @Test
     void send_shouldReturnTheReloadedIssue_whenTheUpdateSucceeds() throws IOException {
         final GitHubIssue reloaded =
-                GitHubIssueBuilder.builder(record).title("New title").build();
+                GitHubIssueBuilder.builder(response).title("New title").build();
         when(github.issues().issue().get(OWNER, NAME, NUMBER)).thenReturn(Optional.of(reloaded));
 
         final Issue updated = issue.update().title("New title").send();
 
         assertSoftly(softly -> {
-            softly.assertThat(updated.record()).isSameAs(reloaded);
+            softly.assertThat(updated.response()).isSameAs(reloaded);
             softly.assertThat(issue.title()).isEqualTo("Found a bug");
         });
     }

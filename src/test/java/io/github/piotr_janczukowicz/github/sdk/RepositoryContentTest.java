@@ -35,14 +35,14 @@ class RepositoryContentTest {
 
     @Test
     void branch_shouldReturnBranch_whenGitHubHasIt() throws IOException {
-        final GitHubBranchWithProtection record = RepositoryContentFixtures.branch();
-        when(github.branches().branch().getBranch(OWNER, NAME, "main")).thenReturn(Optional.of(record));
+        final GitHubBranchWithProtection response = RepositoryContentFixtures.branch();
+        when(github.branches().branch().getBranch(OWNER, NAME, "main")).thenReturn(Optional.of(response));
 
         final Optional<Branch> branch = sut.branch("main");
 
         assertThat(branch).isPresent();
         assertSoftly(softly -> {
-            softly.assertThat(branch.orElseThrow().record()).isSameAs(record);
+            softly.assertThat(branch.orElseThrow().response()).isSameAs(response);
             softly.assertThat(branch.orElseThrow().repository()).isSameAs(sut);
         });
     }
@@ -67,7 +67,7 @@ class RepositoryContentTest {
     void branches_shouldLoadEachListedBranch_whenCalledWithAFilter() throws IOException {
         final GitHubShortBranch listed = mock(GitHubShortBranch.class);
         when(listed.name()).thenReturn("main");
-        final GitHubBranchWithProtection record = RepositoryContentFixtures.branch();
+        final GitHubBranchWithProtection response = RepositoryContentFixtures.branch();
         when(github
                         .branches()
                         .branch()
@@ -75,12 +75,12 @@ class RepositoryContentTest {
                                 eq(OWNER), eq(NAME), any(GitHubListBranchesFilter.class), any(GitHubPageRequest.class))
                         .stream())
                 .thenReturn(Stream.of(listed));
-        when(github.branches().branch().getBranch(OWNER, NAME, "main")).thenReturn(Optional.of(record));
+        when(github.branches().branch().getBranch(OWNER, NAME, "main")).thenReturn(Optional.of(response));
 
         final List<Branch> branches =
                 sut.branches(GitHubListBranchesFilter.empty()).toList();
 
-        assertThat(branches).extracting(Branch::record).containsExactly(record);
+        assertThat(branches).extracting(Branch::response).containsExactly(response);
     }
 
     @Test
@@ -138,14 +138,14 @@ class RepositoryContentTest {
 
     @Test
     void commit_shouldReturnCommit_whenGitHubHasIt() throws IOException {
-        final GitHubCommit record = RepositoryContentFixtures.commit();
-        when(github.commits().commit().getCommit(OWNER, NAME, "abc123")).thenReturn(Optional.of(record));
+        final GitHubCommit response = RepositoryContentFixtures.commit();
+        when(github.commits().commit().getCommit(OWNER, NAME, "abc123")).thenReturn(Optional.of(response));
 
         final Optional<Commit> commit = sut.commit("abc123");
 
         assertThat(commit).isPresent();
         assertSoftly(softly -> {
-            softly.assertThat(commit.orElseThrow().record()).isSameAs(record);
+            softly.assertThat(commit.orElseThrow().response()).isSameAs(response);
             softly.assertThat(commit.orElseThrow().repository()).isSameAs(sut);
         });
     }
@@ -168,19 +168,19 @@ class RepositoryContentTest {
 
     @Test
     void commits_shouldWrapEachCommit_whenCalledWithAFilter() throws IOException {
-        final GitHubCommit record = RepositoryContentFixtures.commit();
+        final GitHubCommit response = RepositoryContentFixtures.commit();
         when(github
                         .commits()
                         .commit()
                         .listCommits(
                                 eq(OWNER), eq(NAME), any(GitHubListCommitsFilter.class), any(GitHubPageRequest.class))
                         .stream())
-                .thenReturn(Stream.of(record));
+                .thenReturn(Stream.of(response));
 
         final List<Commit> commits =
                 sut.commits(GitHubListCommitsFilter.empty()).toList();
 
-        assertThat(commits).extracting(Commit::record).containsExactly(record);
+        assertThat(commits).extracting(Commit::response).containsExactly(response);
     }
 
     @Test

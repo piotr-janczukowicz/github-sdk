@@ -24,7 +24,7 @@ class ContentSmokeIT {
     @Test
     void branch_shouldBeReadAndListed_whenItIsTheDefaultBranch() throws IOException {
         final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
-        final String name = repository.fetch().orElseThrow().record().defaultBranch();
+        final String name = repository.fetch().orElseThrow().response().defaultBranch();
 
         final Optional<Branch> branch = repository.branch(name);
         final boolean isListed =
@@ -37,7 +37,7 @@ class ContentSmokeIT {
     @Test
     void commit_shouldBeReadAndListed_whenItIsTheHeadOfTheDefaultBranch() throws IOException {
         final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
-        final String name = repository.fetch().orElseThrow().record().defaultBranch();
+        final String name = repository.fetch().orElseThrow().response().defaultBranch();
         final Commit head = repository.branch(name).orElseThrow().commit();
 
         final Optional<Commit> read = repository.commit(head.sha());

@@ -19,15 +19,15 @@ class RateLimitTest {
         final GitHubRateLimit core = new GitHubRateLimit(5000, 4990, 1_700_000_000L, 10);
         final GitHubRateLimitResources resources = mock(GitHubRateLimitResources.class);
         when(resources.core()).thenReturn(core);
-        final GitHubRateLimitOverview record = mock(GitHubRateLimitOverview.class);
-        when(record.resources()).thenReturn(resources);
-        final RateLimit sut = new RateLimit(record);
+        final GitHubRateLimitOverview response = mock(GitHubRateLimitOverview.class);
+        when(response.resources()).thenReturn(resources);
+        final RateLimit sut = new RateLimit(response);
 
         assertSoftly(softly -> {
             softly.assertThat(sut.limit()).isEqualTo(5000);
             softly.assertThat(sut.remaining()).isEqualTo(4990);
             softly.assertThat(sut.resetAt()).isEqualTo(Instant.ofEpochSecond(1_700_000_000L));
-            softly.assertThat(sut.record()).isSameAs(record);
+            softly.assertThat(sut.response()).isSameAs(response);
         });
     }
 }

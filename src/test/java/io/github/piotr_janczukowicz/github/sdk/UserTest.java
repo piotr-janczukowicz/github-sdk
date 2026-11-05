@@ -31,9 +31,9 @@ class UserTest {
 
     @Test
     void login_shouldReadTheLogin_whenTheViewIsAPlainUser() {
-        final GitHubUser record = mock(GitHubUser.class);
-        when(record.login()).thenReturn("octocat");
-        final User sut = new User(sdk, record);
+        final GitHubUser response = mock(GitHubUser.class);
+        when(response.login()).thenReturn("octocat");
+        final User sut = new User(sdk, response);
 
         final String login = sut.login();
 
@@ -42,9 +42,9 @@ class UserTest {
 
     @Test
     void login_shouldReadTheLogin_whenTheViewIsTheAuthenticatedUser() {
-        final GitHubAuthenticatedUser record = mock(GitHubAuthenticatedUser.class);
-        when(record.login()).thenReturn("hubot");
-        final User sut = new User(sdk, record);
+        final GitHubAuthenticatedUser response = mock(GitHubAuthenticatedUser.class);
+        when(response.login()).thenReturn("hubot");
+        final User sut = new User(sdk, response);
 
         final String login = sut.login();
 
@@ -53,9 +53,9 @@ class UserTest {
 
     @Test
     void name_shouldReturnTheName_whenTheUserHasOne() {
-        final GitHubUser record = mock(GitHubUser.class);
-        when(record.name()).thenReturn("The Octocat");
-        final User sut = new User(sdk, record);
+        final GitHubUser response = mock(GitHubUser.class);
+        when(response.name()).thenReturn("The Octocat");
+        final User sut = new User(sdk, response);
 
         final Optional<String> name = sut.name();
 
@@ -64,9 +64,9 @@ class UserTest {
 
     @Test
     void name_shouldReturnTheNameOfTheAuthenticatedUser_whenItHasOne() {
-        final GitHubAuthenticatedUser record = mock(GitHubAuthenticatedUser.class);
-        when(record.name()).thenReturn("Hubot");
-        final User sut = new User(sdk, record);
+        final GitHubAuthenticatedUser response = mock(GitHubAuthenticatedUser.class);
+        when(response.name()).thenReturn("Hubot");
+        final User sut = new User(sdk, response);
 
         final Optional<String> name = sut.name();
 
@@ -75,9 +75,9 @@ class UserTest {
 
     @Test
     void name_shouldBeEmpty_whenTheUserHasNone() {
-        final GitHubUser record = mock(GitHubUser.class);
-        when(record.name()).thenReturn(null);
-        final User sut = new User(sdk, record);
+        final GitHubUser response = mock(GitHubUser.class);
+        when(response.name()).thenReturn(null);
+        final User sut = new User(sdk, response);
 
         final Optional<String> name = sut.name();
 
@@ -85,26 +85,26 @@ class UserTest {
     }
 
     @Test
-    void record_shouldReturnTheView_whenCalled() {
-        final GitHubUserView record = mock(GitHubUser.class);
-        final User sut = new User(sdk, record);
+    void response_shouldReturnTheView_whenCalled() {
+        final GitHubUserView response = mock(GitHubUser.class);
+        final User sut = new User(sdk, response);
 
-        final GitHubUserView view = sut.record();
+        final GitHubUserView view = sut.response();
 
-        assertThat(view).isSameAs(record);
+        assertThat(view).isSameAs(response);
     }
 
     @Test
     void repositories_shouldReturnHandlesOfTheListedRepositories_whenTheUserHasRepositories() throws IOException {
-        final GitHubUser record = mock(GitHubUser.class);
-        when(record.login()).thenReturn("octocat");
+        final GitHubUser response = mock(GitHubUser.class);
+        when(response.login()).thenReturn("octocat");
         final GitHubSimpleUser owner = mock(GitHubSimpleUser.class);
         when(owner.login()).thenReturn("octocat");
         final GitHubMinimalRepository listed = mock(GitHubMinimalRepository.class);
         when(listed.owner()).thenReturn(owner);
         when(listed.name()).thenReturn("hello-world");
         when(github.repositories().repository().listForUser("octocat").stream()).thenReturn(Stream.of(listed));
-        final User sut = new User(sdk, record);
+        final User sut = new User(sdk, response);
 
         final List<Repository> repositories = sut.repositories().toList();
 
@@ -116,11 +116,11 @@ class UserTest {
     }
 
     private User userWithOrganizations(final GitHubOrganizationSimple... listed) throws IOException {
-        final GitHubUser record = mock(GitHubUser.class);
-        when(record.login()).thenReturn("octocat");
+        final GitHubUser response = mock(GitHubUser.class);
+        when(response.login()).thenReturn("octocat");
         when(github.organizations().organization().listForUser("octocat").stream())
                 .thenReturn(Stream.of(listed));
-        return new User(sdk, record);
+        return new User(sdk, response);
     }
 
     private GitHubOrganizationSimple listedOrganization(final String login) {
@@ -131,13 +131,13 @@ class UserTest {
 
     @Test
     void organizations_shouldLoadEachListedOrganization_whenTheUserBelongsToSome() throws IOException {
-        final GitHubOrganizationFull organizationRecord = mock(GitHubOrganizationFull.class);
-        when(github.organizations().organization().get("octo-org")).thenReturn(Optional.of(organizationRecord));
+        final GitHubOrganizationFull organizationResponse = mock(GitHubOrganizationFull.class);
+        when(github.organizations().organization().get("octo-org")).thenReturn(Optional.of(organizationResponse));
         final User sut = userWithOrganizations(listedOrganization("octo-org"));
 
         final List<Organization> organizations = sut.organizations().toList();
 
-        assertThat(organizations).extracting(Organization::record).containsExactly(organizationRecord);
+        assertThat(organizations).extracting(Organization::response).containsExactly(organizationResponse);
     }
 
     @Test

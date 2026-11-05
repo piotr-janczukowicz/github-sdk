@@ -20,17 +20,17 @@ import java.util.stream.Stream;
 
 /**
  * A pull request of a {@link Repository}, as GitHub returned it. The object is immutable: it keeps the data of the
- * moment it was loaded, and {@link #record()} gives the complete response for every field the accessors here do not
+ * moment it was loaded, and {@link #response()} gives the complete response for every field the accessors here do not
  * cover.
  */
 public final class PullRequest {
 
     private final Repository repository;
-    private final GitHubPullRequest record;
+    private final GitHubPullRequest response;
 
-    PullRequest(final Repository repository, final GitHubPullRequest record) {
+    PullRequest(final Repository repository, final GitHubPullRequest response) {
         this.repository = requireNonNull(repository, "repository");
-        this.record = requireNonNull(record, "record");
+        this.response = requireNonNull(response, "response");
     }
 
     /**
@@ -48,7 +48,7 @@ public final class PullRequest {
      * @return the number
      */
     public int number() {
-        return record.number();
+        return response.number();
     }
 
     /**
@@ -57,7 +57,7 @@ public final class PullRequest {
      * @return the title
      */
     public String title() {
-        return record.title();
+        return response.title();
     }
 
     /**
@@ -66,7 +66,7 @@ public final class PullRequest {
      * @return the state
      */
     public PullRequestState state() {
-        return PullRequestState.from(record.state());
+        return PullRequestState.from(response.state());
     }
 
     /**
@@ -75,7 +75,7 @@ public final class PullRequest {
      * @return the author
      */
     public GitHubSimpleUser author() {
-        return record.user();
+        return response.user();
     }
 
     /**
@@ -84,7 +84,7 @@ public final class PullRequest {
      * @return {@code true} for a draft
      */
     public boolean isDraft() {
-        return Boolean.TRUE.equals(record.draft());
+        return Boolean.TRUE.equals(response.draft());
     }
 
     /**
@@ -93,7 +93,7 @@ public final class PullRequest {
      * @return {@code true} when merged
      */
     public boolean isMerged() {
-        return record.merged();
+        return response.merged();
     }
 
     /**
@@ -305,8 +305,8 @@ public final class PullRequest {
      *
      * @return the response record
      */
-    public GitHubPullRequest record() {
-        return record;
+    public GitHubPullRequest response() {
+        return response;
     }
 
     PullRequest apply(final GitHubUpdatePullRequestPayload payload) throws IOException {

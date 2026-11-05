@@ -98,8 +98,8 @@ class LabelsAndMilestonesSmokeIT {
             final Milestone refreshed = reopened.refresh();
 
             assertThat(renamed.title()).isEqualTo(ENV.name("phase-two"));
-            assertThat(closed.record().state()).isEqualTo(GitHubMilestoneState.CLOSED);
-            assertThat(reopened.record().state()).isEqualTo(GitHubMilestoneState.OPEN);
+            assertThat(closed.response().state()).isEqualTo(GitHubMilestoneState.CLOSED);
+            assertThat(reopened.response().state()).isEqualTo(GitHubMilestoneState.OPEN);
             assertThat(refreshed.title()).isEqualTo(ENV.name("phase-two"));
         } finally {
             created.delete();

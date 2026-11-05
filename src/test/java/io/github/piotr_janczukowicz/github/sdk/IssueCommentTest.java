@@ -30,23 +30,23 @@ class IssueCommentTest {
 
     private final GitHub github = mock(GitHub.class, RETURNS_DEEP_STUBS);
     private final Issue issue = new Issue(GitHubSdk.of(github).repository(OWNER, NAME), IssuesFixtures.issue());
-    private final GitHubIssueComment record = IssuesFixtures.issueComment();
-    private final IssueComment sut = new IssueComment(issue, record);
+    private final GitHubIssueComment response = IssuesFixtures.issueComment();
+    private final IssueComment sut = new IssueComment(issue, response);
 
     @Test
-    void accessors_shouldExposeTheRecord_whenCommentIsLoaded() {
+    void accessors_shouldExposeTheResponse_whenCommentIsLoaded() {
         assertSoftly(softly -> {
             softly.assertThat(sut.issue()).isSameAs(issue);
             softly.assertThat(sut.id()).isEqualTo(ID);
             softly.assertThat(sut.body()).contains("First comment");
-            softly.assertThat(sut.record()).isSameAs(record);
+            softly.assertThat(sut.response()).isSameAs(response);
         });
     }
 
     @Test
-    void body_shouldBeEmpty_whenTheRecordHasNoBody() {
+    void body_shouldBeEmpty_whenTheResponseHasNoBody() {
         final IssueComment withoutBody = new IssueComment(
-                issue, GitHubIssueCommentBuilder.builder(record).body(null).build());
+                issue, GitHubIssueCommentBuilder.builder(response).body(null).build());
 
         final Optional<String> body = withoutBody.body();
 
@@ -54,17 +54,17 @@ class IssueCommentTest {
     }
 
     @Test
-    void author_shouldBeEmpty_whenTheRecordHasNoUser() {
+    void author_shouldBeEmpty_whenTheResponseHasNoUser() {
         final Optional<GitHubSimpleUser> author = sut.author();
 
         assertThat(author).isEmpty();
     }
 
     @Test
-    void author_shouldReturnTheUser_whenTheRecordHasOne() {
+    void author_shouldReturnTheUser_whenTheResponseHasOne() {
         final GitHubSimpleUser user = mock(GitHubSimpleUser.class);
         final IssueComment withAuthor = new IssueComment(
-                issue, GitHubIssueCommentBuilder.builder(record).user(user).build());
+                issue, GitHubIssueCommentBuilder.builder(response).user(user).build());
 
         final Optional<GitHubSimpleUser> author = withAuthor.author();
 
@@ -74,7 +74,7 @@ class IssueCommentTest {
     @Test
     void edit_shouldSendTheBodyAndReturnTheUpdatedComment_whenCalledWithABody() throws IOException {
         final GitHubIssueComment updated =
-                GitHubIssueCommentBuilder.builder(record).body("Edited").build();
+                GitHubIssueCommentBuilder.builder(response).body("Edited").build();
         when(github.issues()
                         .comments()
                         .updateComment(eq(OWNER), eq(NAME), eq(ID), any(GitHubUpdateCommentPayload.class)))
@@ -87,7 +87,7 @@ class IssueCommentTest {
         verify(github.issues().comments()).updateComment(eq(OWNER), eq(NAME), eq(ID), payload.capture());
         assertSoftly(softly -> {
             softly.assertThat(payload.getValue().body()).isEqualTo("Edited");
-            softly.assertThat(edited.record()).isSameAs(updated);
+            softly.assertThat(edited.response()).isSameAs(updated);
             softly.assertThat(edited.issue()).isSameAs(issue);
             softly.assertThat(sut.body()).contains("First comment");
         });
@@ -103,13 +103,13 @@ class IssueCommentTest {
     @Test
     void refresh_shouldReturnTheReloadedComment_whenGitHubHasIt() throws IOException {
         final GitHubIssueComment reloaded =
-                GitHubIssueCommentBuilder.builder(record).body("Reloaded").build();
+                GitHubIssueCommentBuilder.builder(response).body("Reloaded").build();
         when(github.issues().comments().getComment(OWNER, NAME, ID)).thenReturn(Optional.of(reloaded));
 
         final IssueComment refreshed = sut.refresh();
 
         assertSoftly(softly -> {
-            softly.assertThat(refreshed.record()).isSameAs(reloaded);
+            softly.assertThat(refreshed.response()).isSameAs(reloaded);
             softly.assertThat(refreshed.issue()).isSameAs(issue);
             softly.assertThat(sut.body()).contains("First comment");
         });

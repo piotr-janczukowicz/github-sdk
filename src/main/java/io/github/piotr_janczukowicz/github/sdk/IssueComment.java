@@ -10,17 +10,17 @@ import java.io.IOException;
 import java.util.Optional;
 
 /**
- * A comment on an {@link Issue}, as GitHub returned it. The object is immutable, and {@link #record()} gives the
+ * A comment on an {@link Issue}, as GitHub returned it. The object is immutable, and {@link #response()} gives the
  * complete response for every field the accessors here do not cover.
  */
 public final class IssueComment {
 
     private final Issue issue;
-    private final GitHubIssueComment record;
+    private final GitHubIssueComment response;
 
-    IssueComment(final Issue issue, final GitHubIssueComment record) {
+    IssueComment(final Issue issue, final GitHubIssueComment response) {
         this.issue = requireNonNull(issue, "issue");
-        this.record = requireNonNull(record, "record");
+        this.response = requireNonNull(response, "response");
     }
 
     /**
@@ -38,7 +38,7 @@ public final class IssueComment {
      * @return the id
      */
     public long id() {
-        return record.id();
+        return response.id();
     }
 
     /**
@@ -47,7 +47,7 @@ public final class IssueComment {
      * @return the body, or empty when GitHub does not return one
      */
     public Optional<String> body() {
-        return Optional.ofNullable(record.body());
+        return Optional.ofNullable(response.body());
     }
 
     /**
@@ -56,7 +56,7 @@ public final class IssueComment {
      * @return the author, or empty when GitHub does not return one
      */
     public Optional<GitHubSimpleUser> author() {
-        return Optional.ofNullable(record.user());
+        return Optional.ofNullable(response.user());
     }
 
     /**
@@ -112,7 +112,7 @@ public final class IssueComment {
      *
      * @return the response record
      */
-    public GitHubIssueComment record() {
-        return record;
+    public GitHubIssueComment response() {
+        return response;
     }
 }

@@ -28,13 +28,13 @@ class PullRequestUpdateTest {
     private static final int NUMBER = 7;
 
     private final GitHub github = mock(GitHub.class, RETURNS_DEEP_STUBS);
-    private final GitHubPullRequest record = PullRequestsFixtures.pullRequest();
-    private final PullRequest pullRequest = new PullRequest(GitHubSdk.of(github).repository(OWNER, NAME), record);
+    private final GitHubPullRequest response = PullRequestsFixtures.pullRequest();
+    private final PullRequest pullRequest = new PullRequest(GitHubSdk.of(github).repository(OWNER, NAME), response);
 
     @Test
     void send_shouldSendOnlyTheSetFields_whenTitleAndBaseAreSet() throws IOException {
         final GitHubPullRequest updated =
-                GitHubPullRequestBuilder.builder(record).title("New title").build();
+                GitHubPullRequestBuilder.builder(response).title("New title").build();
         when(github.pullRequests()
                         .pullRequest()
                         .update(eq(OWNER), eq(NAME), eq(NUMBER), any(GitHubUpdatePullRequestPayload.class)))
@@ -52,7 +52,7 @@ class PullRequestUpdateTest {
             softly.assertThat(payload.getValue().body()).isNull();
             softly.assertThat(payload.getValue().state()).isNull();
             softly.assertThat(payload.getValue().maintainerCanModify()).isNull();
-            softly.assertThat(result.record()).isSameAs(updated);
+            softly.assertThat(result.response()).isSameAs(updated);
             softly.assertThat(pullRequest.title()).isEqualTo("Add feature");
         });
     }
@@ -62,7 +62,7 @@ class PullRequestUpdateTest {
         when(github.pullRequests()
                         .pullRequest()
                         .update(eq(OWNER), eq(NAME), eq(NUMBER), any(GitHubUpdatePullRequestPayload.class)))
-                .thenReturn(record);
+                .thenReturn(response);
         final ArgumentCaptor<GitHubUpdatePullRequestPayload> payload =
                 ArgumentCaptor.forClass(GitHubUpdatePullRequestPayload.class);
 

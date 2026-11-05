@@ -29,13 +29,13 @@ class MilestoneUpdateTest {
     private static final int NUMBER = 3;
 
     private final GitHub github = mock(GitHub.class, RETURNS_DEEP_STUBS);
-    private final GitHubMilestone record = RepositoryContentFixtures.milestone();
-    private final Milestone milestone = new Milestone(GitHubSdk.of(github).repository(OWNER, NAME), record);
+    private final GitHubMilestone response = RepositoryContentFixtures.milestone();
+    private final Milestone milestone = new Milestone(GitHubSdk.of(github).repository(OWNER, NAME), response);
 
     @Test
     void send_shouldSendOnlyTheSetFieldsAndReturnTheResponse_whenTitleAndDueDateAreSet() throws IOException {
         final GitHubMilestone updated =
-                GitHubMilestoneBuilder.builder(record).title("v1.1").build();
+                GitHubMilestoneBuilder.builder(response).title("v1.1").build();
         final Instant due = Instant.parse("2026-12-01T00:00:00Z");
         when(github.issues()
                         .milestones()
@@ -52,7 +52,7 @@ class MilestoneUpdateTest {
             softly.assertThat(payload.getValue().dueOn()).isEqualTo(due);
             softly.assertThat(payload.getValue().state()).isNull();
             softly.assertThat(payload.getValue().description()).isNull();
-            softly.assertThat(result.record()).isSameAs(updated);
+            softly.assertThat(result.response()).isSameAs(updated);
             softly.assertThat(milestone.title()).isEqualTo("v1.0");
         });
     }
@@ -62,7 +62,7 @@ class MilestoneUpdateTest {
         when(github.issues()
                         .milestones()
                         .updateMilestone(eq(OWNER), eq(NAME), eq(NUMBER), any(GitHubUpdateMilestonePayload.class)))
-                .thenReturn(record);
+                .thenReturn(response);
         final ArgumentCaptor<GitHubUpdateMilestonePayload> payload =
                 ArgumentCaptor.forClass(GitHubUpdateMilestonePayload.class);
 

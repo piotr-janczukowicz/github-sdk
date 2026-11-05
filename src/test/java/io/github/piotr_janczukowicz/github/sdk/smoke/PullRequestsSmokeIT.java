@@ -34,7 +34,7 @@ class PullRequestsSmokeIT {
     void pullRequest_shouldBeCreatedReadAndListed_whenABranchHasACommit() throws IOException {
         final GitHub github = ENV.github();
         final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
-        final String base = repository.fetch().orElseThrow().record().defaultBranch();
+        final String base = repository.fetch().orElseThrow().response().defaultBranch();
         final String branch = ENV.name("pr");
         final String path = "smoke/" + ENV.runId() + "-sdk-pr.txt";
         final String sha = github.gitDatabase()

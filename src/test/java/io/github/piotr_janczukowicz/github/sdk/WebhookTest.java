@@ -26,18 +26,18 @@ class WebhookTest {
 
     private final GitHub github = mock(GitHub.class, RETURNS_DEEP_STUBS);
     private final Repository repository = GitHubSdk.of(github).repository(OWNER, NAME);
-    private final GitHubHook record = RepositoryContentFixtures.webhook();
-    private final Webhook sut = new Webhook(repository, record);
+    private final GitHubHook response = RepositoryContentFixtures.webhook();
+    private final Webhook sut = new Webhook(repository, response);
 
     @Test
-    void accessors_shouldExposeTheRecord_whenWebhookIsLoaded() {
+    void accessors_shouldExposeTheResponse_whenWebhookIsLoaded() {
         assertSoftly(softly -> {
             softly.assertThat(sut.repository()).isSameAs(repository);
             softly.assertThat(sut.id()).isEqualTo(ID);
             softly.assertThat(sut.isActive()).isTrue();
             softly.assertThat(sut.events()).containsExactly("push");
             softly.assertThat(sut.payloadUrl()).contains("https://example.com/hook");
-            softly.assertThat(sut.record()).isSameAs(record);
+            softly.assertThat(sut.response()).isSameAs(response);
         });
     }
 
@@ -45,7 +45,7 @@ class WebhookTest {
     void payloadUrl_shouldBeEmpty_whenTheConfigHasNone() {
         final Webhook withoutUrl = new Webhook(
                 repository,
-                GitHubHookBuilder.builder(record)
+                GitHubHookBuilder.builder(response)
                         .config(new GitHubWebhookConfig(null, null, null, null))
                         .build());
 
@@ -57,13 +57,13 @@ class WebhookTest {
     @Test
     void refresh_shouldReturnTheReloadedWebhook_whenGitHubHasIt() throws IOException {
         final GitHubHook reloaded =
-                GitHubHookBuilder.builder(record).active(false).build();
+                GitHubHookBuilder.builder(response).active(false).build();
         when(github.repositories().webhooks().getWebhook(OWNER, NAME, ID)).thenReturn(Optional.of(reloaded));
 
         final Webhook refreshed = sut.refresh();
 
         assertSoftly(softly -> {
-            softly.assertThat(refreshed.record()).isSameAs(reloaded);
+            softly.assertThat(refreshed.response()).isSameAs(reloaded);
             softly.assertThat(sut.isActive()).isTrue();
         });
     }

@@ -6,15 +6,15 @@ import io.github.piotr_janczukowicz.github.api.ratelimit.GitHubRateLimitOverview
 import java.time.Instant;
 
 /**
- * The rate limit of the core REST API, as GitHub reported it at one moment. The object is immutable; {@link #record()}
- * gives the complete overview, including the search and other resources.
+ * The rate limit of the core REST API, as GitHub reported it at one moment. The object is immutable;
+ * {@link #response()} gives the complete overview, including the search and other resources.
  */
 public final class RateLimit {
 
-    private final GitHubRateLimitOverview record;
+    private final GitHubRateLimitOverview response;
 
-    RateLimit(final GitHubRateLimitOverview record) {
-        this.record = requireNonNull(record, "record");
+    RateLimit(final GitHubRateLimitOverview response) {
+        this.response = requireNonNull(response, "response");
     }
 
     /**
@@ -23,7 +23,7 @@ public final class RateLimit {
      * @return the limit
      */
     public int limit() {
-        return record.resources().core().limit();
+        return response.resources().core().limit();
     }
 
     /**
@@ -32,7 +32,7 @@ public final class RateLimit {
      * @return the remaining requests
      */
     public int remaining() {
-        return record.resources().core().remaining();
+        return response.resources().core().remaining();
     }
 
     /**
@@ -41,7 +41,7 @@ public final class RateLimit {
      * @return the reset time
      */
     public Instant resetAt() {
-        return Instant.ofEpochSecond(record.resources().core().reset());
+        return Instant.ofEpochSecond(response.resources().core().reset());
     }
 
     /**
@@ -49,7 +49,7 @@ public final class RateLimit {
      *
      * @return the response record
      */
-    public GitHubRateLimitOverview record() {
-        return record;
+    public GitHubRateLimitOverview response() {
+        return response;
     }
 }

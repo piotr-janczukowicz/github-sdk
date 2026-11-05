@@ -31,17 +31,17 @@ class RepositoryReleasesTest {
 
     private final GitHub github = mock(GitHub.class, RETURNS_DEEP_STUBS);
     private final Repository sut = GitHubSdk.of(github).repository(OWNER, NAME);
-    private final GitHubRelease record = RepositoryContentFixtures.release();
+    private final GitHubRelease response = RepositoryContentFixtures.release();
 
     @Test
     void release_shouldReturnTheRelease_whenGitHubHasTheTag() throws IOException {
-        when(github.releases().release().getReleaseByTag(OWNER, NAME, "v1.0.0")).thenReturn(Optional.of(record));
+        when(github.releases().release().getReleaseByTag(OWNER, NAME, "v1.0.0")).thenReturn(Optional.of(response));
 
         final Optional<Release> release = sut.release("v1.0.0");
 
         assertThat(release).isPresent();
         assertSoftly(softly -> {
-            softly.assertThat(release.orElseThrow().record()).isSameAs(record);
+            softly.assertThat(release.orElseThrow().response()).isSameAs(response);
             softly.assertThat(release.orElseThrow().repository()).isSameAs(sut);
         });
     }
@@ -64,11 +64,11 @@ class RepositoryReleasesTest {
 
     @Test
     void latestRelease_shouldReturnTheRelease_whenThereIsOne() throws IOException {
-        when(github.releases().release().getLatestRelease(OWNER, NAME)).thenReturn(Optional.of(record));
+        when(github.releases().release().getLatestRelease(OWNER, NAME)).thenReturn(Optional.of(response));
 
         final Optional<Release> release = sut.latestRelease();
 
-        assertThat(release).map(Release::record).containsSame(record);
+        assertThat(release).map(Release::response).containsSame(response);
     }
 
     @Test
@@ -82,17 +82,17 @@ class RepositoryReleasesTest {
 
     @Test
     void releases_shouldWrapEachRelease_whenTheRepositoryHasReleases() throws IOException {
-        when(github.releases().release().listReleases(OWNER, NAME).stream()).thenReturn(Stream.of(record));
+        when(github.releases().release().listReleases(OWNER, NAME).stream()).thenReturn(Stream.of(response));
 
         final List<Release> releases = sut.releases().toList();
 
-        assertThat(releases).extracting(Release::record).containsExactly(record);
+        assertThat(releases).extracting(Release::response).containsExactly(response);
     }
 
     @Test
     void createRelease_shouldSendTheTagAndReturnTheRelease_whenCalledWithATag() throws IOException {
         when(github.releases().release().createRelease(eq(OWNER), eq(NAME), any(GitHubCreateReleasePayload.class)))
-                .thenReturn(record);
+                .thenReturn(response);
         final ArgumentCaptor<GitHubCreateReleasePayload> payload =
                 ArgumentCaptor.forClass(GitHubCreateReleasePayload.class);
 
@@ -102,7 +102,7 @@ class RepositoryReleasesTest {
         assertSoftly(softly -> {
             softly.assertThat(payload.getValue().tagName()).isEqualTo("v1.0.0");
             softly.assertThat(payload.getValue().draft()).isNull();
-            softly.assertThat(release.record()).isSameAs(record);
+            softly.assertThat(release.response()).isSameAs(response);
         });
     }
 
@@ -112,11 +112,11 @@ class RepositoryReleasesTest {
                 .tagName("v1.0.0")
                 .draft(true)
                 .build();
-        when(github.releases().release().createRelease(OWNER, NAME, payload)).thenReturn(record);
+        when(github.releases().release().createRelease(OWNER, NAME, payload)).thenReturn(response);
 
         final Release release = sut.createRelease(payload);
 
-        assertThat(release.record()).isSameAs(record);
+        assertThat(release.response()).isSameAs(response);
     }
 
     @Test

@@ -26,7 +26,7 @@ class FilesSmokeIT {
     void file_shouldRoundTrip_whenWrittenReadUpdatedAndDeleted() throws IOException {
         final GitHub github = ENV.github();
         final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
-        final String base = repository.fetch().orElseThrow().record().defaultBranch();
+        final String base = repository.fetch().orElseThrow().response().defaultBranch();
         final String branch = ENV.name("files");
         final String path = "smoke/" + ENV.runId() + "-sdk-file.bin";
         final byte[] binary = {0, 1, 2, (byte) 0xFF, (byte) 0xFE, 10, 13, 127};

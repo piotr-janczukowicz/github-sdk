@@ -25,25 +25,25 @@ class ReleaseTest {
 
     private final GitHub github = mock(GitHub.class, RETURNS_DEEP_STUBS);
     private final Repository repository = GitHubSdk.of(github).repository(OWNER, NAME);
-    private final GitHubRelease record = RepositoryContentFixtures.release();
-    private final Release sut = new Release(repository, record);
+    private final GitHubRelease response = RepositoryContentFixtures.release();
+    private final Release sut = new Release(repository, response);
 
     @Test
-    void accessors_shouldExposeTheRecord_whenReleaseIsLoaded() {
+    void accessors_shouldExposeTheResponse_whenReleaseIsLoaded() {
         assertSoftly(softly -> {
             softly.assertThat(sut.repository()).isSameAs(repository);
             softly.assertThat(sut.tagName()).isEqualTo("v1.0.0");
             softly.assertThat(sut.name()).isEmpty();
             softly.assertThat(sut.isDraft()).isFalse();
             softly.assertThat(sut.isPrerelease()).isFalse();
-            softly.assertThat(sut.record()).isSameAs(record);
+            softly.assertThat(sut.response()).isSameAs(response);
         });
     }
 
     @Test
-    void name_shouldReturnTheName_whenTheRecordHasOne() {
+    void name_shouldReturnTheName_whenTheResponseHasOne() {
         final Release named = new Release(
-                repository, GitHubReleaseBuilder.builder(record).name("First").build());
+                repository, GitHubReleaseBuilder.builder(response).name("First").build());
 
         final Optional<String> name = named.name();
 
@@ -51,10 +51,10 @@ class ReleaseTest {
     }
 
     @Test
-    void flags_shouldBeTrue_whenTheRecordSaysDraftAndPrerelease() {
+    void flags_shouldBeTrue_whenTheResponseSaysDraftAndPrerelease() {
         final Release flagged = new Release(
                 repository,
-                GitHubReleaseBuilder.builder(record)
+                GitHubReleaseBuilder.builder(response)
                         .draft(true)
                         .prerelease(true)
                         .build());
@@ -68,13 +68,13 @@ class ReleaseTest {
     @Test
     void refresh_shouldReturnTheReloadedRelease_whenGitHubHasIt() throws IOException {
         final GitHubRelease reloaded =
-                GitHubReleaseBuilder.builder(record).name("Renamed").build();
+                GitHubReleaseBuilder.builder(response).name("Renamed").build();
         when(github.releases().release().getRelease(OWNER, NAME, ID)).thenReturn(Optional.of(reloaded));
 
         final Release refreshed = sut.refresh();
 
         assertSoftly(softly -> {
-            softly.assertThat(refreshed.record()).isSameAs(reloaded);
+            softly.assertThat(refreshed.response()).isSameAs(reloaded);
             softly.assertThat(sut.name()).isEmpty();
         });
     }

@@ -9,17 +9,17 @@ import java.io.IOException;
 import java.util.Optional;
 
 /**
- * A milestone of a {@link Repository}, as GitHub returned it. The object is immutable, and {@link #record()} gives the
- * complete response for every field the accessors here do not cover.
+ * A milestone of a {@link Repository}, as GitHub returned it. The object is immutable, and {@link #response()} gives
+ * the complete response for every field the accessors here do not cover.
  */
 public final class Milestone {
 
     private final Repository repository;
-    private final GitHubMilestone record;
+    private final GitHubMilestone response;
 
-    Milestone(final Repository repository, final GitHubMilestone record) {
+    Milestone(final Repository repository, final GitHubMilestone response) {
         this.repository = requireNonNull(repository, "repository");
-        this.record = requireNonNull(record, "record");
+        this.response = requireNonNull(response, "response");
     }
 
     /**
@@ -37,7 +37,7 @@ public final class Milestone {
      * @return the number
      */
     public int number() {
-        return record.number();
+        return response.number();
     }
 
     /**
@@ -46,7 +46,7 @@ public final class Milestone {
      * @return the title
      */
     public String title() {
-        return record.title();
+        return response.title();
     }
 
     /**
@@ -55,7 +55,7 @@ public final class Milestone {
      * @return the description, or empty when the milestone has none
      */
     public Optional<String> description() {
-        return Optional.ofNullable(record.description());
+        return Optional.ofNullable(response.description());
     }
 
     /**
@@ -123,8 +123,8 @@ public final class Milestone {
      *
      * @return the response record
      */
-    public GitHubMilestone record() {
-        return record;
+    public GitHubMilestone response() {
+        return response;
     }
 
     Milestone apply(final GitHubUpdateMilestonePayload payload) throws IOException {

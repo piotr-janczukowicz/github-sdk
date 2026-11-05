@@ -44,32 +44,32 @@ class IssueTest {
 
     private final GitHub github = mock(GitHub.class, RETURNS_DEEP_STUBS);
     private final Repository repository = GitHubSdk.of(github).repository(OWNER, NAME);
-    private final GitHubIssue record = IssuesFixtures.issue();
-    private final Issue sut = new Issue(repository, record);
+    private final GitHubIssue response = IssuesFixtures.issue();
+    private final Issue sut = new Issue(repository, response);
 
     @Test
-    void accessors_shouldExposeTheRecord_whenIssueIsLoaded() {
+    void accessors_shouldExposeTheResponse_whenIssueIsLoaded() {
         assertSoftly(softly -> {
             softly.assertThat(sut.repository()).isSameAs(repository);
             softly.assertThat(sut.number()).isEqualTo(NUMBER);
             softly.assertThat(sut.title()).isEqualTo("Found a bug");
             softly.assertThat(sut.state()).isEqualTo(IssueState.OPEN);
-            softly.assertThat(sut.record()).isSameAs(record);
+            softly.assertThat(sut.response()).isSameAs(response);
         });
     }
 
     @Test
-    void author_shouldBeEmpty_whenTheRecordHasNoUser() {
+    void author_shouldBeEmpty_whenTheResponseHasNoUser() {
         final Optional<GitHubSimpleUser> author = sut.author();
 
         assertThat(author).isEmpty();
     }
 
     @Test
-    void author_shouldReturnTheUser_whenTheRecordHasOne() {
+    void author_shouldReturnTheUser_whenTheResponseHasOne() {
         final GitHubSimpleUser user = mock(GitHubSimpleUser.class);
         final Issue withAuthor = new Issue(
-                repository, GitHubIssueBuilder.builder(record).user(user).build());
+                repository, GitHubIssueBuilder.builder(response).user(user).build());
 
         final Optional<GitHubSimpleUser> author = withAuthor.author();
 
@@ -79,7 +79,7 @@ class IssueTest {
     @Test
     void close_shouldSendClosedAndReturnTheReloadedIssue_whenUpdateSucceeds() throws IOException {
         final GitHubIssue reloaded =
-                GitHubIssueBuilder.builder(record).state("closed").build();
+                GitHubIssueBuilder.builder(response).state("closed").build();
         when(github.issues().issue().get(OWNER, NAME, NUMBER)).thenReturn(Optional.of(reloaded));
         final ArgumentCaptor<GitHubUpdatePayload> payload = ArgumentCaptor.forClass(GitHubUpdatePayload.class);
 
@@ -88,7 +88,7 @@ class IssueTest {
         verify(github.issues().issue()).update(eq(OWNER), eq(NAME), eq(NUMBER), payload.capture());
         assertSoftly(softly -> {
             softly.assertThat(payload.getValue().state()).isEqualTo(GitHubIssueUpdateState.CLOSED);
-            softly.assertThat(closed.record()).isSameAs(reloaded);
+            softly.assertThat(closed.response()).isSameAs(reloaded);
             softly.assertThat(sut.state()).isEqualTo(IssueState.OPEN);
         });
     }
@@ -96,7 +96,7 @@ class IssueTest {
     @Test
     void reopen_shouldSendOpenAndReturnTheReloadedIssue_whenUpdateSucceeds() throws IOException {
         final GitHubIssue reloaded =
-                GitHubIssueBuilder.builder(record).state("open").build();
+                GitHubIssueBuilder.builder(response).state("open").build();
         when(github.issues().issue().get(OWNER, NAME, NUMBER)).thenReturn(Optional.of(reloaded));
         final ArgumentCaptor<GitHubUpdatePayload> payload = ArgumentCaptor.forClass(GitHubUpdatePayload.class);
 
@@ -105,7 +105,7 @@ class IssueTest {
         verify(github.issues().issue()).update(eq(OWNER), eq(NAME), eq(NUMBER), payload.capture());
         assertSoftly(softly -> {
             softly.assertThat(payload.getValue().state()).isEqualTo(GitHubIssueUpdateState.OPEN);
-            softly.assertThat(reopened.record()).isSameAs(reloaded);
+            softly.assertThat(reopened.response()).isSameAs(reloaded);
         });
     }
 
@@ -121,13 +121,13 @@ class IssueTest {
     @Test
     void refresh_shouldReturnTheReloadedIssue_whenGitHubHasIt() throws IOException {
         final GitHubIssue reloaded =
-                GitHubIssueBuilder.builder(record).title("Renamed").build();
+                GitHubIssueBuilder.builder(response).title("Renamed").build();
         when(github.issues().issue().get(OWNER, NAME, NUMBER)).thenReturn(Optional.of(reloaded));
 
         final Issue refreshed = sut.refresh();
 
         assertSoftly(softly -> {
-            softly.assertThat(refreshed.record()).isSameAs(reloaded);
+            softly.assertThat(refreshed.response()).isSameAs(reloaded);
             softly.assertThat(sut.title()).isEqualTo("Found a bug");
         });
     }
@@ -142,18 +142,18 @@ class IssueTest {
     }
 
     @Test
-    void labels_shouldBeEmpty_whenTheRecordHasNone() {
+    void labels_shouldBeEmpty_whenTheResponseHasNone() {
         final List<GitHubIssueLabel> labels = sut.labels();
 
         assertThat(labels).isEmpty();
     }
 
     @Test
-    void labels_shouldReturnTheLabelsOfTheRecord_whenTheyArePresent() {
+    void labels_shouldReturnTheLabelsOfTheResponse_whenTheyArePresent() {
         final GitHubIssueLabel label = mock(GitHubIssueLabel.class);
         final Issue labelled = new Issue(
                 repository,
-                GitHubIssueBuilder.builder(record).labels(List.of(label)).build());
+                GitHubIssueBuilder.builder(response).labels(List.of(label)).build());
 
         final List<GitHubIssueLabel> labels = labelled.labels();
 
@@ -161,41 +161,43 @@ class IssueTest {
     }
 
     @Test
-    void milestone_shouldBeEmpty_whenTheRecordHasNone() {
+    void milestone_shouldBeEmpty_whenTheResponseHasNone() {
         final Optional<Milestone> milestone = sut.milestone();
 
         assertThat(milestone).isEmpty();
     }
 
     @Test
-    void milestone_shouldWrapTheMilestoneOfTheRecord_whenTheRecordHasOne() {
-        final GitHubMilestone milestoneRecord = RepositoryContentFixtures.milestone();
+    void milestone_shouldWrapTheMilestoneOfTheResponse_whenTheResponseHasOne() {
+        final GitHubMilestone milestoneResponse = RepositoryContentFixtures.milestone();
         final Issue planned = new Issue(
                 repository,
-                GitHubIssueBuilder.builder(record).milestone(milestoneRecord).build());
+                GitHubIssueBuilder.builder(response)
+                        .milestone(milestoneResponse)
+                        .build());
 
         final Optional<Milestone> milestone = planned.milestone();
 
         assertThat(milestone).isPresent();
         assertSoftly(softly -> {
-            softly.assertThat(milestone.orElseThrow().record()).isSameAs(milestoneRecord);
+            softly.assertThat(milestone.orElseThrow().response()).isSameAs(milestoneResponse);
             softly.assertThat(milestone.orElseThrow().repository()).isSameAs(repository);
         });
     }
 
     @Test
-    void assignees_shouldBeEmpty_whenTheRecordHasNone() {
+    void assignees_shouldBeEmpty_whenTheResponseHasNone() {
         final List<GitHubSimpleUser> assignees = sut.assignees();
 
         assertThat(assignees).isEmpty();
     }
 
     @Test
-    void assignees_shouldReturnTheUsersOfTheRecord_whenTheyArePresent() {
+    void assignees_shouldReturnTheUsersOfTheResponse_whenTheyArePresent() {
         final GitHubSimpleUser user = mock(GitHubSimpleUser.class);
         final Issue assigned = new Issue(
                 repository,
-                GitHubIssueBuilder.builder(record).assignees(List.of(user)).build());
+                GitHubIssueBuilder.builder(response).assignees(List.of(user)).build());
 
         final List<GitHubSimpleUser> assignees = assigned.assignees();
 
@@ -205,7 +207,7 @@ class IssueTest {
     @Test
     void addLabels_shouldSendTheNamesAndReturnTheReloadedIssue_whenCalled() throws IOException {
         final GitHubIssue reloaded =
-                GitHubIssueBuilder.builder(record).comments(1).build();
+                GitHubIssueBuilder.builder(response).comments(1).build();
         when(github.issues().issue().get(OWNER, NAME, NUMBER)).thenReturn(Optional.of(reloaded));
         final ArgumentCaptor<GitHubAddLabelsPayload> payload = ArgumentCaptor.forClass(GitHubAddLabelsPayload.class);
 
@@ -215,7 +217,7 @@ class IssueTest {
         assertSoftly(softly -> {
             softly.assertThat(payload.getValue().labels())
                     .containsExactly(GitHubAddLabelsLabel.ofName("bug"), GitHubAddLabelsLabel.ofName("help wanted"));
-            softly.assertThat(labelled.record()).isSameAs(reloaded);
+            softly.assertThat(labelled.response()).isSameAs(reloaded);
         });
     }
 
@@ -229,7 +231,7 @@ class IssueTest {
     @Test
     void setLabels_shouldSendTheNamesAndReturnTheReloadedIssue_whenCalled() throws IOException {
         final GitHubIssue reloaded =
-                GitHubIssueBuilder.builder(record).comments(1).build();
+                GitHubIssueBuilder.builder(response).comments(1).build();
         when(github.issues().issue().get(OWNER, NAME, NUMBER)).thenReturn(Optional.of(reloaded));
         final ArgumentCaptor<GitHubSetLabelsPayload> payload = ArgumentCaptor.forClass(GitHubSetLabelsPayload.class);
 
@@ -238,26 +240,26 @@ class IssueTest {
         verify(github.issues().labels()).setLabels(eq(OWNER), eq(NAME), eq(NUMBER), payload.capture());
         assertSoftly(softly -> {
             softly.assertThat(payload.getValue().labels()).containsExactly(GitHubSetLabelsLabel.ofName("bug"));
-            softly.assertThat(labelled.record()).isSameAs(reloaded);
+            softly.assertThat(labelled.response()).isSameAs(reloaded);
         });
     }
 
     @Test
     void removeLabel_shouldRemoveTheLabelAndReturnTheReloadedIssue_whenCalled() throws IOException {
         final GitHubIssue reloaded =
-                GitHubIssueBuilder.builder(record).comments(1).build();
+                GitHubIssueBuilder.builder(response).comments(1).build();
         when(github.issues().issue().get(OWNER, NAME, NUMBER)).thenReturn(Optional.of(reloaded));
 
         final Issue unlabelled = sut.removeLabel("bug");
 
         verify(github.issues().labels()).removeLabel(OWNER, NAME, NUMBER, "bug");
-        assertThat(unlabelled.record()).isSameAs(reloaded);
+        assertThat(unlabelled.response()).isSameAs(reloaded);
     }
 
     @Test
     void assign_shouldSendTheLoginsAndReturnTheResponse_whenCalled() throws IOException {
         final GitHubIssue assigned =
-                GitHubIssueBuilder.builder(record).comments(1).build();
+                GitHubIssueBuilder.builder(response).comments(1).build();
         when(github.issues()
                         .assignees()
                         .addAssignees(eq(OWNER), eq(NAME), eq(NUMBER), any(GitHubAddAssigneesPayload.class)))
@@ -271,7 +273,7 @@ class IssueTest {
         assertSoftly(softly -> {
             softly.assertThat(payload.getValue().assignees())
                     .containsExactly(GitHubAddAssigneesAssignee.ofLogin("hubot"));
-            softly.assertThat(result.record()).isSameAs(assigned);
+            softly.assertThat(result.response()).isSameAs(assigned);
         });
     }
 
@@ -285,7 +287,7 @@ class IssueTest {
     @Test
     void unassign_shouldSendTheLoginsAndReturnTheResponse_whenCalled() throws IOException {
         final GitHubIssue unassigned =
-                GitHubIssueBuilder.builder(record).comments(1).build();
+                GitHubIssueBuilder.builder(response).comments(1).build();
         when(github.issues()
                         .assignees()
                         .removeAssignees(eq(OWNER), eq(NAME), eq(NUMBER), any(GitHubRemoveAssigneesPayload.class)))
@@ -298,32 +300,32 @@ class IssueTest {
         verify(github.issues().assignees()).removeAssignees(eq(OWNER), eq(NAME), eq(NUMBER), payload.capture());
         assertSoftly(softly -> {
             softly.assertThat(payload.getValue().assignees()).containsExactly("hubot");
-            softly.assertThat(result.record()).isSameAs(unassigned);
+            softly.assertThat(result.response()).isSameAs(unassigned);
         });
     }
 
     @Test
     void lock_shouldLockTheIssueAndReturnTheReloadedIssue_whenCalled() throws IOException {
         final GitHubIssue reloaded =
-                GitHubIssueBuilder.builder(record).locked(true).build();
+                GitHubIssueBuilder.builder(response).locked(true).build();
         when(github.issues().issue().get(OWNER, NAME, NUMBER)).thenReturn(Optional.of(reloaded));
 
         final Issue locked = sut.lock();
 
         verify(github.issues().issue()).lock(OWNER, NAME, NUMBER);
-        assertThat(locked.record()).isSameAs(reloaded);
+        assertThat(locked.response()).isSameAs(reloaded);
     }
 
     @Test
     void unlock_shouldUnlockTheIssueAndReturnTheReloadedIssue_whenCalled() throws IOException {
         final GitHubIssue reloaded =
-                GitHubIssueBuilder.builder(record).locked(false).build();
+                GitHubIssueBuilder.builder(response).locked(false).build();
         when(github.issues().issue().get(OWNER, NAME, NUMBER)).thenReturn(Optional.of(reloaded));
 
         final Issue unlocked = sut.unlock();
 
         verify(github.issues().issue()).unlock(OWNER, NAME, NUMBER);
-        assertThat(unlocked.record()).isSameAs(reloaded);
+        assertThat(unlocked.response()).isSameAs(reloaded);
     }
 
     @Test
@@ -341,7 +343,7 @@ class IssueTest {
         verify(github.issues().comments()).createComment(eq(OWNER), eq(NAME), eq(NUMBER), payload.capture());
         assertSoftly(softly -> {
             softly.assertThat(payload.getValue().body()).isEqualTo("First comment");
-            softly.assertThat(comment.record()).isSameAs(created);
+            softly.assertThat(comment.response()).isSameAs(created);
             softly.assertThat(comment.issue()).isSameAs(sut);
         });
     }
@@ -363,7 +365,7 @@ class IssueTest {
 
         assertThat(comments).hasSize(1);
         assertSoftly(softly -> {
-            softly.assertThat(comments.getFirst().record()).isSameAs(first);
+            softly.assertThat(comments.getFirst().response()).isSameAs(first);
             softly.assertThat(comments.getFirst().issue()).isSameAs(sut);
         });
     }

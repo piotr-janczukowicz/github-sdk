@@ -26,25 +26,25 @@ class MilestoneTest {
 
     private final GitHub github = mock(GitHub.class, RETURNS_DEEP_STUBS);
     private final Repository repository = GitHubSdk.of(github).repository("octocat", "hello-world");
-    private final GitHubMilestone record = RepositoryContentFixtures.milestone();
-    private final Milestone sut = new Milestone(repository, record);
+    private final GitHubMilestone response = RepositoryContentFixtures.milestone();
+    private final Milestone sut = new Milestone(repository, response);
 
     @Test
-    void accessors_shouldExposeTheRecord_whenMilestoneIsLoaded() {
+    void accessors_shouldExposeTheResponse_whenMilestoneIsLoaded() {
         assertSoftly(softly -> {
             softly.assertThat(sut.repository()).isSameAs(repository);
             softly.assertThat(sut.number()).isEqualTo(3);
             softly.assertThat(sut.title()).isEqualTo("v1.0");
             softly.assertThat(sut.description()).isEmpty();
-            softly.assertThat(sut.record()).isSameAs(record);
+            softly.assertThat(sut.response()).isSameAs(response);
         });
     }
 
     @Test
-    void description_shouldReturnTheDescription_whenTheRecordHasOne() {
+    void description_shouldReturnTheDescription_whenTheResponseHasOne() {
         final Milestone described = new Milestone(
                 repository,
-                GitHubMilestoneBuilder.builder(record)
+                GitHubMilestoneBuilder.builder(response)
                         .description("First release")
                         .build());
 
@@ -55,7 +55,7 @@ class MilestoneTest {
 
     @Test
     void close_shouldSendClosedAndReturnTheResponse_whenCalled() throws IOException {
-        final GitHubMilestone closed = GitHubMilestoneBuilder.builder(record)
+        final GitHubMilestone closed = GitHubMilestoneBuilder.builder(response)
                 .state(GitHubMilestoneState.CLOSED)
                 .build();
         when(github.issues()
@@ -72,8 +72,8 @@ class MilestoneTest {
                 .updateMilestone(eq("octocat"), eq("hello-world"), eq(3), payload.capture());
         assertSoftly(softly -> {
             softly.assertThat(payload.getValue().state()).isEqualTo(GitHubMilestoneState.CLOSED);
-            softly.assertThat(result.record()).isSameAs(closed);
-            softly.assertThat(sut.record()).isSameAs(record);
+            softly.assertThat(result.response()).isSameAs(closed);
+            softly.assertThat(sut.response()).isSameAs(response);
         });
     }
 
@@ -83,7 +83,7 @@ class MilestoneTest {
                         .milestones()
                         .updateMilestone(
                                 eq("octocat"), eq("hello-world"), eq(3), any(GitHubUpdateMilestonePayload.class)))
-                .thenReturn(record);
+                .thenReturn(response);
         final ArgumentCaptor<GitHubUpdateMilestonePayload> payload =
                 ArgumentCaptor.forClass(GitHubUpdateMilestonePayload.class);
 
@@ -93,21 +93,21 @@ class MilestoneTest {
                 .updateMilestone(eq("octocat"), eq("hello-world"), eq(3), payload.capture());
         assertSoftly(softly -> {
             softly.assertThat(payload.getValue().state()).isEqualTo(GitHubMilestoneState.OPEN);
-            softly.assertThat(result.record()).isSameAs(record);
+            softly.assertThat(result.response()).isSameAs(response);
         });
     }
 
     @Test
     void refresh_shouldReturnTheReloadedMilestone_whenGitHubHasIt() throws IOException {
         final GitHubMilestone reloaded =
-                GitHubMilestoneBuilder.builder(record).title("v1.1").build();
+                GitHubMilestoneBuilder.builder(response).title("v1.1").build();
         when(github.issues().milestones().getMilestone("octocat", "hello-world", 3))
                 .thenReturn(Optional.of(reloaded));
 
         final Milestone refreshed = sut.refresh();
 
         assertSoftly(softly -> {
-            softly.assertThat(refreshed.record()).isSameAs(reloaded);
+            softly.assertThat(refreshed.response()).isSameAs(reloaded);
             softly.assertThat(sut.title()).isEqualTo("v1.0");
         });
     }

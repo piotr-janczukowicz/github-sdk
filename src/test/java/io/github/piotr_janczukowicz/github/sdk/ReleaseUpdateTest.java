@@ -28,13 +28,13 @@ class ReleaseUpdateTest {
     private static final long ID = 9009L;
 
     private final GitHub github = mock(GitHub.class, RETURNS_DEEP_STUBS);
-    private final GitHubRelease record = RepositoryContentFixtures.release();
-    private final Release release = new Release(GitHubSdk.of(github).repository(OWNER, NAME), record);
+    private final GitHubRelease response = RepositoryContentFixtures.release();
+    private final Release release = new Release(GitHubSdk.of(github).repository(OWNER, NAME), response);
 
     @Test
     void send_shouldSendOnlyTheSetFieldsAndReturnTheResponse_whenNameAndBodyAreSet() throws IOException {
         final GitHubRelease updated =
-                GitHubReleaseBuilder.builder(record).name("First").build();
+                GitHubReleaseBuilder.builder(response).name("First").build();
         when(github.releases()
                         .release()
                         .updateRelease(eq(OWNER), eq(NAME), eq(ID), any(GitHubUpdateReleasePayload.class)))
@@ -51,7 +51,7 @@ class ReleaseUpdateTest {
             softly.assertThat(payload.getValue().tagName()).isNull();
             softly.assertThat(payload.getValue().draft()).isNull();
             softly.assertThat(payload.getValue().prerelease()).isNull();
-            softly.assertThat(result.record()).isSameAs(updated);
+            softly.assertThat(result.response()).isSameAs(updated);
             softly.assertThat(release.name()).isEmpty();
         });
     }
@@ -61,7 +61,7 @@ class ReleaseUpdateTest {
         when(github.releases()
                         .release()
                         .updateRelease(eq(OWNER), eq(NAME), eq(ID), any(GitHubUpdateReleasePayload.class)))
-                .thenReturn(record);
+                .thenReturn(response);
         final ArgumentCaptor<GitHubUpdateReleasePayload> payload =
                 ArgumentCaptor.forClass(GitHubUpdateReleasePayload.class);
 

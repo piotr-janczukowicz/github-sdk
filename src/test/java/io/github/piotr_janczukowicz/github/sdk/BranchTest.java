@@ -20,24 +20,24 @@ class BranchTest {
 
     private final GitHub github = mock(GitHub.class, RETURNS_DEEP_STUBS);
     private final Repository repository = GitHubSdk.of(github).repository("octocat", "hello-world");
-    private final GitHubBranchWithProtection record = RepositoryContentFixtures.branch();
-    private final Branch sut = new Branch(repository, record);
+    private final GitHubBranchWithProtection response = RepositoryContentFixtures.branch();
+    private final Branch sut = new Branch(repository, response);
 
     @Test
-    void accessors_shouldExposeTheRecord_whenBranchIsLoaded() {
+    void accessors_shouldExposeTheResponse_whenBranchIsLoaded() {
         assertSoftly(softly -> {
             softly.assertThat(sut.repository()).isSameAs(repository);
             softly.assertThat(sut.name()).isEqualTo("main");
             softly.assertThat(sut.isProtected()).isFalse();
-            softly.assertThat(sut.commit().record()).isSameAs(record.commit());
+            softly.assertThat(sut.commit().response()).isSameAs(response.commit());
             softly.assertThat(sut.commit().repository()).isSameAs(repository);
-            softly.assertThat(sut.record()).isSameAs(record);
+            softly.assertThat(sut.response()).isSameAs(response);
         });
     }
 
     @Test
     void refresh_shouldReturnTheReloadedBranch_whenGitHubHasIt() throws IOException {
-        final GitHubBranchWithProtection reloaded = GitHubBranchWithProtectionBuilder.builder(record)
+        final GitHubBranchWithProtection reloaded = GitHubBranchWithProtectionBuilder.builder(response)
                 .protectedBranch(true)
                 .build();
         when(github.branches().branch().getBranch("octocat", "hello-world", "main"))
@@ -46,7 +46,7 @@ class BranchTest {
         final Branch refreshed = sut.refresh();
 
         assertSoftly(softly -> {
-            softly.assertThat(refreshed.record()).isSameAs(reloaded);
+            softly.assertThat(refreshed.response()).isSameAs(reloaded);
             softly.assertThat(sut.isProtected()).isFalse();
         });
     }
@@ -62,10 +62,10 @@ class BranchTest {
     }
 
     @Test
-    void isProtected_shouldBeTrue_whenTheRecordSaysProtected() {
+    void isProtected_shouldBeTrue_whenTheResponseSaysProtected() {
         final Branch protectedBranch = new Branch(
                 repository,
-                GitHubBranchWithProtectionBuilder.builder(record)
+                GitHubBranchWithProtectionBuilder.builder(response)
                         .protectedBranch(true)
                         .build());
 

@@ -16,31 +16,31 @@ import org.junit.jupiter.api.Test;
 class CommitTest {
 
     private final Repository repository = GitHubSdk.of(mock(GitHub.class)).repository("octocat", "hello-world");
-    private final GitHubCommit record = RepositoryContentFixtures.commit();
-    private final Commit sut = new Commit(repository, record);
+    private final GitHubCommit response = RepositoryContentFixtures.commit();
+    private final Commit sut = new Commit(repository, response);
 
     @Test
-    void accessors_shouldExposeTheRecord_whenCommitIsLoaded() {
+    void accessors_shouldExposeTheResponse_whenCommitIsLoaded() {
         assertSoftly(softly -> {
             softly.assertThat(sut.repository()).isSameAs(repository);
             softly.assertThat(sut.sha()).isEqualTo("abc123");
             softly.assertThat(sut.message()).isEqualTo("Fix the bug");
-            softly.assertThat(sut.record()).isSameAs(record);
+            softly.assertThat(sut.response()).isSameAs(response);
         });
     }
 
     @Test
-    void author_shouldBeEmpty_whenTheRecordHasNoAuthor() {
+    void author_shouldBeEmpty_whenTheResponseHasNoAuthor() {
         final Optional<GitHubSimpleUser> author = sut.author();
 
         assertThat(author).isEmpty();
     }
 
     @Test
-    void author_shouldReturnTheUser_whenTheRecordHasOne() {
+    void author_shouldReturnTheUser_whenTheResponseHasOne() {
         final GitHubSimpleUser user = mock(GitHubSimpleUser.class);
         final Commit withAuthor = new Commit(
-                repository, GitHubCommitBuilder.builder(record).author(user).build());
+                repository, GitHubCommitBuilder.builder(response).author(user).build());
 
         final Optional<GitHubSimpleUser> author = withAuthor.author();
 

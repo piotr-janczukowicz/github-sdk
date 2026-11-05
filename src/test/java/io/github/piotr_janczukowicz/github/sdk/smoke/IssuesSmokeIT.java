@@ -34,7 +34,7 @@ class IssuesSmokeIT {
 
         final Optional<Repository> loaded = handle.fetch();
 
-        assertThat(loaded).map(repository -> repository.record().fullName()).contains(ENV.owner() + "/" + ENV.repo());
+        assertThat(loaded).map(repository -> repository.response().fullName()).contains(ENV.owner() + "/" + ENV.repo());
     }
 
     @Test
@@ -74,7 +74,7 @@ class IssuesSmokeIT {
             final Issue refreshed = updated.refresh();
 
             assertThat(updated.title()).isEqualTo(ENV.name("updated"));
-            assertThat(refreshed.record().body()).isEqualTo("changed by a smoke test");
+            assertThat(refreshed.response().body()).isEqualTo("changed by a smoke test");
             assertThat(created.title()).isEqualTo(ENV.name("update"));
         } finally {
             created.close();
@@ -112,8 +112,8 @@ class IssuesSmokeIT {
             final Issue locked = created.lock();
             final Issue unlocked = locked.unlock();
 
-            assertThat(locked.record().locked()).isTrue();
-            assertThat(unlocked.record().locked()).isFalse();
+            assertThat(locked.response().locked()).isTrue();
+            assertThat(unlocked.response().locked()).isFalse();
         } finally {
             created.close();
         }

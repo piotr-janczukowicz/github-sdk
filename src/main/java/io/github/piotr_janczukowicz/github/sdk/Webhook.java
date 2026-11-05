@@ -9,17 +9,17 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * A webhook of a {@link Repository}, as GitHub returned it. The object is immutable, and {@link #record()} gives the
+ * A webhook of a {@link Repository}, as GitHub returned it. The object is immutable, and {@link #response()} gives the
  * complete response for every field the accessors here do not cover. GitHub never returns the secret.
  */
 public final class Webhook {
 
     private final Repository repository;
-    private final GitHubHook record;
+    private final GitHubHook response;
 
-    Webhook(final Repository repository, final GitHubHook record) {
+    Webhook(final Repository repository, final GitHubHook response) {
         this.repository = requireNonNull(repository, "repository");
-        this.record = requireNonNull(record, "record");
+        this.response = requireNonNull(response, "response");
     }
 
     /**
@@ -37,7 +37,7 @@ public final class Webhook {
      * @return the id
      */
     public long id() {
-        return record.id();
+        return response.id();
     }
 
     /**
@@ -46,7 +46,7 @@ public final class Webhook {
      * @return {@code true} when active
      */
     public boolean isActive() {
-        return record.active();
+        return response.active();
     }
 
     /**
@@ -55,7 +55,7 @@ public final class Webhook {
      * @return the event names
      */
     public List<String> events() {
-        return record.events();
+        return response.events();
     }
 
     /**
@@ -64,7 +64,7 @@ public final class Webhook {
      * @return the payload URL, or empty when the configuration has none
      */
     public Optional<String> payloadUrl() {
-        return Optional.ofNullable(record.config().url());
+        return Optional.ofNullable(response.config().url());
     }
 
     /**
@@ -101,8 +101,8 @@ public final class Webhook {
      *
      * @return the response record
      */
-    public GitHubHook record() {
-        return record;
+    public GitHubHook response() {
+        return response;
     }
 
     Webhook apply(final GitHubUpdateWebhookPayload payload) throws IOException {

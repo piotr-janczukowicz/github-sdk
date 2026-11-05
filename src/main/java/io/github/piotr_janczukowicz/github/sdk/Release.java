@@ -9,16 +9,16 @@ import java.util.Optional;
 
 /**
  * A release of a {@link Repository}, as GitHub returned it. The object is immutable: it keeps the data of the moment it
- * was loaded, and {@link #record()} gives the complete response for every field the accessors here do not cover.
+ * was loaded, and {@link #response()} gives the complete response for every field the accessors here do not cover.
  */
 public final class Release {
 
     private final Repository repository;
-    private final GitHubRelease record;
+    private final GitHubRelease response;
 
-    Release(final Repository repository, final GitHubRelease record) {
+    Release(final Repository repository, final GitHubRelease response) {
         this.repository = requireNonNull(repository, "repository");
-        this.record = requireNonNull(record, "record");
+        this.response = requireNonNull(response, "response");
     }
 
     /**
@@ -36,7 +36,7 @@ public final class Release {
      * @return the tag name
      */
     public String tagName() {
-        return record.tagName();
+        return response.tagName();
     }
 
     /**
@@ -45,7 +45,7 @@ public final class Release {
      * @return the name, or empty when the release has none
      */
     public Optional<String> name() {
-        return Optional.ofNullable(record.name());
+        return Optional.ofNullable(response.name());
     }
 
     /**
@@ -54,7 +54,7 @@ public final class Release {
      * @return {@code true} for a draft
      */
     public boolean isDraft() {
-        return record.draft();
+        return response.draft();
     }
 
     /**
@@ -63,7 +63,7 @@ public final class Release {
      * @return {@code true} for a pre-release
      */
     public boolean isPrerelease() {
-        return record.prerelease();
+        return response.prerelease();
     }
 
     /**
@@ -79,7 +79,7 @@ public final class Release {
                 .github()
                 .releases()
                 .release()
-                .getRelease(repository.owner(), repository.name(), record.id())
+                .getRelease(repository.owner(), repository.name(), response.id())
                 .map(reloaded -> new Release(repository, reloaded))
                 .orElseThrow(() -> new IllegalStateException("Release " + tagName() + " is gone"));
     }
@@ -95,7 +95,7 @@ public final class Release {
                 .github()
                 .releases()
                 .release()
-                .deleteRelease(repository.owner(), repository.name(), record.id());
+                .deleteRelease(repository.owner(), repository.name(), response.id());
     }
 
     /**
@@ -112,8 +112,8 @@ public final class Release {
      *
      * @return the response record
      */
-    public GitHubRelease record() {
-        return record;
+    public GitHubRelease response() {
+        return response;
     }
 
     Release apply(final GitHubUpdateReleasePayload payload) throws IOException {
@@ -124,6 +124,6 @@ public final class Release {
                         .github()
                         .releases()
                         .release()
-                        .updateRelease(repository.owner(), repository.name(), record.id(), payload));
+                        .updateRelease(repository.owner(), repository.name(), response.id(), payload));
     }
 }

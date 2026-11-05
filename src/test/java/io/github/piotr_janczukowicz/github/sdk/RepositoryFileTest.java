@@ -33,16 +33,16 @@ class RepositoryFileTest {
     }
 
     @Test
-    void accessors_shouldExposeTheRecord_whenFileIsLoaded() {
-        final GitHubContentFile record = RepositoryContentFixtures.contentFile("base64", "SGVsbG8=");
-        final RepositoryFile sut = new RepositoryFile(repository, record);
+    void accessors_shouldExposeTheResponse_whenFileIsLoaded() {
+        final GitHubContentFile response = RepositoryContentFixtures.contentFile("base64", "SGVsbG8=");
+        final RepositoryFile sut = new RepositoryFile(repository, response);
 
         assertSoftly(softly -> {
             softly.assertThat(sut.repository()).isSameAs(repository);
             softly.assertThat(sut.path()).isEqualTo("docs/README.md");
             softly.assertThat(sut.sha()).isEqualTo("blob123");
             softly.assertThat(sut.size()).isEqualTo(5);
-            softly.assertThat(sut.record()).isSameAs(record);
+            softly.assertThat(sut.response()).isSameAs(response);
         });
     }
 

@@ -41,27 +41,28 @@ class PullRequestTest {
 
     private final GitHub github = mock(GitHub.class, RETURNS_DEEP_STUBS);
     private final Repository repository = GitHubSdk.of(github).repository(OWNER, NAME);
-    private final GitHubPullRequest record = PullRequestsFixtures.pullRequest();
-    private final PullRequest sut = new PullRequest(repository, record);
+    private final GitHubPullRequest response = PullRequestsFixtures.pullRequest();
+    private final PullRequest sut = new PullRequest(repository, response);
 
     @Test
-    void accessors_shouldExposeTheRecord_whenPullRequestIsLoaded() {
+    void accessors_shouldExposeTheResponse_whenPullRequestIsLoaded() {
         assertSoftly(softly -> {
             softly.assertThat(sut.repository()).isSameAs(repository);
             softly.assertThat(sut.number()).isEqualTo(NUMBER);
             softly.assertThat(sut.title()).isEqualTo("Add feature");
             softly.assertThat(sut.state()).isEqualTo(PullRequestState.OPEN);
-            softly.assertThat(sut.author()).isSameAs(record.user());
+            softly.assertThat(sut.author()).isSameAs(response.user());
             softly.assertThat(sut.isDraft()).isFalse();
             softly.assertThat(sut.isMerged()).isFalse();
-            softly.assertThat(sut.record()).isSameAs(record);
+            softly.assertThat(sut.response()).isSameAs(response);
         });
     }
 
     @Test
-    void isDraft_shouldBeTrue_whenTheRecordSaysDraft() {
+    void isDraft_shouldBeTrue_whenTheResponseSaysDraft() {
         final PullRequest draft = new PullRequest(
-                repository, GitHubPullRequestBuilder.builder(record).draft(true).build());
+                repository,
+                GitHubPullRequestBuilder.builder(response).draft(true).build());
 
         final boolean isDraft = draft.isDraft();
 
@@ -69,10 +70,10 @@ class PullRequestTest {
     }
 
     @Test
-    void isMerged_shouldBeTrue_whenTheRecordSaysMerged() {
+    void isMerged_shouldBeTrue_whenTheResponseSaysMerged() {
         final PullRequest merged = new PullRequest(
                 repository,
-                GitHubPullRequestBuilder.builder(record).merged(true).build());
+                GitHubPullRequestBuilder.builder(response).merged(true).build());
 
         final boolean isMerged = merged.isMerged();
 
@@ -82,13 +83,13 @@ class PullRequestTest {
     @Test
     void refresh_shouldReturnTheReloadedPullRequest_whenGitHubHasIt() throws IOException {
         final GitHubPullRequest reloaded =
-                GitHubPullRequestBuilder.builder(record).title("Renamed").build();
+                GitHubPullRequestBuilder.builder(response).title("Renamed").build();
         when(github.pullRequests().pullRequest().get(OWNER, NAME, NUMBER)).thenReturn(Optional.of(reloaded));
 
         final PullRequest refreshed = sut.refresh();
 
         assertSoftly(softly -> {
-            softly.assertThat(refreshed.record()).isSameAs(reloaded);
+            softly.assertThat(refreshed.response()).isSameAs(reloaded);
             softly.assertThat(sut.title()).isEqualTo("Add feature");
         });
     }
@@ -104,7 +105,7 @@ class PullRequestTest {
 
     @Test
     void close_shouldSendClosedAndReturnTheResponse_whenCalled() throws IOException {
-        final GitHubPullRequest closed = GitHubPullRequestBuilder.builder(record)
+        final GitHubPullRequest closed = GitHubPullRequestBuilder.builder(response)
                 .state(GitHubPullRequestUpdateState.CLOSED)
                 .build();
         when(github.pullRequests()
@@ -129,7 +130,7 @@ class PullRequestTest {
         when(github.pullRequests()
                         .pullRequest()
                         .update(eq(OWNER), eq(NAME), eq(NUMBER), any(GitHubUpdatePullRequestPayload.class)))
-                .thenReturn(record);
+                .thenReturn(response);
         final ArgumentCaptor<GitHubUpdatePullRequestPayload> payload =
                 ArgumentCaptor.forClass(GitHubUpdatePullRequestPayload.class);
 
@@ -138,14 +139,14 @@ class PullRequestTest {
         verify(github.pullRequests().pullRequest()).update(eq(OWNER), eq(NAME), eq(NUMBER), payload.capture());
         assertSoftly(softly -> {
             softly.assertThat(payload.getValue().state()).isEqualTo(GitHubPullRequestUpdateState.OPEN);
-            softly.assertThat(result.record()).isSameAs(record);
+            softly.assertThat(result.response()).isSameAs(response);
         });
     }
 
     @Test
     void merge_shouldSendTheMethodAndReturnTheReloadedPullRequest_whenCalledWithAMethod() throws IOException {
         final GitHubPullRequest merged =
-                GitHubPullRequestBuilder.builder(record).merged(true).build();
+                GitHubPullRequestBuilder.builder(response).merged(true).build();
         when(github.pullRequests().pullRequest().get(OWNER, NAME, NUMBER)).thenReturn(Optional.of(merged));
         final ArgumentCaptor<GitHubMergePullRequestPayload> payload =
                 ArgumentCaptor.forClass(GitHubMergePullRequestPayload.class);
@@ -163,7 +164,7 @@ class PullRequestTest {
 
     @Test
     void merge_shouldSendTheCommitMessage_whenCalledWithAMessage() throws IOException {
-        when(github.pullRequests().pullRequest().get(OWNER, NAME, NUMBER)).thenReturn(Optional.of(record));
+        when(github.pullRequests().pullRequest().get(OWNER, NAME, NUMBER)).thenReturn(Optional.of(response));
         final ArgumentCaptor<GitHubMergePullRequestPayload> payload =
                 ArgumentCaptor.forClass(GitHubMergePullRequestPayload.class);
 
@@ -208,7 +209,7 @@ class PullRequestTest {
     @Test
     void requestReviewers_shouldSendTheLoginsAndReturnTheReloadedPullRequest_whenCalled() throws IOException {
         final GitHubPullRequest reloaded =
-                GitHubPullRequestBuilder.builder(record).title("Reviewed").build();
+                GitHubPullRequestBuilder.builder(response).title("Reviewed").build();
         when(github.pullRequests().pullRequest().get(OWNER, NAME, NUMBER)).thenReturn(Optional.of(reloaded));
         final ArgumentCaptor<GitHubRequestReviewersPayload> payload =
                 ArgumentCaptor.forClass(GitHubRequestReviewersPayload.class);
@@ -219,7 +220,7 @@ class PullRequestTest {
         assertSoftly(softly -> {
             softly.assertThat(payload.getValue().reviewers()).containsExactly("hubot", "octocat");
             softly.assertThat(payload.getValue().teamReviewers()).isNullOrEmpty();
-            softly.assertThat(result.record()).isSameAs(reloaded);
+            softly.assertThat(result.response()).isSameAs(reloaded);
         });
     }
 
@@ -232,7 +233,7 @@ class PullRequestTest {
 
     @Test
     void removeReviewers_shouldSendTheLoginsAndReturnTheReloadedPullRequest_whenCalled() throws IOException {
-        when(github.pullRequests().pullRequest().get(OWNER, NAME, NUMBER)).thenReturn(Optional.of(record));
+        when(github.pullRequests().pullRequest().get(OWNER, NAME, NUMBER)).thenReturn(Optional.of(response));
         final ArgumentCaptor<GitHubRemoveReviewersPayload> payload =
                 ArgumentCaptor.forClass(GitHubRemoveReviewersPayload.class);
 
@@ -241,7 +242,7 @@ class PullRequestTest {
         verify(github.pullRequests().reviewRequests()).remove(eq(OWNER), eq(NAME), eq(NUMBER), payload.capture());
         assertSoftly(softly -> {
             softly.assertThat(payload.getValue().reviewers()).containsExactly("hubot");
-            softly.assertThat(result.record()).isSameAs(record);
+            softly.assertThat(result.response()).isSameAs(response);
         });
     }
 
@@ -254,13 +255,13 @@ class PullRequestTest {
 
     @Test
     void issue_shouldLoadTheIssueWithTheSameNumber_whenItExists() throws IOException {
-        final GitHubIssue issueRecord = IssuesFixtures.issue();
-        when(github.issues().issue().get(OWNER, NAME, NUMBER)).thenReturn(Optional.of(issueRecord));
+        final GitHubIssue issueResponse = IssuesFixtures.issue();
+        when(github.issues().issue().get(OWNER, NAME, NUMBER)).thenReturn(Optional.of(issueResponse));
 
         final Issue issue = sut.issue();
 
         assertSoftly(softly -> {
-            softly.assertThat(issue.record()).isSameAs(issueRecord);
+            softly.assertThat(issue.response()).isSameAs(issueResponse);
             softly.assertThat(issue.repository()).isSameAs(repository);
         });
     }

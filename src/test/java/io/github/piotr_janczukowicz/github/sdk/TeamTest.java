@@ -26,28 +26,28 @@ class TeamTest {
 
     private final GitHub github = mock(GitHub.class, RETURNS_DEEP_STUBS);
     private final GitHubSdk sdk = GitHubSdk.of(github);
-    private final GitHubOrganizationFull organizationRecord = mock(GitHubOrganizationFull.class);
-    private final Organization organization = new Organization(sdk, organizationRecord);
-    private final GitHubTeamFull record = mock(GitHubTeamFull.class);
-    private final Team sut = new Team(organization, record);
+    private final GitHubOrganizationFull organizationResponse = mock(GitHubOrganizationFull.class);
+    private final Organization organization = new Organization(sdk, organizationResponse);
+    private final GitHubTeamFull response = mock(GitHubTeamFull.class);
+    private final Team sut = new Team(organization, response);
 
     @Test
-    void accessors_shouldExposeTheRecord_whenTeamIsLoaded() {
-        when(record.slug()).thenReturn(SLUG);
-        when(record.name()).thenReturn("Core team");
+    void accessors_shouldExposeTheResponse_whenTeamIsLoaded() {
+        when(response.slug()).thenReturn(SLUG);
+        when(response.name()).thenReturn("Core team");
 
         assertSoftly(softly -> {
             softly.assertThat(sut.organization()).isSameAs(organization);
             softly.assertThat(sut.slug()).isEqualTo(SLUG);
             softly.assertThat(sut.name()).isEqualTo("Core team");
-            softly.assertThat(sut.record()).isSameAs(record);
+            softly.assertThat(sut.response()).isSameAs(response);
         });
     }
 
     @Test
     void members_shouldStreamTheMembers_whenTheTeamHasMembers() throws IOException {
-        when(organizationRecord.login()).thenReturn(ORG);
-        when(record.slug()).thenReturn(SLUG);
+        when(organizationResponse.login()).thenReturn(ORG);
+        when(response.slug()).thenReturn(SLUG);
         final GitHubTeamMember member = mock(GitHubTeamMember.class);
         when(github.teams().members().listMembers(ORG, SLUG).stream()).thenReturn(Stream.of(member));
 
@@ -58,8 +58,8 @@ class TeamTest {
 
     @Test
     void repositories_shouldReturnHandlesOfTheListedRepositories_whenTheTeamHasRepositories() throws IOException {
-        when(organizationRecord.login()).thenReturn(ORG);
-        when(record.slug()).thenReturn(SLUG);
+        when(organizationResponse.login()).thenReturn(ORG);
+        when(response.slug()).thenReturn(SLUG);
         final GitHubSimpleUser owner = mock(GitHubSimpleUser.class);
         when(owner.login()).thenReturn(ORG);
         final GitHubMinimalRepository listed = mock(GitHubMinimalRepository.class);

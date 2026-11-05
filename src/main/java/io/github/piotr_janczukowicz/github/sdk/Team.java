@@ -8,17 +8,17 @@ import java.io.IOException;
 import java.util.stream.Stream;
 
 /**
- * A team of an {@link Organization}, as GitHub returned it. The object is immutable, and {@link #record()} gives the
+ * A team of an {@link Organization}, as GitHub returned it. The object is immutable, and {@link #response()} gives the
  * complete response for every field the accessors here do not cover.
  */
 public final class Team {
 
     private final Organization organization;
-    private final GitHubTeamFull record;
+    private final GitHubTeamFull response;
 
-    Team(final Organization organization, final GitHubTeamFull record) {
+    Team(final Organization organization, final GitHubTeamFull response) {
         this.organization = requireNonNull(organization, "organization");
-        this.record = requireNonNull(record, "record");
+        this.response = requireNonNull(response, "response");
     }
 
     /**
@@ -36,7 +36,7 @@ public final class Team {
      * @return the slug
      */
     public String slug() {
-        return record.slug();
+        return response.slug();
     }
 
     /**
@@ -45,7 +45,7 @@ public final class Team {
      * @return the name
      */
     public String name() {
-        return record.name();
+        return response.name();
     }
 
     /**
@@ -78,7 +78,7 @@ public final class Team {
      *
      * @return the response record
      */
-    public GitHubTeamFull record() {
-        return record;
+    public GitHubTeamFull response() {
+        return response;
     }
 }

@@ -42,15 +42,15 @@ class SearchTest {
     @Test
     void issues_shouldLoadEachFoundIssue_whenTheQueryMatches() throws IOException {
         final GitHubIssueSearchResultItem item = foundIssue("https://api.github.com/repos/octocat/hello-world", 42);
-        final GitHubIssue record = IssuesFixtures.issue();
+        final GitHubIssue response = IssuesFixtures.issue();
         when(github.search().searchIssues("is:open bug").stream()).thenReturn(Stream.of(item));
-        when(github.issues().issue().get("octocat", "hello-world", 42)).thenReturn(Optional.of(record));
+        when(github.issues().issue().get("octocat", "hello-world", 42)).thenReturn(Optional.of(response));
 
         final List<Issue> issues = sut.issues("is:open bug").toList();
 
         assertThat(issues).hasSize(1);
         assertSoftly(softly -> {
-            softly.assertThat(issues.getFirst().record()).isSameAs(record);
+            softly.assertThat(issues.getFirst().response()).isSameAs(response);
             softly.assertThat(issues.getFirst().repository().owner()).isEqualTo("octocat");
             softly.assertThat(issues.getFirst().repository().name()).isEqualTo("hello-world");
         });
@@ -111,14 +111,14 @@ class SearchTest {
     void users_shouldLoadEachFoundUser_whenTheQueryMatches() throws IOException {
         final GitHubUserSearchResultItem item = mock(GitHubUserSearchResultItem.class);
         when(item.login()).thenReturn("octocat");
-        final GitHubUserView record = mock(GitHubUser.class);
+        final GitHubUserView response = mock(GitHubUser.class);
         when(github.search().searchUsers("octo").stream()).thenReturn(Stream.of(item));
         final GitHubUserApi userApi = github.users().user();
-        doReturn(Optional.of(record)).when(userApi).getByLogin("octocat");
+        doReturn(Optional.of(response)).when(userApi).getByLogin("octocat");
 
         final List<User> users = sut.users("octo").toList();
 
-        assertThat(users).extracting(User::record).containsExactly(record);
+        assertThat(users).extracting(User::response).containsExactly(response);
     }
 
     @Test

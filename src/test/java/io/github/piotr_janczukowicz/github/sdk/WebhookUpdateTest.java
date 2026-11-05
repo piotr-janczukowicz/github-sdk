@@ -29,13 +29,13 @@ class WebhookUpdateTest {
     private static final long ID = 7007L;
 
     private final GitHub github = mock(GitHub.class, RETURNS_DEEP_STUBS);
-    private final GitHubHook record = RepositoryContentFixtures.webhook();
-    private final Webhook webhook = new Webhook(GitHubSdk.of(github).repository(OWNER, NAME), record);
+    private final GitHubHook response = RepositoryContentFixtures.webhook();
+    private final Webhook webhook = new Webhook(GitHubSdk.of(github).repository(OWNER, NAME), response);
 
     @Test
     void send_shouldSendOnlyTheSetFieldsAndReturnTheResponse_whenEventsAndActiveAreSet() throws IOException {
         final GitHubHook updated =
-                GitHubHookBuilder.builder(record).active(false).build();
+                GitHubHookBuilder.builder(response).active(false).build();
         when(github.repositories()
                         .webhooks()
                         .updateWebhook(eq(OWNER), eq(NAME), eq(ID), any(GitHubUpdateWebhookPayload.class)))
@@ -52,7 +52,7 @@ class WebhookUpdateTest {
             softly.assertThat(payload.getValue().active()).isFalse();
             softly.assertThat(payload.getValue().addEvents()).isNullOrEmpty();
             softly.assertThat(payload.getValue().config()).isNull();
-            softly.assertThat(result.record()).isSameAs(updated);
+            softly.assertThat(result.response()).isSameAs(updated);
             softly.assertThat(webhook.isActive()).isTrue();
         });
     }
@@ -62,7 +62,7 @@ class WebhookUpdateTest {
         when(github.repositories()
                         .webhooks()
                         .updateWebhook(eq(OWNER), eq(NAME), eq(ID), any(GitHubUpdateWebhookPayload.class)))
-                .thenReturn(record);
+                .thenReturn(response);
         final ArgumentCaptor<GitHubUpdateWebhookPayload> payload =
                 ArgumentCaptor.forClass(GitHubUpdateWebhookPayload.class);
 

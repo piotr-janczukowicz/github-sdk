@@ -14,17 +14,17 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
- * A GitHub organization, as GitHub returned it. The object is immutable, and {@link #record()} gives the complete
+ * A GitHub organization, as GitHub returned it. The object is immutable, and {@link #response()} gives the complete
  * response for every field the accessors here do not cover.
  */
 public final class Organization {
 
     private final GitHubSdk sdk;
-    private final GitHubOrganizationFull record;
+    private final GitHubOrganizationFull response;
 
-    Organization(final GitHubSdk sdk, final GitHubOrganizationFull record) {
+    Organization(final GitHubSdk sdk, final GitHubOrganizationFull response) {
         this.sdk = requireNonNull(sdk, "sdk");
-        this.record = requireNonNull(record, "record");
+        this.response = requireNonNull(response, "response");
     }
 
     /**
@@ -33,7 +33,7 @@ public final class Organization {
      * @return the login
      */
     public String login() {
-        return record.login();
+        return response.login();
     }
 
     /**
@@ -42,7 +42,7 @@ public final class Organization {
      * @return the name, or empty when the organization has none
      */
     public Optional<String> name() {
-        return Optional.ofNullable(record.name());
+        return Optional.ofNullable(response.name());
     }
 
     /**
@@ -118,8 +118,8 @@ public final class Organization {
      *
      * @return the response record
      */
-    public GitHubOrganizationFull record() {
-        return record;
+    public GitHubOrganizationFull response() {
+        return response;
     }
 
     GitHubSdk sdk() {

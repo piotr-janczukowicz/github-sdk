@@ -39,13 +39,15 @@ class ReleasesSmokeIT {
             final boolean isListed = repository
                     .releases()
                     .limit(50)
-                    .anyMatch(listed -> listed.record().id() == created.record().id());
+                    .anyMatch(listed ->
+                            listed.response().id() == created.response().id());
             refreshed.delete();
             isDeleted = true;
             final boolean isStillListed = repository
                     .releases()
                     .limit(50)
-                    .anyMatch(listed -> listed.record().id() == created.record().id());
+                    .anyMatch(listed ->
+                            listed.response().id() == created.response().id());
 
             assertThat(created.isDraft()).isTrue();
             assertThat(renamed.isDraft()).isTrue();

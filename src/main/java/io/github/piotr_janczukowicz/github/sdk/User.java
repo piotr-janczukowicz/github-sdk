@@ -12,17 +12,17 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
- * A GitHub user, as GitHub returned it. The object is immutable, and {@link #record()} gives the complete response for
- * every field the accessors here do not cover.
+ * A GitHub user, as GitHub returned it. The object is immutable, and {@link #response()} gives the complete response
+ * for every field the accessors here do not cover.
  */
 public final class User {
 
     private final GitHubSdk sdk;
-    private final GitHubUserView record;
+    private final GitHubUserView response;
 
-    User(final GitHubSdk sdk, final GitHubUserView record) {
+    User(final GitHubSdk sdk, final GitHubUserView response) {
         this.sdk = requireNonNull(sdk, "sdk");
-        this.record = requireNonNull(record, "record");
+        this.response = requireNonNull(response, "response");
     }
 
     /**
@@ -31,7 +31,7 @@ public final class User {
      * @return the login
      */
     public String login() {
-        return switch (record) {
+        return switch (response) {
             case final GitHubUser user -> user.login();
             case final GitHubAuthenticatedUser user -> user.login();
         };
@@ -44,7 +44,7 @@ public final class User {
      */
     public Optional<String> name() {
         return Optional.ofNullable(
-                switch (record) {
+                switch (response) {
                     case final GitHubUser user -> user.name();
                     case final GitHubAuthenticatedUser user -> user.name();
                 });
@@ -83,8 +83,8 @@ public final class User {
      *
      * @return the response record, a plain user or the authenticated user
      */
-    public GitHubUserView record() {
-        return record;
+    public GitHubUserView response() {
+        return response;
     }
 
     private Organization loadOrganization(final GitHubOrganizationSimple listed) {

@@ -32,14 +32,14 @@ class RepositoryFilesTest {
 
     private final GitHub github = mock(GitHub.class, RETURNS_DEEP_STUBS);
     private final Repository sut = GitHubSdk.of(github).repository(OWNER, NAME);
-    private final GitHubContentFile record = RepositoryContentFixtures.contentFile("base64", "SGVsbG8=");
+    private final GitHubContentFile response = RepositoryContentFixtures.contentFile("base64", "SGVsbG8=");
 
     @Test
     void file_shouldReturnTheFile_whenGitHubHasIt() throws IOException {
         when(github.repositories()
                         .contents()
                         .getContent(eq(OWNER), eq(NAME), eq(PATH), any(GitHubGetContentFilter.class)))
-                .thenReturn(Optional.of(record));
+                .thenReturn(Optional.of(response));
         final ArgumentCaptor<GitHubGetContentFilter> filter = ArgumentCaptor.forClass(GitHubGetContentFilter.class);
 
         final Optional<RepositoryFile> file = sut.file(PATH);
@@ -47,7 +47,7 @@ class RepositoryFilesTest {
         verify(github.repositories().contents()).getContent(eq(OWNER), eq(NAME), eq(PATH), filter.capture());
         assertThat(file).isPresent();
         assertSoftly(softly -> {
-            softly.assertThat(file.orElseThrow().record()).isSameAs(record);
+            softly.assertThat(file.orElseThrow().response()).isSameAs(response);
             softly.assertThat(file.orElseThrow().repository()).isSameAs(sut);
             softly.assertThat(filter.getValue().ref()).isNull();
         });
@@ -58,7 +58,7 @@ class RepositoryFilesTest {
         when(github.repositories()
                         .contents()
                         .getContent(eq(OWNER), eq(NAME), eq(PATH), any(GitHubGetContentFilter.class)))
-                .thenReturn(Optional.of(record));
+                .thenReturn(Optional.of(response));
         final ArgumentCaptor<GitHubGetContentFilter> filter = ArgumentCaptor.forClass(GitHubGetContentFilter.class);
 
         sut.file(PATH, "feature");
@@ -103,7 +103,7 @@ class RepositoryFilesTest {
         when(github.repositories()
                         .contents()
                         .getContent(eq(OWNER), eq(NAME), eq(PATH), any(GitHubGetContentFilter.class)))
-                .thenReturn(Optional.empty(), Optional.of(record));
+                .thenReturn(Optional.empty(), Optional.of(response));
         final ArgumentCaptor<GitHubCreateOrUpdateFileContentsPayload> payload =
                 ArgumentCaptor.forClass(GitHubCreateOrUpdateFileContentsPayload.class);
 
@@ -116,7 +116,7 @@ class RepositoryFilesTest {
             softly.assertThat(payload.getValue().content()).isEqualTo("SGVsbG8=");
             softly.assertThat(payload.getValue().sha()).isNull();
             softly.assertThat(payload.getValue().branch()).isNull();
-            softly.assertThat(written.record()).isSameAs(record);
+            softly.assertThat(written.response()).isSameAs(response);
         });
     }
 
@@ -125,7 +125,7 @@ class RepositoryFilesTest {
         when(github.repositories()
                         .contents()
                         .getContent(eq(OWNER), eq(NAME), eq(PATH), any(GitHubGetContentFilter.class)))
-                .thenReturn(Optional.of(record));
+                .thenReturn(Optional.of(response));
         final ArgumentCaptor<GitHubCreateOrUpdateFileContentsPayload> payload =
                 ArgumentCaptor.forClass(GitHubCreateOrUpdateFileContentsPayload.class);
         final ArgumentCaptor<GitHubGetContentFilter> filter = ArgumentCaptor.forClass(GitHubGetContentFilter.class);

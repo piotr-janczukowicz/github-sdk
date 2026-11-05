@@ -33,7 +33,7 @@ class PullRequestWriteSmokeIT {
     void pullRequest_shouldBeUpdatedClosedReopenedAndCommented_whenItIsOpen() throws IOException {
         final GitHub github = ENV.github();
         final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
-        final String base = repository.fetch().orElseThrow().record().defaultBranch();
+        final String base = repository.fetch().orElseThrow().response().defaultBranch();
         final String head = ENV.name("write");
         final String baseSha = branchSha(github, base);
         createBranch(github, head, baseSha);
@@ -66,7 +66,7 @@ class PullRequestWriteSmokeIT {
     void pullRequest_shouldBeMerged_whenItTargetsAThrowawayBranch() throws IOException {
         final GitHub github = ENV.github();
         final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
-        final String main = repository.fetch().orElseThrow().record().defaultBranch();
+        final String main = repository.fetch().orElseThrow().response().defaultBranch();
         final String base = ENV.name("merge-base");
         final String head = ENV.name("merge-head");
         final String baseSha = branchSha(github, main);

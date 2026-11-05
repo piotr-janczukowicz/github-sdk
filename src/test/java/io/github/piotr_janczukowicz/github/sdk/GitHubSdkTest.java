@@ -65,26 +65,26 @@ class GitHubSdkTest {
     @Test
     void currentUser_shouldReturnTheAuthenticatedUser_whenCalled() throws IOException {
         final GitHub github = mock(GitHub.class, RETURNS_DEEP_STUBS);
-        final GitHubUserView record = mock(GitHubUser.class);
+        final GitHubUserView response = mock(GitHubUser.class);
         final GitHubUserApi userApi = github.users().user();
-        doReturn(record).when(userApi).getAuthenticatedUser();
+        doReturn(response).when(userApi).getAuthenticatedUser();
         final GitHubSdk sut = GitHubSdk.of(github);
 
         final User user = sut.currentUser();
 
-        assertThat(user.record()).isSameAs(record);
+        assertThat(user.response()).isSameAs(response);
     }
 
     @Test
     void user_shouldReturnTheUser_whenGitHubHasTheLogin() throws IOException {
         final GitHub github = mock(GitHub.class, RETURNS_DEEP_STUBS);
-        final GitHubUserView record = mock(GitHubUser.class);
-        when(github.users().user().getByLogin("octocat")).thenReturn(Optional.of(record));
+        final GitHubUserView response = mock(GitHubUser.class);
+        when(github.users().user().getByLogin("octocat")).thenReturn(Optional.of(response));
         final GitHubSdk sut = GitHubSdk.of(github);
 
         final Optional<User> user = sut.user("octocat");
 
-        assertThat(user).map(User::record).containsSame(record);
+        assertThat(user).map(User::response).containsSame(response);
     }
 
     @Test
@@ -110,13 +110,13 @@ class GitHubSdkTest {
     @Test
     void organization_shouldReturnTheOrganization_whenGitHubHasTheLogin() throws IOException {
         final GitHub github = mock(GitHub.class, RETURNS_DEEP_STUBS);
-        final GitHubOrganizationFull record = mock(GitHubOrganizationFull.class);
-        when(github.organizations().organization().get("octo-org")).thenReturn(Optional.of(record));
+        final GitHubOrganizationFull response = mock(GitHubOrganizationFull.class);
+        when(github.organizations().organization().get("octo-org")).thenReturn(Optional.of(response));
         final GitHubSdk sut = GitHubSdk.of(github);
 
         final Optional<Organization> organization = sut.organization("octo-org");
 
-        assertThat(organization).map(Organization::record).containsSame(record);
+        assertThat(organization).map(Organization::response).containsSame(response);
     }
 
     @Test
@@ -151,13 +151,13 @@ class GitHubSdkTest {
     @Test
     void rateLimit_shouldReturnTheRateLimit_whenGitHubReportsIt() throws IOException {
         final GitHub github = mock(GitHub.class, RETURNS_DEEP_STUBS);
-        final GitHubRateLimitOverview record = mock(GitHubRateLimitOverview.class);
-        when(github.rateLimit().get()).thenReturn(Optional.of(record));
+        final GitHubRateLimitOverview response = mock(GitHubRateLimitOverview.class);
+        when(github.rateLimit().get()).thenReturn(Optional.of(response));
         final GitHubSdk sut = GitHubSdk.of(github);
 
         final Optional<RateLimit> rateLimit = sut.rateLimit();
 
-        assertThat(rateLimit).map(RateLimit::record).containsSame(record);
+        assertThat(rateLimit).map(RateLimit::response).containsSame(response);
     }
 
     @Test

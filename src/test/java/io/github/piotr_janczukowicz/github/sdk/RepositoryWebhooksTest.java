@@ -39,7 +39,7 @@ class RepositoryWebhooksTest {
 
         assertThat(found).isPresent();
         assertSoftly(softly -> {
-            softly.assertThat(found.orElseThrow().record()).isSameAs(hook);
+            softly.assertThat(found.orElseThrow().response()).isSameAs(hook);
             softly.assertThat(found.orElseThrow().repository()).isSameAs(sut);
         });
     }
@@ -60,7 +60,7 @@ class RepositoryWebhooksTest {
 
         final List<Webhook> webhooks = sut.webhooks().toList();
 
-        assertThat(webhooks).extracting(Webhook::record).containsExactly(hook);
+        assertThat(webhooks).extracting(Webhook::response).containsExactly(hook);
     }
 
     @Test
@@ -78,7 +78,7 @@ class RepositoryWebhooksTest {
             softly.assertThat(payload.getValue().config().url()).isEqualTo("https://example.com/hook");
             softly.assertThat(payload.getValue().config().contentType()).isEqualTo("json");
             softly.assertThat(payload.getValue().events()).containsExactly("push");
-            softly.assertThat(created.record()).isSameAs(hook);
+            softly.assertThat(created.response()).isSameAs(hook);
         });
     }
 
@@ -90,7 +90,7 @@ class RepositoryWebhooksTest {
 
         final Webhook created = sut.createWebhook(payload);
 
-        assertThat(created.record()).isSameAs(hook);
+        assertThat(created.response()).isSameAs(hook);
     }
 
     @Test

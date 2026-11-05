@@ -30,8 +30,8 @@ class OrganizationTest {
 
     private final GitHub github = mock(GitHub.class, RETURNS_DEEP_STUBS);
     private final GitHubSdk sdk = GitHubSdk.of(github);
-    private final GitHubOrganizationFull record = mock(GitHubOrganizationFull.class);
-    private final Organization sut = new Organization(sdk, record);
+    private final GitHubOrganizationFull response = mock(GitHubOrganizationFull.class);
+    private final Organization sut = new Organization(sdk, response);
 
     private GitHubTeam listedTeam(final String slug) {
         final GitHubTeam listed = mock(GitHubTeam.class);
@@ -40,8 +40,8 @@ class OrganizationTest {
     }
 
     @Test
-    void login_shouldReadTheLoginOfTheRecord_whenCalled() {
-        when(record.login()).thenReturn(ORG);
+    void login_shouldReadTheLoginOfTheResponse_whenCalled() {
+        when(response.login()).thenReturn(ORG);
 
         final String login = sut.login();
 
@@ -50,7 +50,7 @@ class OrganizationTest {
 
     @Test
     void name_shouldReturnTheName_whenTheOrganizationHasOne() {
-        when(record.name()).thenReturn("Octo Org");
+        when(response.name()).thenReturn("Octo Org");
 
         final Optional<String> name = sut.name();
 
@@ -59,7 +59,7 @@ class OrganizationTest {
 
     @Test
     void name_shouldBeEmpty_whenTheOrganizationHasNone() {
-        when(record.name()).thenReturn(null);
+        when(response.name()).thenReturn(null);
 
         final Optional<String> name = sut.name();
 
@@ -67,16 +67,16 @@ class OrganizationTest {
     }
 
     @Test
-    void record_shouldReturnTheRecord_whenCalled() {
-        final GitHubOrganizationFull result = sut.record();
+    void response_shouldReturnTheResponse_whenCalled() {
+        final GitHubOrganizationFull result = sut.response();
 
-        assertThat(result).isSameAs(record);
+        assertThat(result).isSameAs(response);
     }
 
     @Test
     void repositories_shouldReturnHandlesOfTheListedRepositories_whenTheOrganizationHasRepositories()
             throws IOException {
-        when(record.login()).thenReturn(ORG);
+        when(response.login()).thenReturn(ORG);
         final GitHubSimpleUser owner = mock(GitHubSimpleUser.class);
         when(owner.login()).thenReturn(ORG);
         final GitHubMinimalRepository listed = mock(GitHubMinimalRepository.class);
@@ -95,7 +95,7 @@ class OrganizationTest {
 
     @Test
     void createRepository_shouldReturnTheLoadedRepository_whenGitHubCreatesIt() throws IOException {
-        when(record.login()).thenReturn(ORG);
+        when(response.login()).thenReturn(ORG);
         final GitHubCreateInOrgPayload payload = mock(GitHubCreateInOrgPayload.class);
         final GitHubFullRepository created = mock(GitHubFullRepository.class);
         when(created.name()).thenReturn("new-repo");
@@ -106,7 +106,7 @@ class OrganizationTest {
         assertSoftly(softly -> {
             softly.assertThat(repository.owner()).isEqualTo(ORG);
             softly.assertThat(repository.name()).isEqualTo("new-repo");
-            softly.assertThat(repository.record()).isSameAs(created);
+            softly.assertThat(repository.response()).isSameAs(created);
         });
     }
 
@@ -119,7 +119,7 @@ class OrganizationTest {
 
     @Test
     void members_shouldStreamTheMembers_whenTheOrganizationHasMembers() throws IOException {
-        when(record.login()).thenReturn(ORG);
+        when(response.login()).thenReturn(ORG);
         final GitHubSimpleUser member = mock(GitHubSimpleUser.class);
         when(github.organizations().members().listMembers(ORG).stream()).thenReturn(Stream.of(member));
 
@@ -130,22 +130,22 @@ class OrganizationTest {
 
     @Test
     void team_shouldReturnTheTeam_whenGitHubHasTheSlug() throws IOException {
-        when(record.login()).thenReturn(ORG);
-        final GitHubTeamFull teamRecord = mock(GitHubTeamFull.class);
-        when(github.teams().team().getByName(ORG, "core")).thenReturn(Optional.of(teamRecord));
+        when(response.login()).thenReturn(ORG);
+        final GitHubTeamFull teamResponse = mock(GitHubTeamFull.class);
+        when(github.teams().team().getByName(ORG, "core")).thenReturn(Optional.of(teamResponse));
 
         final Optional<Team> team = sut.team("core");
 
         assertThat(team).isPresent();
         assertSoftly(softly -> {
-            softly.assertThat(team.orElseThrow().record()).isSameAs(teamRecord);
+            softly.assertThat(team.orElseThrow().response()).isSameAs(teamResponse);
             softly.assertThat(team.orElseThrow().organization()).isSameAs(sut);
         });
     }
 
     @Test
     void team_shouldReturnEmpty_whenGitHubAnswersNotFound() throws IOException {
-        when(record.login()).thenReturn(ORG);
+        when(response.login()).thenReturn(ORG);
         when(github.teams().team().getByName(ORG, "ghost")).thenReturn(Optional.empty());
 
         final Optional<Team> team = sut.team("ghost");
@@ -162,20 +162,20 @@ class OrganizationTest {
 
     @Test
     void teams_shouldLoadEachListedTeam_whenTheOrganizationHasTeams() throws IOException {
-        when(record.login()).thenReturn(ORG);
-        final GitHubTeamFull teamRecord = mock(GitHubTeamFull.class);
+        when(response.login()).thenReturn(ORG);
+        final GitHubTeamFull teamResponse = mock(GitHubTeamFull.class);
         final GitHubTeam listed = listedTeam("core");
         when(github.teams().team().list(ORG).stream()).thenReturn(Stream.of(listed));
-        when(github.teams().team().getByName(ORG, "core")).thenReturn(Optional.of(teamRecord));
+        when(github.teams().team().getByName(ORG, "core")).thenReturn(Optional.of(teamResponse));
 
         final List<Team> teams = sut.teams().toList();
 
-        assertThat(teams).extracting(Team::record).containsExactly(teamRecord);
+        assertThat(teams).extracting(Team::response).containsExactly(teamResponse);
     }
 
     @Test
     void teams_shouldThrowIllegalStateException_whenAListedTeamIsGone() throws IOException {
-        when(record.login()).thenReturn(ORG);
+        when(response.login()).thenReturn(ORG);
         final GitHubTeam listed = listedTeam("core");
         when(github.teams().team().list(ORG).stream()).thenReturn(Stream.of(listed));
         when(github.teams().team().getByName(ORG, "core")).thenReturn(Optional.empty());
@@ -188,7 +188,7 @@ class OrganizationTest {
 
     @Test
     void teams_shouldThrowUncheckedIoException_whenLoadingAListedTeamFails() throws IOException {
-        when(record.login()).thenReturn(ORG);
+        when(response.login()).thenReturn(ORG);
         final GitHubTeam listed = listedTeam("core");
         when(github.teams().team().list(ORG).stream()).thenReturn(Stream.of(listed));
         when(github.teams().team().getByName(ORG, "core")).thenThrow(new IOException("transport failed"));

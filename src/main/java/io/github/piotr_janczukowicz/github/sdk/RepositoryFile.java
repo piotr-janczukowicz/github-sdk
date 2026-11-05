@@ -14,7 +14,7 @@ import java.util.Base64;
 import org.jspecify.annotations.Nullable;
 
 /**
- * A file of a {@link Repository}, as GitHub returned it at one ref. The object is immutable, and {@link #record()}
+ * A file of a {@link Repository}, as GitHub returned it at one ref. The object is immutable, and {@link #response()}
  * gives the complete response for every field the accessors here do not cover.
  */
 public final class RepositoryFile {
@@ -22,11 +22,11 @@ public final class RepositoryFile {
     private static final String BASE64 = "base64";
 
     private final Repository repository;
-    private final GitHubContentFile record;
+    private final GitHubContentFile response;
 
-    RepositoryFile(final Repository repository, final GitHubContentFile record) {
+    RepositoryFile(final Repository repository, final GitHubContentFile response) {
         this.repository = requireNonNull(repository, "repository");
-        this.record = requireNonNull(record, "record");
+        this.response = requireNonNull(response, "response");
     }
 
     /**
@@ -44,7 +44,7 @@ public final class RepositoryFile {
      * @return the path
      */
     public String path() {
-        return record.path();
+        return response.path();
     }
 
     /**
@@ -53,7 +53,7 @@ public final class RepositoryFile {
      * @return the SHA
      */
     public String sha() {
-        return record.sha();
+        return response.sha();
     }
 
     /**
@@ -62,7 +62,7 @@ public final class RepositoryFile {
      * @return the size in bytes
      */
     public int size() {
-        return record.size();
+        return response.size();
     }
 
     /**
@@ -72,11 +72,11 @@ public final class RepositoryFile {
      * @throws IllegalStateException if GitHub sent no content, as it does for files too large for the contents API
      */
     public byte[] bytes() {
-        if (!BASE64.equals(record.encoding())) {
-            throw new IllegalStateException("GitHub sent no content for " + record.path() + " (encoding "
-                    + record.encoding() + "); the file is too large for the contents API");
+        if (!BASE64.equals(response.encoding())) {
+            throw new IllegalStateException("GitHub sent no content for " + response.path() + " (encoding "
+                    + response.encoding() + "); the file is too large for the contents API");
         }
-        return Base64.getMimeDecoder().decode(record.content());
+        return Base64.getMimeDecoder().decode(response.content());
     }
 
     /**
@@ -94,7 +94,7 @@ public final class RepositoryFile {
                     .decode(ByteBuffer.wrap(bytes()))
                     .toString();
         } catch (final CharacterCodingException e) {
-            throw new IllegalStateException(record.path() + " is not valid UTF-8", e);
+            throw new IllegalStateException(response.path() + " is not valid UTF-8", e);
         }
     }
 
@@ -128,8 +128,8 @@ public final class RepositoryFile {
      *
      * @return the response record
      */
-    public GitHubContentFile record() {
-        return record;
+    public GitHubContentFile response() {
+        return response;
     }
 
     private void remove(final String message, final @Nullable String branch) throws IOException {
@@ -141,7 +141,7 @@ public final class RepositoryFile {
                 .deleteFile(
                         repository.owner(),
                         repository.name(),
-                        record.path(),
-                        new GitHubDeleteFilePayload(message, record.sha(), branch, null, null));
+                        response.path(),
+                        new GitHubDeleteFilePayload(message, response.sha(), branch, null, null));
     }
 }

@@ -26,16 +26,16 @@ import java.util.stream.Stream;
 
 /**
  * An issue of a {@link Repository}, as GitHub returned it. The object is immutable: it keeps the data of the moment it
- * was loaded, and {@link #record()} gives the complete response for every field the accessors here do not cover.
+ * was loaded, and {@link #response()} gives the complete response for every field the accessors here do not cover.
  */
 public final class Issue {
 
     private final Repository repository;
-    private final GitHubIssue record;
+    private final GitHubIssue response;
 
-    Issue(final Repository repository, final GitHubIssue record) {
+    Issue(final Repository repository, final GitHubIssue response) {
         this.repository = requireNonNull(repository, "repository");
-        this.record = requireNonNull(record, "record");
+        this.response = requireNonNull(response, "response");
     }
 
     /**
@@ -53,7 +53,7 @@ public final class Issue {
      * @return the number
      */
     public int number() {
-        return record.number();
+        return response.number();
     }
 
     /**
@@ -62,7 +62,7 @@ public final class Issue {
      * @return the title
      */
     public String title() {
-        return record.title();
+        return response.title();
     }
 
     /**
@@ -72,7 +72,7 @@ public final class Issue {
      * @throws IllegalArgumentException if GitHub returns a state other than {@code open} or {@code closed}
      */
     public IssueState state() {
-        return IssueState.from(record.state());
+        return IssueState.from(response.state());
     }
 
     /**
@@ -81,7 +81,7 @@ public final class Issue {
      * @return the labels, empty when there are none
      */
     public List<GitHubIssueLabel> labels() {
-        return record.labels();
+        return response.labels();
     }
 
     /**
@@ -90,7 +90,7 @@ public final class Issue {
      * @return the milestone, or empty when the issue has none
      */
     public Optional<Milestone> milestone() {
-        return Optional.ofNullable(record.milestone()).map(milestone -> new Milestone(repository, milestone));
+        return Optional.ofNullable(response.milestone()).map(milestone -> new Milestone(repository, milestone));
     }
 
     /**
@@ -99,7 +99,7 @@ public final class Issue {
      * @return the assignees, empty when there are none
      */
     public List<GitHubSimpleUser> assignees() {
-        return Optional.ofNullable(record.assignees()).orElse(List.of());
+        return Optional.ofNullable(response.assignees()).orElse(List.of());
     }
 
     /**
@@ -246,7 +246,7 @@ public final class Issue {
      * @return the author, or empty when GitHub does not return one
      */
     public Optional<GitHubSimpleUser> author() {
-        return Optional.ofNullable(record.user());
+        return Optional.ofNullable(response.user());
     }
 
     /**
@@ -300,7 +300,7 @@ public final class Issue {
     public Stream<IssueComment> comments() throws IOException {
         final GitHub github = repository.sdk().github();
         return github.issues().comments().listComments(repository.owner(), repository.name(), number()).stream()
-                .map(record -> new IssueComment(this, record));
+                .map(response -> new IssueComment(this, response));
     }
 
     /**
@@ -330,8 +330,8 @@ public final class Issue {
      *
      * @return the response record
      */
-    public GitHubIssue record() {
-        return record;
+    public GitHubIssue response() {
+        return response;
     }
 
     Issue apply(final GitHubUpdatePayload payload) throws IOException {

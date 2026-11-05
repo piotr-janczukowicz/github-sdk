@@ -45,14 +45,14 @@ public final class Repository {
     private final GitHubSdk sdk;
     private final String owner;
     private final String name;
-    private final @Nullable GitHubFullRepository record;
+    private final @Nullable GitHubFullRepository response;
 
     Repository(
-            final GitHubSdk sdk, final String owner, final String name, final @Nullable GitHubFullRepository record) {
+            final GitHubSdk sdk, final String owner, final String name, final @Nullable GitHubFullRepository response) {
         this.sdk = sdk;
         this.owner = owner;
         this.name = name;
-        this.record = record;
+        this.response = response;
     }
 
     /**
@@ -93,11 +93,11 @@ public final class Repository {
      * @return the response record
      * @throws IllegalStateException if this is a handle that was not loaded with {@link #fetch()}
      */
-    public GitHubFullRepository record() {
-        if (record == null) {
+    public GitHubFullRepository response() {
+        if (response == null) {
             throw new IllegalStateException("Repository " + owner + "/" + name + " is not loaded; call fetch()");
         }
-        return record;
+        return response;
     }
 
     /**
@@ -165,7 +165,7 @@ public final class Repository {
      * @throws IOException if the transport fails
      */
     public Optional<Issue> issue(final int number) throws IOException {
-        return sdk.github().issues().issue().get(owner, name, number).map(record -> new Issue(this, record));
+        return sdk.github().issues().issue().get(owner, name, number).map(response -> new Issue(this, response));
     }
 
     /**

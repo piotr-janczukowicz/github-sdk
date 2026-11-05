@@ -27,13 +27,13 @@ class LabelUpdateTest {
     private static final String NAME = "hello-world";
 
     private final GitHub github = mock(GitHub.class, RETURNS_DEEP_STUBS);
-    private final GitHubLabel record = RepositoryContentFixtures.label();
-    private final Label label = new Label(GitHubSdk.of(github).repository(OWNER, NAME), record);
+    private final GitHubLabel response = RepositoryContentFixtures.label();
+    private final Label label = new Label(GitHubSdk.of(github).repository(OWNER, NAME), response);
 
     @Test
     void send_shouldSendOnlyTheSetFieldsAndReturnTheResponse_whenNameAndColorAreSet() throws IOException {
         final GitHubLabel updated =
-                GitHubLabelBuilder.builder(record).name("defect").build();
+                GitHubLabelBuilder.builder(response).name("defect").build();
         when(github.issues().labels().updateLabel(eq(OWNER), eq(NAME), eq("bug"), any(GitHubUpdateLabelPayload.class)))
                 .thenReturn(updated);
         final ArgumentCaptor<GitHubUpdateLabelPayload> payload =
@@ -46,7 +46,7 @@ class LabelUpdateTest {
             softly.assertThat(payload.getValue().newName()).isEqualTo("defect");
             softly.assertThat(payload.getValue().color()).isEqualTo("ffffff");
             softly.assertThat(payload.getValue().description()).isNull();
-            softly.assertThat(result.record()).isSameAs(updated);
+            softly.assertThat(result.response()).isSameAs(updated);
             softly.assertThat(label.name()).isEqualTo("bug");
         });
     }
@@ -54,7 +54,7 @@ class LabelUpdateTest {
     @Test
     void send_shouldSendTheDescription_whenItIsSet() throws IOException {
         when(github.issues().labels().updateLabel(eq(OWNER), eq(NAME), eq("bug"), any(GitHubUpdateLabelPayload.class)))
-                .thenReturn(record);
+                .thenReturn(response);
         final ArgumentCaptor<GitHubUpdateLabelPayload> payload =
                 ArgumentCaptor.forClass(GitHubUpdateLabelPayload.class);
 

@@ -42,8 +42,8 @@ class RepositoryTest {
 
     @Test
     void fetch_shouldReturnLoadedRepository_whenGitHubHasIt() throws IOException {
-        final GitHubFullRepository record = mock(GitHubFullRepository.class);
-        when(github.repositories().repository().get(OWNER, NAME)).thenReturn(Optional.of(record));
+        final GitHubFullRepository response = mock(GitHubFullRepository.class);
+        when(github.repositories().repository().get(OWNER, NAME)).thenReturn(Optional.of(response));
 
         final Optional<Repository> loaded = sut.fetch();
 
@@ -51,7 +51,7 @@ class RepositoryTest {
         assertSoftly(softly -> {
             softly.assertThat(loaded.orElseThrow().owner()).isEqualTo(OWNER);
             softly.assertThat(loaded.orElseThrow().name()).isEqualTo(NAME);
-            softly.assertThat(loaded.orElseThrow().record()).isSameAs(record);
+            softly.assertThat(loaded.orElseThrow().response()).isSameAs(response);
         });
     }
 
@@ -65,22 +65,22 @@ class RepositoryTest {
     }
 
     @Test
-    void record_shouldThrowIllegalStateException_whenRepositoryIsAHandle() {
-        final Throwable thrown = catchThrowable(sut::record);
+    void response_shouldThrowIllegalStateException_whenRepositoryIsAHandle() {
+        final Throwable thrown = catchThrowable(sut::response);
 
         assertThat(thrown).isInstanceOf(IllegalStateException.class).hasMessageContaining("octocat/hello-world");
     }
 
     @Test
     void issue_shouldReturnIssue_whenGitHubHasIt() throws IOException {
-        final GitHubIssue record = IssuesFixtures.issue();
-        when(github.issues().issue().get(OWNER, NAME, 42)).thenReturn(Optional.of(record));
+        final GitHubIssue response = IssuesFixtures.issue();
+        when(github.issues().issue().get(OWNER, NAME, 42)).thenReturn(Optional.of(response));
 
         final Optional<Issue> issue = sut.issue(42);
 
         assertThat(issue).isPresent();
         assertSoftly(softly -> {
-            softly.assertThat(issue.orElseThrow().record()).isSameAs(record);
+            softly.assertThat(issue.orElseThrow().response()).isSameAs(response);
             softly.assertThat(issue.orElseThrow().repository()).isSameAs(sut);
         });
     }
@@ -96,20 +96,20 @@ class RepositoryTest {
 
     @Test
     void issues_shouldWrapEachIssue_whenCalledWithAFilter() throws IOException {
-        final GitHubIssue record = IssuesFixtures.issue();
+        final GitHubIssue response = IssuesFixtures.issue();
         when(github
                         .issues()
                         .issue()
                         .listForRepo(
                                 eq(OWNER), eq(NAME), any(GitHubListForRepoFilter.class), any(GitHubPageRequest.class))
                         .stream())
-                .thenReturn(Stream.of(record));
+                .thenReturn(Stream.of(response));
 
         final List<Issue> issues = sut.issues(GitHubListForRepoFilter.empty()).toList();
 
         assertThat(issues).hasSize(1);
         assertSoftly(softly -> {
-            softly.assertThat(issues.getFirst().record()).isSameAs(record);
+            softly.assertThat(issues.getFirst().response()).isSameAs(response);
             softly.assertThat(issues.getFirst().repository()).isSameAs(sut);
         });
     }
@@ -138,9 +138,9 @@ class RepositoryTest {
 
     @Test
     void createIssue_shouldSendTheTitle_whenCalledWithATitle() throws IOException {
-        final GitHubIssue record = IssuesFixtures.issue();
+        final GitHubIssue response = IssuesFixtures.issue();
         when(github.issues().issue().create(eq(OWNER), eq(NAME), any(GitHubCreatePayload.class)))
-                .thenReturn(record);
+                .thenReturn(response);
         final ArgumentCaptor<GitHubCreatePayload> payload = ArgumentCaptor.forClass(GitHubCreatePayload.class);
 
         final Issue issue = sut.createIssue("Found a bug");
@@ -148,23 +148,23 @@ class RepositoryTest {
         verify(github.issues().issue()).create(eq(OWNER), eq(NAME), payload.capture());
         assertSoftly(softly -> {
             softly.assertThat(payload.getValue().title()).isEqualTo("Found a bug");
-            softly.assertThat(issue.record()).isSameAs(record);
+            softly.assertThat(issue.response()).isSameAs(response);
             softly.assertThat(issue.repository()).isSameAs(sut);
         });
     }
 
     @Test
     void createIssue_shouldSendThePayload_whenCalledWithAPayload() throws IOException {
-        final GitHubIssue record = IssuesFixtures.issue();
+        final GitHubIssue response = IssuesFixtures.issue();
         final GitHubCreatePayload payload = GitHubCreatePayloadBuilder.builder()
                 .title("Found a bug")
                 .body("Details")
                 .build();
-        when(github.issues().issue().create(OWNER, NAME, payload)).thenReturn(record);
+        when(github.issues().issue().create(OWNER, NAME, payload)).thenReturn(response);
 
         final Issue issue = sut.createIssue(payload);
 
-        assertThat(issue.record()).isSameAs(record);
+        assertThat(issue.response()).isSameAs(response);
     }
 
     @Test
@@ -183,14 +183,14 @@ class RepositoryTest {
 
     @Test
     void pullRequest_shouldReturnPullRequest_whenGitHubHasIt() throws IOException {
-        final GitHubPullRequest record = PullRequestsFixtures.pullRequest();
-        when(github.pullRequests().pullRequest().get(OWNER, NAME, 7)).thenReturn(Optional.of(record));
+        final GitHubPullRequest response = PullRequestsFixtures.pullRequest();
+        when(github.pullRequests().pullRequest().get(OWNER, NAME, 7)).thenReturn(Optional.of(response));
 
         final Optional<PullRequest> pullRequest = sut.pullRequest(7);
 
         assertThat(pullRequest).isPresent();
         assertSoftly(softly -> {
-            softly.assertThat(pullRequest.orElseThrow().record()).isSameAs(record);
+            softly.assertThat(pullRequest.orElseThrow().response()).isSameAs(response);
             softly.assertThat(pullRequest.orElseThrow().repository()).isSameAs(sut);
         });
     }
@@ -208,7 +208,7 @@ class RepositoryTest {
     void pullRequests_shouldLoadEachListedPullRequest_whenCalledWithAFilter() throws IOException {
         final GitHubPullRequestSimple listed = mock(GitHubPullRequestSimple.class);
         when(listed.number()).thenReturn(7);
-        final GitHubPullRequest record = PullRequestsFixtures.pullRequest();
+        final GitHubPullRequest response = PullRequestsFixtures.pullRequest();
         when(github
                         .pullRequests()
                         .pullRequest()
@@ -219,12 +219,12 @@ class RepositoryTest {
                                 any(GitHubPageRequest.class))
                         .stream())
                 .thenReturn(Stream.of(listed));
-        when(github.pullRequests().pullRequest().get(OWNER, NAME, 7)).thenReturn(Optional.of(record));
+        when(github.pullRequests().pullRequest().get(OWNER, NAME, 7)).thenReturn(Optional.of(response));
 
         final List<PullRequest> pullRequests =
                 sut.pullRequests(GitHubListPullRequestsFilter.empty()).toList();
 
-        assertThat(pullRequests).extracting(PullRequest::record).containsExactly(record);
+        assertThat(pullRequests).extracting(PullRequest::response).containsExactly(response);
     }
 
     @Test
@@ -291,18 +291,18 @@ class RepositoryTest {
 
     @Test
     void createPullRequest_shouldSendThePayloadAndReturnThePullRequest_whenCalled() throws IOException {
-        final GitHubPullRequest record = PullRequestsFixtures.pullRequest();
+        final GitHubPullRequest response = PullRequestsFixtures.pullRequest();
         final GitHubCreatePullRequestPayload payload = GitHubCreatePullRequestPayloadBuilder.builder()
                 .head("feature")
                 .base("main")
                 .title("Add feature")
                 .build();
-        when(github.pullRequests().pullRequest().create(OWNER, NAME, payload)).thenReturn(record);
+        when(github.pullRequests().pullRequest().create(OWNER, NAME, payload)).thenReturn(response);
 
         final PullRequest pullRequest = sut.createPullRequest(payload);
 
         assertSoftly(softly -> {
-            softly.assertThat(pullRequest.record()).isSameAs(record);
+            softly.assertThat(pullRequest.response()).isSameAs(response);
             softly.assertThat(pullRequest.repository()).isSameAs(sut);
         });
     }

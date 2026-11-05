@@ -21,26 +21,26 @@ class LabelTest {
 
     private final GitHub github = mock(GitHub.class, RETURNS_DEEP_STUBS);
     private final Repository repository = GitHubSdk.of(github).repository("octocat", "hello-world");
-    private final GitHubLabel record = RepositoryContentFixtures.label();
-    private final Label sut = new Label(repository, record);
+    private final GitHubLabel response = RepositoryContentFixtures.label();
+    private final Label sut = new Label(repository, response);
 
     @Test
-    void accessors_shouldExposeTheRecord_whenLabelIsLoaded() {
+    void accessors_shouldExposeTheResponse_whenLabelIsLoaded() {
         assertSoftly(softly -> {
             softly.assertThat(sut.repository()).isSameAs(repository);
             softly.assertThat(sut.name()).isEqualTo("bug");
             softly.assertThat(sut.color()).isEqualTo("d73a4a");
             softly.assertThat(sut.description()).isEmpty();
             softly.assertThat(sut.isDefault()).isTrue();
-            softly.assertThat(sut.record()).isSameAs(record);
+            softly.assertThat(sut.response()).isSameAs(response);
         });
     }
 
     @Test
-    void description_shouldReturnTheDescription_whenTheRecordHasOne() {
+    void description_shouldReturnTheDescription_whenTheResponseHasOne() {
         final Label described = new Label(
                 repository,
-                GitHubLabelBuilder.builder(record)
+                GitHubLabelBuilder.builder(response)
                         .description("Something broke")
                         .build());
 
@@ -52,13 +52,13 @@ class LabelTest {
     @Test
     void refresh_shouldReturnTheReloadedLabel_whenGitHubHasIt() throws IOException {
         final GitHubLabel reloaded =
-                GitHubLabelBuilder.builder(record).color("ffffff").build();
+                GitHubLabelBuilder.builder(response).color("ffffff").build();
         when(github.issues().labels().getLabel("octocat", "hello-world", "bug")).thenReturn(Optional.of(reloaded));
 
         final Label refreshed = sut.refresh();
 
         assertSoftly(softly -> {
-            softly.assertThat(refreshed.record()).isSameAs(reloaded);
+            softly.assertThat(refreshed.response()).isSameAs(reloaded);
             softly.assertThat(sut.color()).isEqualTo("d73a4a");
         });
     }
