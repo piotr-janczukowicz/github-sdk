@@ -68,6 +68,7 @@ import io.github.piotr_janczukowicz.github.sdk.actions.Artifact;
 import io.github.piotr_janczukowicz.github.sdk.actions.Variable;
 import io.github.piotr_janczukowicz.github.sdk.actions.Workflow;
 import io.github.piotr_janczukowicz.github.sdk.actions.WorkflowRun;
+import io.github.piotr_janczukowicz.github.sdk.advisories.RepositoryAdvisories;
 import io.github.piotr_janczukowicz.github.sdk.checks.CheckRun;
 import io.github.piotr_janczukowicz.github.sdk.checks.CheckSuite;
 import io.github.piotr_janczukowicz.github.sdk.collaborators.Collaborator;
@@ -79,6 +80,7 @@ import io.github.piotr_janczukowicz.github.sdk.content.Commit;
 import io.github.piotr_janczukowicz.github.sdk.content.CommitComment;
 import io.github.piotr_janczukowicz.github.sdk.content.Release;
 import io.github.piotr_janczukowicz.github.sdk.content.RepositoryFile;
+import io.github.piotr_janczukowicz.github.sdk.dependencies.RepositoryDependencies;
 import io.github.piotr_janczukowicz.github.sdk.deploykeys.DeployKey;
 import io.github.piotr_janczukowicz.github.sdk.deployments.Deployment;
 import io.github.piotr_janczukowicz.github.sdk.deployments.Environment;
@@ -1963,6 +1965,26 @@ public final class Repository {
      */
     public RepositoryCodeQuality codeQuality() {
         return new RepositoryCodeQuality(this);
+    }
+
+    /**
+     * Returns the security advisories of the repository, the private reports a maintainer prepares before a
+     * vulnerability is published. Nothing is requested until a method of the result is called.
+     *
+     * @return the advisories
+     */
+    public RepositoryAdvisories advisories() {
+        return new RepositoryAdvisories(this);
+    }
+
+    /**
+     * Returns the dependency graph of the repository: the software bill of materials, dependency changes between refs
+     * and dependency submission. Nothing is requested until a method of the result is called.
+     *
+     * @return the dependency graph
+     */
+    public RepositoryDependencies dependencies() {
+        return new RepositoryDependencies(this);
     }
 
     /**

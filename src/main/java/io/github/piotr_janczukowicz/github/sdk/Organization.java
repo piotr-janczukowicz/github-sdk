@@ -14,6 +14,7 @@ import io.github.piotr_janczukowicz.github.api.organizations.GitHubSetOrganizati
 import io.github.piotr_janczukowicz.github.api.packages.GitHubPackageType;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateInOrgPayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubFullRepository;
+import io.github.piotr_janczukowicz.github.api.securityadvisories.GitHubRepositoryAdvisory;
 import io.github.piotr_janczukowicz.github.api.teams.GitHubCreateTeamPayload;
 import io.github.piotr_janczukowicz.github.api.teams.GitHubTeam;
 import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
@@ -449,6 +450,17 @@ public final class Organization {
     public Optional<RegistryPackage> registryPackage(final GitHubPackageType type, final String name)
             throws IOException {
         return RegistryPackages.forOrganization(sdk, login()).find(type, name);
+    }
+
+    /**
+     * Lists the repository security advisories across the organization ({@code GET /orgs/{org}/security-advisories}) as
+     * GitHub returns them. The stream is lazy and can be used once.
+     *
+     * @return the advisories
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<GitHubRepositoryAdvisory> advisories() throws IOException {
+        return sdk.github().securityAdvisories().repositoryAdvisories().listOrgRepositoryAdvisories(login()).stream();
     }
 
     /**

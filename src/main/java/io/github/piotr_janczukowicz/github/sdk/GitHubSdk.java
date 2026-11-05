@@ -12,6 +12,8 @@ import io.github.piotr_janczukowicz.github.api.licenses.GitHubLicenseSimple;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateForAuthenticatedUserPayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateInOrgPayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubFullRepository;
+import io.github.piotr_janczukowicz.github.api.securityadvisories.GitHubGlobalAdvisory;
+import io.github.piotr_janczukowicz.github.api.securityadvisories.GitHubListGlobalAdvisoriesFilter;
 import io.github.piotr_janczukowicz.github.pagination.GitHubPageRequest;
 import io.github.piotr_janczukowicz.github.sdk.accounts.Me;
 import io.github.piotr_janczukowicz.github.sdk.apps.App;
@@ -278,6 +280,46 @@ public final class GitHubSdk {
      */
     public Stream<GitHubEvent> publicEvents() throws IOException {
         return github.activity().events().listPublicEvents().stream();
+    }
+
+    /**
+     * Lists the advisories of the GitHub Advisory Database, newest first ({@code GET /advisories}) as GitHub returns
+     * them. The stream is lazy and can be used once.
+     *
+     * @return the advisories
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<GitHubGlobalAdvisory> globalAdvisories() throws IOException {
+        return github.securityAdvisories().globalAdvisories().listGlobalAdvisories().stream();
+    }
+
+    /**
+     * Lists the advisories of the GitHub Advisory Database that match a filter, such as an ecosystem or a severity.
+     *
+     * @param filter the client filter record
+     * @return the matching advisories
+     * @throws NullPointerException if {@code filter} is {@code null}
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<GitHubGlobalAdvisory> globalAdvisories(final GitHubListGlobalAdvisoriesFilter filter)
+            throws IOException {
+        return github
+                .securityAdvisories()
+                .globalAdvisories()
+                .listGlobalAdvisories(requireNonNull(filter, "filter"))
+                .stream();
+    }
+
+    /**
+     * Loads one advisory of the GitHub Advisory Database ({@code GET /advisories/{ghsa_id}}).
+     *
+     * @param ghsaId the GitHub Security Advisory id, for example {@code GHSA-xxxx-xxxx-xxxx}
+     * @return the advisory, or empty when GitHub answers HTTP 404
+     * @throws IllegalArgumentException if {@code ghsaId} is blank
+     * @throws IOException if the transport fails
+     */
+    public Optional<GitHubGlobalAdvisory> globalAdvisory(final String ghsaId) throws IOException {
+        return github.securityAdvisories().globalAdvisories().getGlobalAdvisory(requireNotBlank(ghsaId, "ghsaId"));
     }
 
     /**

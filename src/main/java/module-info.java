@@ -6,11 +6,13 @@ module io.github.piotr_janczukowicz.githubsdk {
     exports io.github.piotr_janczukowicz.github.sdk;
     exports io.github.piotr_janczukowicz.github.sdk.accounts;
     exports io.github.piotr_janczukowicz.github.sdk.actions;
+    exports io.github.piotr_janczukowicz.github.sdk.advisories;
     exports io.github.piotr_janczukowicz.github.sdk.apps;
     exports io.github.piotr_janczukowicz.github.sdk.checks;
     exports io.github.piotr_janczukowicz.github.sdk.collaborators;
     exports io.github.piotr_janczukowicz.github.sdk.content;
     exports io.github.piotr_janczukowicz.github.sdk.gists;
+    exports io.github.piotr_janczukowicz.github.sdk.dependencies;
     exports io.github.piotr_janczukowicz.github.sdk.deploykeys;
     exports io.github.piotr_janczukowicz.github.sdk.deployments;
     exports io.github.piotr_janczukowicz.github.sdk.git;
