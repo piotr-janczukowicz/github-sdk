@@ -101,6 +101,30 @@ class IssueCommentTest {
     }
 
     @Test
+    void refresh_shouldReturnTheReloadedComment_whenGitHubHasIt() throws IOException {
+        final GitHubIssueComment reloaded =
+                GitHubIssueCommentBuilder.builder(record).body("Reloaded").build();
+        when(github.issues().comments().getComment(OWNER, NAME, ID)).thenReturn(Optional.of(reloaded));
+
+        final IssueComment refreshed = sut.refresh();
+
+        assertSoftly(softly -> {
+            softly.assertThat(refreshed.record()).isSameAs(reloaded);
+            softly.assertThat(refreshed.issue()).isSameAs(issue);
+            softly.assertThat(sut.body()).contains("First comment");
+        });
+    }
+
+    @Test
+    void refresh_shouldThrowIllegalStateException_whenTheCommentIsGone() throws IOException {
+        when(github.issues().comments().getComment(OWNER, NAME, ID)).thenReturn(Optional.empty());
+
+        final Throwable thrown = catchThrowable(sut::refresh);
+
+        assertThat(thrown).isInstanceOf(IllegalStateException.class).hasMessageContaining("2002");
+    }
+
+    @Test
     void delete_shouldDeleteTheComment_whenCalled() throws IOException {
         sut.delete();
 

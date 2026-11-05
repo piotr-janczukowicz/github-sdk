@@ -25,6 +25,7 @@ import io.github.piotr_janczukowicz.github.api.issues.GitHubSetLabelsLabel;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubSetLabelsPayload;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubUpdatePayload;
 import io.github.piotr_janczukowicz.github.api.search.GitHubIssueComment;
+import io.github.piotr_janczukowicz.github.api.search.GitHubMilestone;
 import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.io.IOException;
@@ -157,6 +158,29 @@ class IssueTest {
         final List<GitHubIssueLabel> labels = labelled.labels();
 
         assertThat(labels).containsExactly(label);
+    }
+
+    @Test
+    void milestone_shouldBeEmpty_whenTheRecordHasNone() {
+        final Optional<Milestone> milestone = sut.milestone();
+
+        assertThat(milestone).isEmpty();
+    }
+
+    @Test
+    void milestone_shouldWrapTheMilestoneOfTheRecord_whenTheRecordHasOne() {
+        final GitHubMilestone milestoneRecord = RepositoryContentFixtures.milestone();
+        final Issue planned = new Issue(
+                repository,
+                GitHubIssueBuilder.builder(record).milestone(milestoneRecord).build());
+
+        final Optional<Milestone> milestone = planned.milestone();
+
+        assertThat(milestone).isPresent();
+        assertSoftly(softly -> {
+            softly.assertThat(milestone.orElseThrow().record()).isSameAs(milestoneRecord);
+            softly.assertThat(milestone.orElseThrow().repository()).isSameAs(repository);
+        });
     }
 
     @Test

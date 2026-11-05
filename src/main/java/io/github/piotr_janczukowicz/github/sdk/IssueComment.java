@@ -88,6 +88,26 @@ public final class IssueComment {
     }
 
     /**
+     * Loads the comment again ({@code GET /repos/{owner}/{repo}/issues/comments/{comment_id}}). This object is not
+     * changed.
+     *
+     * @return the comment as GitHub holds it now
+     * @throws IOException if the transport fails
+     * @throws IllegalStateException if the comment is gone
+     */
+    public IssueComment refresh() throws IOException {
+        final Repository repository = issue.repository();
+        return repository
+                .sdk()
+                .github()
+                .issues()
+                .comments()
+                .getComment(repository.owner(), repository.name(), id())
+                .map(reloaded -> new IssueComment(issue, reloaded))
+                .orElseThrow(() -> new IllegalStateException("Comment " + id() + " is gone"));
+    }
+
+    /**
      * Returns the complete response this object was built from.
      *
      * @return the response record

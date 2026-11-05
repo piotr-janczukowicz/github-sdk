@@ -3,6 +3,7 @@ package io.github.piotr_janczukowicz.github.sdk;
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
 
 import io.github.piotr_janczukowicz.github.api.branches.GitHubBranchWithProtection;
+import java.io.IOException;
 
 /**
  * A branch of a {@link Repository}, as GitHub returned it. The object is immutable, and {@link #record()} gives the
@@ -52,6 +53,17 @@ public final class Branch {
      */
     public Commit commit() {
         return new Commit(repository, record.commit());
+    }
+
+    /**
+     * Loads the branch again ({@code GET /repos/{owner}/{repo}/branches/{branch}}). This object is not changed.
+     *
+     * @return the branch as GitHub holds it now
+     * @throws IOException if the transport fails
+     * @throws IllegalStateException if the branch is gone
+     */
+    public Branch refresh() throws IOException {
+        return repository.branch(name()).orElseThrow(() -> new IllegalStateException("Branch " + name() + " is gone"));
     }
 
     /**

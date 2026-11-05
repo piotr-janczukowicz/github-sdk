@@ -3,6 +3,7 @@ package io.github.piotr_janczukowicz.github.sdk;
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
 
 import io.github.piotr_janczukowicz.github.api.releases.GitHubRelease;
+import io.github.piotr_janczukowicz.github.api.releases.GitHubUpdateReleasePayload;
 import java.io.IOException;
 import java.util.Optional;
 
@@ -98,11 +99,31 @@ public final class Release {
     }
 
     /**
+     * Starts a change of several fields at once; nothing is sent until {@link ReleaseUpdate#send()}.
+     *
+     * @return a new update for this release
+     */
+    public ReleaseUpdate update() {
+        return new ReleaseUpdate(this);
+    }
+
+    /**
      * Returns the complete response this object was built from.
      *
      * @return the response record
      */
     public GitHubRelease record() {
         return record;
+    }
+
+    Release apply(final GitHubUpdateReleasePayload payload) throws IOException {
+        return new Release(
+                repository,
+                repository
+                        .sdk()
+                        .github()
+                        .releases()
+                        .release()
+                        .updateRelease(repository.owner(), repository.name(), record.id(), payload));
     }
 }

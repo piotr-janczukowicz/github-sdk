@@ -34,20 +34,23 @@ class ReleasesSmokeIT {
                 .build());
         boolean isDeleted = false;
         try {
-            final Release refreshed = created.refresh();
+            final Release renamed = created.update().name("smoke renamed").send();
+            final Release refreshed = renamed.refresh();
             final boolean isListed = repository
                     .releases()
                     .limit(50)
-                    .anyMatch(listed -> listed.tagName().equals(tag));
+                    .anyMatch(listed -> listed.record().id() == created.record().id());
             refreshed.delete();
             isDeleted = true;
             final boolean isStillListed = repository
                     .releases()
                     .limit(50)
-                    .anyMatch(listed -> listed.tagName().equals(tag));
+                    .anyMatch(listed -> listed.record().id() == created.record().id());
 
             assertThat(created.isDraft()).isTrue();
-            assertThat(refreshed.name()).contains("smoke release");
+            assertThat(renamed.isDraft()).isTrue();
+            assertThat(renamed.name()).contains("smoke renamed");
+            assertThat(refreshed.name()).contains("smoke renamed");
             assertThat(isListed).isTrue();
             assertThat(isStillListed).isFalse();
         } finally {

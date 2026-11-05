@@ -7,6 +7,8 @@ import io.github.piotr_janczukowicz.github.api.branches.GitHubBranchProtection;
 import io.github.piotr_janczukowicz.github.api.branches.GitHubBranchWithProtection;
 import io.github.piotr_janczukowicz.github.api.branches.GitHubBranchWithProtectionBuilder;
 import io.github.piotr_janczukowicz.github.api.branches.GitHubBranchWithProtectionLinks;
+import io.github.piotr_janczukowicz.github.api.issues.GitHubLabel;
+import io.github.piotr_janczukowicz.github.api.issues.GitHubLabelBuilder;
 import io.github.piotr_janczukowicz.github.api.releases.GitHubRelease;
 import io.github.piotr_janczukowicz.github.api.releases.GitHubReleaseBuilder;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubCommit;
@@ -16,6 +18,9 @@ import io.github.piotr_janczukowicz.github.api.repositories.GitHubContentFile;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubContentFileBuilder;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubContentFileType;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubContentLinks;
+import io.github.piotr_janczukowicz.github.api.search.GitHubMilestone;
+import io.github.piotr_janczukowicz.github.api.search.GitHubMilestoneBuilder;
+import io.github.piotr_janczukowicz.github.api.search.GitHubMilestoneState;
 import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
 import java.time.Instant;
 import java.util.List;
@@ -53,6 +58,35 @@ final class RepositoryContentFixtures {
                 .sha("blob123")
                 .url(API + "/contents/docs/README.md")
                 .links(mock(GitHubContentLinks.class))
+                .build();
+    }
+
+    static GitHubLabel label() {
+        return GitHubLabelBuilder.builder()
+                .id(4004L)
+                .nodeId("LA_kwDOA")
+                .url(API + "/labels/bug")
+                .name("bug")
+                .color("d73a4a")
+                .isDefault(true)
+                .build();
+    }
+
+    static GitHubMilestone milestone() {
+        final Instant at = Instant.parse("2026-04-05T06:07:08Z");
+        return GitHubMilestoneBuilder.builder()
+                .url(API + "/milestones/3")
+                .htmlUrl("https://github.com/octocat/hello-world/milestone/3")
+                .labelsUrl(API + "/milestones/3/labels")
+                .id(5005L)
+                .nodeId("MI_kwDOA")
+                .number(3)
+                .state(GitHubMilestoneState.OPEN)
+                .title("v1.0")
+                .openIssues(2)
+                .closedIssues(1)
+                .createdAt(at)
+                .updatedAt(at)
                 .build();
     }
 

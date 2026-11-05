@@ -6,6 +6,8 @@ import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 import io.github.piotr_janczukowicz.github.api.branches.GitHubListBranchesFilter;
 import io.github.piotr_janczukowicz.github.api.branches.GitHubShortBranch;
 import io.github.piotr_janczukowicz.github.api.commits.GitHubListCommitsFilter;
+import io.github.piotr_janczukowicz.github.api.issues.GitHubCreateLabelPayload;
+import io.github.piotr_janczukowicz.github.api.issues.GitHubCreateMilestonePayload;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubCreatePayload;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubCreatePayloadBuilder;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubCreatePullRequestPayload;
@@ -32,6 +34,8 @@ import org.jspecify.annotations.Nullable;
  * belong to a repository.
  */
 public final class Repository {
+
+    private static final String PAYLOAD = "payload";
 
     private final GitHubSdk sdk;
     private final String owner;
@@ -114,7 +118,7 @@ public final class Repository {
      * @throws IOException if the transport fails
      */
     public Issue createIssue(final GitHubCreatePayload payload) throws IOException {
-        return new Issue(this, sdk.github().issues().issue().create(owner, name, requireNonNull(payload, "payload")));
+        return new Issue(this, sdk.github().issues().issue().create(owner, name, requireNonNull(payload, PAYLOAD)));
     }
 
     /**
@@ -185,8 +189,7 @@ public final class Repository {
      */
     public PullRequest createPullRequest(final GitHubCreatePullRequestPayload payload) throws IOException {
         return new PullRequest(
-                this,
-                sdk.github().pullRequests().pullRequest().create(owner, name, requireNonNull(payload, "payload")));
+                this, sdk.github().pullRequests().pullRequest().create(owner, name, requireNonNull(payload, PAYLOAD)));
     }
 
     /**
@@ -406,7 +409,7 @@ public final class Repository {
      */
     public Release createRelease(final GitHubCreateReleasePayload payload) throws IOException {
         return new Release(
-                this, sdk.github().releases().release().createRelease(owner, name, requireNonNull(payload, "payload")));
+                this, sdk.github().releases().release().createRelease(owner, name, requireNonNull(payload, PAYLOAD)));
     }
 
     /**
@@ -418,6 +421,114 @@ public final class Repository {
      */
     public Stream<GitHubRepositoryTag> tags() throws IOException {
         return sdk.github().repositories().repository().listTags(owner, name).stream();
+    }
+
+    /**
+     * Loads one label ({@code GET /repos/{owner}/{repo}/labels/{name}}).
+     *
+     * @param labelName the label name
+     * @return the label, or empty when GitHub answers HTTP 404
+     * @throws IllegalArgumentException if {@code labelName} is blank
+     * @throws IOException if the transport fails
+     */
+    public Optional<Label> label(final String labelName) throws IOException {
+        return sdk.github()
+                .issues()
+                .labels()
+                .getLabel(owner, name, requireNotBlank(labelName, "name"))
+                .map(loaded -> new Label(this, loaded));
+    }
+
+    /**
+     * Lists the labels ({@code GET /repos/{owner}/{repo}/labels}). Pages are fetched only as the stream is consumed;
+     * transport failures during iteration are {@link java.io.UncheckedIOException}.
+     *
+     * @return the labels
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<Label> labels() throws IOException {
+        return sdk.github().issues().labels().listLabelsForRepo(owner, name).stream()
+                .map(listed -> new Label(this, listed));
+    }
+
+    /**
+     * Creates a label ({@code POST /repos/{owner}/{repo}/labels}).
+     *
+     * @param labelName the label name
+     * @param color the color as a hexadecimal value without the leading {@code #}
+     * @return the new label as GitHub returned it
+     * @throws IllegalArgumentException if {@code labelName} or {@code color} is blank
+     * @throws IOException if the transport fails
+     */
+    public Label createLabel(final String labelName, final String color) throws IOException {
+        return createLabel(new GitHubCreateLabelPayload(
+                requireNotBlank(labelName, "name"), requireNotBlank(color, "color"), null));
+    }
+
+    /**
+     * Creates a label ({@code POST /repos/{owner}/{repo}/labels}).
+     *
+     * @param payload the label to create
+     * @return the new label as GitHub returned it
+     * @throws NullPointerException if {@code payload} is {@code null}
+     * @throws IOException if the transport fails
+     */
+    public Label createLabel(final GitHubCreateLabelPayload payload) throws IOException {
+        return new Label(
+                this, sdk.github().issues().labels().createLabel(owner, name, requireNonNull(payload, PAYLOAD)));
+    }
+
+    /**
+     * Loads one milestone ({@code GET /repos/{owner}/{repo}/milestones/{milestone_number}}).
+     *
+     * @param number the milestone number
+     * @return the milestone, or empty when GitHub answers HTTP 404
+     * @throws IOException if the transport fails
+     */
+    public Optional<Milestone> milestone(final int number) throws IOException {
+        return sdk.github()
+                .issues()
+                .milestones()
+                .getMilestone(owner, name, number)
+                .map(loaded -> new Milestone(this, loaded));
+    }
+
+    /**
+     * Lists the milestones ({@code GET /repos/{owner}/{repo}/milestones}). Pages are fetched only as the stream is
+     * consumed; transport failures during iteration are {@link java.io.UncheckedIOException}.
+     *
+     * @return the milestones
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<Milestone> milestones() throws IOException {
+        return sdk.github().issues().milestones().listMilestones(owner, name).stream()
+                .map(listed -> new Milestone(this, listed));
+    }
+
+    /**
+     * Creates a milestone ({@code POST /repos/{owner}/{repo}/milestones}).
+     *
+     * @param title the milestone title
+     * @return the new milestone as GitHub returned it
+     * @throws IllegalArgumentException if {@code title} is blank
+     * @throws IOException if the transport fails
+     */
+    public Milestone createMilestone(final String title) throws IOException {
+        return createMilestone(new GitHubCreateMilestonePayload(requireNotBlank(title, "title"), null, null, null));
+    }
+
+    /**
+     * Creates a milestone ({@code POST /repos/{owner}/{repo}/milestones}).
+     *
+     * @param payload the milestone to create
+     * @return the new milestone as GitHub returned it
+     * @throws NullPointerException if {@code payload} is {@code null}
+     * @throws IOException if the transport fails
+     */
+    public Milestone createMilestone(final GitHubCreateMilestonePayload payload) throws IOException {
+        return new Milestone(
+                this,
+                sdk.github().issues().milestones().createMilestone(owner, name, requireNonNull(payload, PAYLOAD)));
     }
 
     /**

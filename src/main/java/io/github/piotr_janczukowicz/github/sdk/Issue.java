@@ -85,6 +85,15 @@ public final class Issue {
     }
 
     /**
+     * Returns the milestone the issue belongs to.
+     *
+     * @return the milestone, or empty when the issue has none
+     */
+    public Optional<Milestone> milestone() {
+        return Optional.ofNullable(record.milestone()).map(milestone -> new Milestone(repository, milestone));
+    }
+
+    /**
      * Returns the users the issue is assigned to.
      *
      * @return the assignees, empty when there are none
