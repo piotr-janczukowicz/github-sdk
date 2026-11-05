@@ -14,6 +14,7 @@ import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubCreatePayload;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubCreatePayloadBuilder;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubIssue;
+import io.github.piotr_janczukowicz.github.api.issues.GitHubListForRepoFilter;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubCreatePullRequestPayload;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubCreatePullRequestPayloadBuilder;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubListPullRequestsFilter;
@@ -91,6 +92,48 @@ class RepositoryTest {
         final Optional<Issue> issue = sut.issue(42);
 
         assertThat(issue).isEmpty();
+    }
+
+    @Test
+    void issues_shouldWrapEachIssue_whenCalledWithAFilter() throws IOException {
+        final GitHubIssue record = IssuesFixtures.issue();
+        when(github
+                        .issues()
+                        .issue()
+                        .listForRepo(
+                                eq(OWNER), eq(NAME), any(GitHubListForRepoFilter.class), any(GitHubPageRequest.class))
+                        .stream())
+                .thenReturn(Stream.of(record));
+
+        final List<Issue> issues = sut.issues(GitHubListForRepoFilter.empty()).toList();
+
+        assertThat(issues).hasSize(1);
+        assertSoftly(softly -> {
+            softly.assertThat(issues.getFirst().record()).isSameAs(record);
+            softly.assertThat(issues.getFirst().repository()).isSameAs(sut);
+        });
+    }
+
+    @Test
+    void issues_shouldListWithAnEmptyFilter_whenCalledWithoutOne() throws IOException {
+        when(github
+                        .issues()
+                        .issue()
+                        .listForRepo(
+                                eq(OWNER), eq(NAME), any(GitHubListForRepoFilter.class), any(GitHubPageRequest.class))
+                        .stream())
+                .thenReturn(Stream.empty());
+
+        final List<Issue> issues = sut.issues().toList();
+
+        assertThat(issues).isEmpty();
+    }
+
+    @Test
+    void issues_shouldThrowNullPointerException_whenFilterIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.issues(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("filter");
     }
 
     @Test

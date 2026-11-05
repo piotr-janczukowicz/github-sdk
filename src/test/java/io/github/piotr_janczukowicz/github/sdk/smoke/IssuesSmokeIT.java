@@ -4,6 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.github.piotr_janczukowicz.github.api.issues.GitHubCreateLabelPayload;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubIssueLabel;
+import io.github.piotr_janczukowicz.github.api.issues.GitHubListForRepoFilter;
+import io.github.piotr_janczukowicz.github.api.issues.GitHubListForRepoFilterBuilder;
+import io.github.piotr_janczukowicz.github.api.issues.GitHubListIssuesState;
 import io.github.piotr_janczukowicz.github.sdk.Issue;
 import io.github.piotr_janczukowicz.github.sdk.IssueComment;
 import io.github.piotr_janczukowicz.github.sdk.IssueState;
@@ -114,6 +117,22 @@ class IssuesSmokeIT {
         } finally {
             created.close();
         }
+    }
+
+    @Test
+    void issues_shouldListExistingIssuesOfTheRepository_whenTheyAreLoadedByNumber() throws IOException {
+        final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
+        final GitHubListForRepoFilter all = GitHubListForRepoFilterBuilder.builder()
+                .state(GitHubListIssuesState.ALL)
+                .build();
+
+        final List<Issue> issues = repository.issues(all).limit(5).toList();
+
+        assertThat(issues).isNotEmpty().hasSizeLessThanOrEqualTo(5);
+        assertThat(issues).allSatisfy(issue -> assertThat(issue.repository()).isSameAs(repository));
+        assertThat(repository.issue(issues.getFirst().number()))
+                .map(Issue::title)
+                .contains(issues.getFirst().title());
     }
 
     @Test

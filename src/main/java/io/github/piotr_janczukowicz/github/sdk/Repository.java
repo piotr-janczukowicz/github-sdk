@@ -10,6 +10,7 @@ import io.github.piotr_janczukowicz.github.api.issues.GitHubCreateLabelPayload;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubCreateMilestonePayload;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubCreatePayload;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubCreatePayloadBuilder;
+import io.github.piotr_janczukowicz.github.api.issues.GitHubListForRepoFilter;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubCreatePullRequestPayload;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubListPullRequestsFilter;
 import io.github.piotr_janczukowicz.github.api.releases.GitHubCreateReleasePayload;
@@ -39,6 +40,7 @@ import org.jspecify.annotations.Nullable;
 public final class Repository {
 
     private static final String PAYLOAD = "payload";
+    private static final String FILTER = "filter";
 
     private final GitHubSdk sdk;
     private final String owner;
@@ -125,6 +127,37 @@ public final class Repository {
     }
 
     /**
+     * Lists the open issues and pull requests ({@code GET /repos/{owner}/{repo}/issues}), the way GitHub lists them by
+     * default. See {@link #issues(GitHubListForRepoFilter)}.
+     *
+     * @return the issues
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<Issue> issues() throws IOException {
+        return issues(GitHubListForRepoFilter.empty());
+    }
+
+    /**
+     * Lists issues ({@code GET /repos/{owner}/{repo}/issues}). GitHub also returns pull requests here, as it does for
+     * the endpoint. Pages are fetched only as the stream is consumed, so {@code limit} stops further requests;
+     * transport failures during iteration are {@link java.io.UncheckedIOException}.
+     *
+     * @param filter the list filter
+     * @return the issues
+     * @throws NullPointerException if {@code filter} is {@code null}
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<Issue> issues(final GitHubListForRepoFilter filter) throws IOException {
+        return sdk
+                .github()
+                .issues()
+                .issue()
+                .listForRepo(owner, name, requireNonNull(filter, FILTER), GitHubPageRequest.byPage())
+                .stream()
+                .map(listed -> new Issue(this, listed));
+    }
+
+    /**
      * Loads one issue of this repository ({@code GET /repos/{owner}/{repo}/issues/{issue_number}}).
      *
      * @param number the issue number
@@ -177,7 +210,7 @@ public final class Repository {
                 .github()
                 .pullRequests()
                 .pullRequest()
-                .list(owner, name, requireNonNull(filter, "filter"), GitHubPageRequest.byPage())
+                .list(owner, name, requireNonNull(filter, FILTER), GitHubPageRequest.byPage())
                 .stream()
                 .map(this::loadPullRequest);
     }
@@ -237,7 +270,7 @@ public final class Repository {
                 .github()
                 .branches()
                 .branch()
-                .listBranches(owner, name, requireNonNull(filter, "filter"), GitHubPageRequest.byPage())
+                .listBranches(owner, name, requireNonNull(filter, FILTER), GitHubPageRequest.byPage())
                 .stream()
                 .map(this::loadBranch);
     }
@@ -283,7 +316,7 @@ public final class Repository {
                 .github()
                 .commits()
                 .commit()
-                .listCommits(owner, name, requireNonNull(filter, "filter"), GitHubPageRequest.byPage())
+                .listCommits(owner, name, requireNonNull(filter, FILTER), GitHubPageRequest.byPage())
                 .stream()
                 .map(listed -> new Commit(this, listed));
     }
