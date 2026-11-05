@@ -16,14 +16,17 @@ import io.github.piotr_janczukowicz.github.api.releases.GitHubCreateReleasePaylo
 import io.github.piotr_janczukowicz.github.api.releases.GitHubCreateReleasePayloadBuilder;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubContentFile;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateOrUpdateFileContentsPayload;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateWebhookPayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubFullRepository;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubGetContentFilter;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubPullRequestSimple;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryTag;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubWebhookConfig;
 import io.github.piotr_janczukowicz.github.pagination.GitHubPageRequest;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Base64;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
@@ -529,6 +532,65 @@ public final class Repository {
         return new Milestone(
                 this,
                 sdk.github().issues().milestones().createMilestone(owner, name, requireNonNull(payload, PAYLOAD)));
+    }
+
+    /**
+     * Loads one webhook ({@code GET /repos/{owner}/{repo}/hooks/{hook_id}}).
+     *
+     * @param id the webhook id
+     * @return the webhook, or empty when GitHub answers HTTP 404
+     * @throws IOException if the transport fails
+     */
+    public Optional<Webhook> webhook(final long id) throws IOException {
+        return sdk.github()
+                .repositories()
+                .webhooks()
+                .getWebhook(owner, name, id)
+                .map(loaded -> new Webhook(this, loaded));
+    }
+
+    /**
+     * Lists the webhooks ({@code GET /repos/{owner}/{repo}/hooks}). Pages are fetched only as the stream is consumed;
+     * transport failures during iteration are {@link java.io.UncheckedIOException}.
+     *
+     * @return the webhooks
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<Webhook> webhooks() throws IOException {
+        return sdk.github().repositories().webhooks().listWebhooks(owner, name).stream()
+                .map(listed -> new Webhook(this, listed));
+    }
+
+    /**
+     * Creates a webhook that delivers JSON to a URL ({@code POST /repos/{owner}/{repo}/hooks}).
+     *
+     * @param payloadUrl the URL GitHub delivers the events to
+     * @param events the event names to subscribe to
+     * @return the new webhook as GitHub returned it
+     * @throws IllegalArgumentException if {@code payloadUrl} is blank
+     * @throws NullPointerException if {@code events} is {@code null}
+     * @throws IOException if the transport fails
+     */
+    public Webhook createWebhook(final String payloadUrl, final List<String> events) throws IOException {
+        return createWebhook(new GitHubCreateWebhookPayload(
+                "web",
+                new GitHubWebhookConfig(requireNotBlank(payloadUrl, "payloadUrl"), "json", null, null),
+                List.copyOf(requireNonNull(events, "events")),
+                null));
+    }
+
+    /**
+     * Creates a webhook ({@code POST /repos/{owner}/{repo}/hooks}).
+     *
+     * @param payload the webhook to create
+     * @return the new webhook as GitHub returned it
+     * @throws NullPointerException if {@code payload} is {@code null}
+     * @throws IOException if the transport fails
+     */
+    public Webhook createWebhook(final GitHubCreateWebhookPayload payload) throws IOException {
+        return new Webhook(
+                this,
+                sdk.github().repositories().webhooks().createWebhook(owner, name, requireNonNull(payload, PAYLOAD)));
     }
 
     /**

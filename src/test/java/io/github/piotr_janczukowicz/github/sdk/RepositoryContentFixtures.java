@@ -18,6 +18,10 @@ import io.github.piotr_janczukowicz.github.api.repositories.GitHubContentFile;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubContentFileBuilder;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubContentFileType;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubContentLinks;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubHook;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubHookBuilder;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubHookResponse;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubWebhookConfig;
 import io.github.piotr_janczukowicz.github.api.search.GitHubMilestone;
 import io.github.piotr_janczukowicz.github.api.search.GitHubMilestoneBuilder;
 import io.github.piotr_janczukowicz.github.api.search.GitHubMilestoneState;
@@ -87,6 +91,24 @@ final class RepositoryContentFixtures {
                 .closedIssues(1)
                 .createdAt(at)
                 .updatedAt(at)
+                .build();
+    }
+
+    static GitHubHook webhook() {
+        final Instant at = Instant.parse("2026-05-06T07:08:09Z");
+        return GitHubHookBuilder.builder()
+                .type("Repository")
+                .id(7007L)
+                .name("web")
+                .active(true)
+                .events(List.of("push"))
+                .config(new GitHubWebhookConfig("https://example.com/hook", "json", null, null))
+                .updatedAt(at)
+                .createdAt(at)
+                .url(API + "/hooks/7007")
+                .testUrl(API + "/hooks/7007/test")
+                .pingUrl(API + "/hooks/7007/pings")
+                .lastResponse(mock(GitHubHookResponse.class))
                 .build();
     }
 
