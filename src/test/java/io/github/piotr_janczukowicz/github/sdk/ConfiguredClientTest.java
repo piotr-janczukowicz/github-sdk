@@ -3,8 +3,6 @@ package io.github.piotr_janczukowicz.github.sdk;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
-import io.github.piotr_janczukowicz.github.api.GitHub;
-import io.github.piotr_janczukowicz.github.client.GitHubCaller;
 import io.github.piotr_janczukowicz.github.client.GitHubClient;
 import io.github.piotr_janczukowicz.github.client.GitHubClientConfiguration;
 import io.github.piotr_janczukowicz.github.client.GitHubClients;
@@ -43,7 +41,7 @@ class ConfiguredClientTest {
 
         try (GitHubClient client =
                 GitHubClients.create(AuthenticationProviders.bearer("token-for-a-test"), "my-app/1.0", configuration)) {
-            final GitHubSdk sdk = GitHubSdk.of(new GitHub(GitHubCaller.of(client)));
+            final GitHubSdk sdk = GitHubSdk.of(client);
             final Repository repository = sdk.repository("octocat", "Hello-World");
 
             assertSoftly(softly -> {
@@ -62,7 +60,7 @@ class ConfiguredClientTest {
     void defaults_shouldKeepTheClientsOwnPaging_whenNothingIsConfigured() {
         try (GitHubClient client =
                 GitHubClients.create(AuthenticationProviders.bearer("token-for-a-test"), "my-app/1.0")) {
-            final GitHubSdk sdk = GitHubSdk.of(new GitHub(GitHubCaller.of(client)));
+            final GitHubSdk sdk = GitHubSdk.of(client);
 
             assertThat(sdk.repository("octocat", "Hello-World").name()).isEqualTo("Hello-World");
             assertThat(client.pagination().perPage()).isPositive();

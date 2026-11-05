@@ -47,7 +47,7 @@ its own.
 
 ```java
 try (GitHubClient client = GitHubClients.create(AuthenticationProviders.bearer(System.getenv("GITHUB_TOKEN")), "my-app/1.0")) {
-    GitHubSdk sdk = GitHubSdk.of(new GitHub(GitHubCaller.of(client)));
+    GitHubSdk sdk = GitHubSdk.of(client);
 
     Repository repository = sdk.repository("octocat", "Hello-World");
     Issue issue = repository.createIssue("Found a bug");
@@ -99,7 +99,7 @@ All objects behave the same way, so you learn them once:
 ## Configure the client
 
 Authentication, retries, caching, page size and the GitHub product (github.com, Enterprise Cloud or Enterprise Server)
-are the client's job, not the SDK's: every object calls the `GitHub` client you pass to `GitHubSdk.of(...)`, so one
+are the client's job, not the SDK's: every object calls the client you pass to `GitHubSdk.of(...)` (a `GitHubClient`, a `GitHubCaller` or a `GitHub`), so one
 configuration covers all of them. The SDK has no configuration of its own, and a call made through an object behaves
 exactly like the same call on the client.
 
@@ -112,7 +112,7 @@ GitHubClientConfiguration configuration = GitHubClientConfiguration.builder()
 
 try (GitHubClient client = GitHubClients.create(
         AuthenticationProviders.bearer(System.getenv("GITHUB_TOKEN")), "my-app/1.0", configuration)) {
-    GitHubSdk sdk = GitHubSdk.of(new GitHub(GitHubCaller.of(client)));
+    GitHubSdk sdk = GitHubSdk.of(client);
     // use the sdk as usual
 }
 ```
@@ -138,7 +138,7 @@ because an event carries the owner, the repository name and the number of the is
 
 ```java
 GitHubWebhookReceiver receiver = GitHubWebhookReceiver.of(webhookSecret);
-GitHubSdk sdk = GitHubSdk.of(new GitHub(GitHubCaller.of(client)));
+GitHubSdk sdk = GitHubSdk.of(client);
 
 GitHubWebhookEvent event = receiver.receive(
         request.header("X-GitHub-Event"), request.header("X-Hub-Signature-256"), request.readBody());

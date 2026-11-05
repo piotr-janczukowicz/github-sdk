@@ -18,6 +18,10 @@ import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
 import io.github.piotr_janczukowicz.github.api.users.GitHubUser;
 import io.github.piotr_janczukowicz.github.api.users.GitHubUserApi;
 import io.github.piotr_janczukowicz.github.api.users.GitHubUserView;
+import io.github.piotr_janczukowicz.github.client.GitHubCaller;
+import io.github.piotr_janczukowicz.github.client.GitHubClient;
+import io.github.piotr_janczukowicz.github.client.GitHubClients;
+import io.github.piotr_janczukowicz.http.client.authentication.AuthenticationProviders;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.io.IOException;
 import java.util.Optional;
@@ -28,9 +32,44 @@ class GitHubSdkTest {
 
     @Test
     void of_shouldThrowNullPointerException_whenGithubIsNull() {
-        final Throwable thrown = catchThrowable(() -> GitHubSdk.of(null));
+        final Throwable thrown = catchThrowable(() -> GitHubSdk.of((GitHub) null));
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("github");
+    }
+
+    @Test
+    void of_shouldThrowNullPointerException_whenCallerIsNull() {
+        final Throwable thrown = catchThrowable(() -> GitHubSdk.of((GitHubCaller) null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("caller");
+    }
+
+    @Test
+    void of_shouldThrowNullPointerException_whenClientIsNull() {
+        final Throwable thrown = catchThrowable(() -> GitHubSdk.of((GitHubClient) null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("client");
+    }
+
+    @Test
+    void of_shouldWrapTheClient_whenCalledWithAClient() {
+        try (GitHubClient client =
+                GitHubClients.create(AuthenticationProviders.bearer("token-for-a-test"), "my-app/1.0")) {
+            final GitHubSdk sdk = GitHubSdk.of(client);
+
+            assertThat(sdk.repository("octocat", "Hello-World").owner()).isEqualTo("octocat");
+        }
+    }
+
+    @Test
+    void of_shouldWrapTheCaller_whenCalledWithACaller() {
+        try (GitHubClient client =
+                GitHubClients.create(AuthenticationProviders.bearer("token-for-a-test"), "my-app/1.0")) {
+            final GitHubCaller caller = GitHubCaller.of(client);
+            final GitHubSdk sdk = GitHubSdk.of(caller);
+
+            assertThat(sdk.repository("octocat", "Hello-World").owner()).isEqualTo("octocat");
+        }
     }
 
     @Test

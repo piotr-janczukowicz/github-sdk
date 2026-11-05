@@ -14,6 +14,8 @@ import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateInOrgPay
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubFullRepository;
 import io.github.piotr_janczukowicz.github.api.securityadvisories.GitHubGlobalAdvisory;
 import io.github.piotr_janczukowicz.github.api.securityadvisories.GitHubListGlobalAdvisoriesFilter;
+import io.github.piotr_janczukowicz.github.client.GitHubCaller;
+import io.github.piotr_janczukowicz.github.client.GitHubClient;
 import io.github.piotr_janczukowicz.github.pagination.GitHubPageRequest;
 import io.github.piotr_janczukowicz.github.sdk.accounts.Me;
 import io.github.piotr_janczukowicz.github.sdk.apps.App;
@@ -53,6 +55,29 @@ public final class GitHubSdk {
      */
     public static GitHubSdk of(final GitHub github) {
         return new GitHubSdk(github);
+    }
+
+    /**
+     * Wraps a caller, so every object of this SDK calls the resources of {@code new GitHub(caller)}.
+     *
+     * @param caller the caller that executes the requests of every object of this SDK
+     * @return the entry point
+     * @throws NullPointerException if {@code caller} is {@code null}
+     */
+    public static GitHubSdk of(final GitHubCaller caller) {
+        return of(new GitHub(requireNonNull(caller, "caller")));
+    }
+
+    /**
+     * Wraps a client, the shortest way to start: it is the same as {@code of(new GitHub(GitHubCaller.of(client)))}. The
+     * client stays yours; closing it is up to you.
+     *
+     * @param client the client that sends the requests of every object of this SDK
+     * @return the entry point
+     * @throws NullPointerException if {@code client} is {@code null}
+     */
+    public static GitHubSdk of(final GitHubClient client) {
+        return of(GitHubCaller.of(requireNonNull(client, "client")));
     }
 
     /**
