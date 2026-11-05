@@ -47,11 +47,7 @@ public final class Arguments {
      * @throws NullPointerException if the list or a value is {@code null}
      */
     public static List<String> requireNotBlankValues(final List<String> values, final String name) {
-        final List<String> checked = requireNotBlankElements(values, name);
-        if (checked.isEmpty()) {
-            throw new IllegalArgumentException(name + " must not be empty");
-        }
-        return checked;
+        return requireNonEmpty(requireNotBlankElements(values, name), name);
     }
 
     /**

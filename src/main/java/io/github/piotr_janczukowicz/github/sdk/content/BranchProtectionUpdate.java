@@ -1,5 +1,7 @@
 package io.github.piotr_janczukowicz.github.sdk.content;
 
+import static io.github.piotr_janczukowicz.util.ValidationUtils.requireBetween;
+
 import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.branches.GitHubUpdateBranchProtectionPayload;
 import io.github.piotr_janczukowicz.github.api.branches.GitHubUpdateBranchProtectionRequiredPullRequestReviews;
@@ -81,10 +83,7 @@ public final class BranchProtectionUpdate {
             final boolean isStaleDismissed,
             final boolean isCodeOwnerRequired,
             final boolean isLastPushApprovalRequired) {
-        if (approvals < MIN_APPROVALS || approvals > MAX_APPROVALS) {
-            throw new IllegalArgumentException(
-                    "approvals must be from " + MIN_APPROVALS + " to " + MAX_APPROVALS + ": " + approvals);
-        }
+        requireBetween(approvals, MIN_APPROVALS, MAX_APPROVALS, "approvals");
         this.pullRequestReviews = new GitHubUpdateBranchProtectionRequiredPullRequestReviews(
                 null, isStaleDismissed, isCodeOwnerRequired, approvals, isLastPushApprovalRequired, null);
         return this;

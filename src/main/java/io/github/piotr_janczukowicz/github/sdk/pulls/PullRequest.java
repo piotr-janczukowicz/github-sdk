@@ -1,5 +1,6 @@
 package io.github.piotr_janczukowicz.github.sdk.pulls;
 
+import static io.github.piotr_janczukowicz.util.ValidationUtils.requireAtLeast;
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 
@@ -319,9 +320,7 @@ public final class PullRequest {
      */
     public PullRequestReviewComment commentOnLine(
             final String commitId, final String path, final int line, final String body) throws IOException {
-        if (line < MINIMUM_LINE) {
-            throw new IllegalArgumentException("line must be at least " + MINIMUM_LINE + ": " + line);
-        }
+        requireAtLeast(line, MINIMUM_LINE, "line");
         final GitHubCreateReviewCommentPayload payload = new GitHubCreateReviewCommentPayload(
                 requireNotBlank(body, "body"),
                 requireNotBlank(commitId, "commitId"),

@@ -1,5 +1,6 @@
 package io.github.piotr_janczukowicz.github.sdk.actions;
 
+import static io.github.piotr_janczukowicz.util.ValidationUtils.requireAtLeast;
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
 
 import io.github.piotr_janczukowicz.github.api.GitHub;
@@ -396,8 +397,6 @@ public final class WorkflowRun {
     }
 
     private static void requireAttempt(final long attempt) {
-        if (attempt < FIRST_ATTEMPT) {
-            throw new IllegalArgumentException("attempt must be at least " + FIRST_ATTEMPT + ": " + attempt);
-        }
+        requireAtLeast(attempt, FIRST_ATTEMPT, "attempt");
     }
 }

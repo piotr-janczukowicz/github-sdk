@@ -1,5 +1,6 @@
 package io.github.piotr_janczukowicz.github.sdk.actions;
 
+import static io.github.piotr_janczukowicz.util.ValidationUtils.requireAtLeast;
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 
@@ -128,9 +129,7 @@ public final class RepositoryActionsCache {
      * @throws IOException if the transport fails
      */
     public void setRetentionDays(final int days) throws IOException {
-        if (days < MINIMUM_LIMIT) {
-            throw new IllegalArgumentException("days must be at least 1: " + days);
-        }
+        requireAtLeast(days, MINIMUM_LIMIT, "days");
         github().actions()
                 .cache()
                 .setRepoCacheRetentionLimit(
@@ -161,9 +160,7 @@ public final class RepositoryActionsCache {
      * @throws IOException if the transport fails
      */
     public void setStorageGigabytes(final int gigabytes) throws IOException {
-        if (gigabytes < MINIMUM_LIMIT) {
-            throw new IllegalArgumentException("gigabytes must be at least 1: " + gigabytes);
-        }
+        requireAtLeast(gigabytes, MINIMUM_LIMIT, "gigabytes");
         github().actions()
                 .cache()
                 .setRepoCacheStorageLimit(

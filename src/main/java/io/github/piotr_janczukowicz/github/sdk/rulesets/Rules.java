@@ -1,5 +1,7 @@
 package io.github.piotr_janczukowicz.github.sdk.rulesets;
 
+import static io.github.piotr_janczukowicz.util.ValidationUtils.requireBetween;
+
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRule;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRuleCreation;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRuleCreationType;
@@ -120,9 +122,7 @@ public final class Rules {
             final boolean isCodeOwnerRequired,
             final boolean isLastPushApprovalRequired,
             final boolean isConversationResolutionRequired) {
-        if (approvals < 0 || approvals > MAX_APPROVALS) {
-            throw new IllegalArgumentException("approvals must be from 0 to " + MAX_APPROVALS + ": " + approvals);
-        }
+        requireBetween(approvals, 0, MAX_APPROVALS, "approvals");
         return new GitHubRepositoryRulePullRequest(
                 GitHubRepositoryRulePullRequestType.PULL_REQUEST,
                 new GitHubRepositoryRulePullRequestParameters(
