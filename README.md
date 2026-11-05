@@ -55,6 +55,48 @@ try (GitHubClient client = GitHubClients.create(AuthenticationProviders.bearer(S
 }
 ```
 
+## Configure the client
+
+Retries, caching and page size are the client's job, not the SDK's: every object calls the `GitHub` client you pass to
+`GitHubSdk.of(...)`, so one configuration covers all of them. `GitHubClientConfiguration` offers:
+
+- **Retry and backoff.** `retry(...)` sets how often a rate-limited call, a server error or an I/O failure is retried,
+  the backoff and its jitter, the longest wait, and a total deadline. A rate-limited call waits for the reset time GitHub
+  reports, within the configured limits, instead of failing at once.
+- **Conditional cache.** The client sends `If-None-Match` and reuses the body when GitHub answers 304, which does not
+  count against the rate limit. `conditionalCacheMaxEntries(...)`, `conditionalCacheMaxBodyBytes(...)` and
+  `conditionalCacheMaxBytes(...)` bound it.
+- **Rate limit listener.** `rateLimitListener(...)` is called with every snapshot, and `client.lastRateLimit(resource)`
+  returns the latest one.
+- **Paging.** `pagination(...)` sets the page size (up to 100) and the most pages one list walks. A list of the SDK is
+  a lazy `Stream`, so `limit(...)` stops further page requests too.
+
+```java
+GitHubClientConfiguration configuration = GitHubClientConfiguration.builder()
+        .retry(RetryConfiguration.builder()
+                .maxRateLimitAttempts(5)
+                .maxBackoff(Duration.ofSeconds(30))
+                .totalDeadline(Duration.ofMinutes(5))
+                .build())
+        .conditionalCacheMaxEntries(500)
+        .rateLimitListener(snapshot -> {
+            if (snapshot.isExhausted()) {
+                System.err.println("Rate limit exhausted until " + snapshot.resetAt());
+            }
+        })
+        .pagination(PaginationConfiguration.builder().perPage(100).maxPages(5).build())
+        .build();
+
+try (GitHubClient client = GitHubClients.create(
+        AuthenticationProviders.bearer(System.getenv("GITHUB_TOKEN")), "my-app/1.0", configuration)) {
+    GitHubSdk sdk = GitHubSdk.of(new GitHub(GitHubCaller.of(client)));
+    // use the sdk as usual
+}
+```
+
+The SDK adds no layer of its own, so a call made through an object behaves exactly like the same call made on the
+client. `ConfiguredClientTest` builds this configuration, so a change in the client's API shows up in the build.
+
 ## Packages
 
 The entry points (`GitHubSdk`, `Repository`, `User`, `Organization`, `Team`, `Search`, `RateLimit`) are in
