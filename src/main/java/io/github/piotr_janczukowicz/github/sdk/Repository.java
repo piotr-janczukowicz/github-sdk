@@ -14,6 +14,7 @@ import io.github.piotr_janczukowicz.github.api.collaborators.GitHubAddCollaborat
 import io.github.piotr_janczukowicz.github.api.collaborators.GitHubListCollaboratorsFilter;
 import io.github.piotr_janczukowicz.github.api.collaborators.GitHubRepositoryCollaboratorPermission;
 import io.github.piotr_janczukowicz.github.api.commits.GitHubListCommitsFilter;
+import io.github.piotr_janczukowicz.github.api.dependabot.GitHubListAlertsForRepoFilter;
 import io.github.piotr_janczukowicz.github.api.deploykeys.GitHubCreateDeployKeyPayload;
 import io.github.piotr_janczukowicz.github.api.deployments.GitHubCreateDeploymentPayload;
 import io.github.piotr_janczukowicz.github.api.deployments.GitHubCreateDeploymentResult;
@@ -54,6 +55,7 @@ import io.github.piotr_janczukowicz.github.api.repositories.GitHubTransferPayloa
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubUpdatePayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubUpdatePayloadBuilder;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubWebhookConfig;
+import io.github.piotr_janczukowicz.github.api.secretscanning.GitHubListSecretScanningAlertsFilter;
 import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
 import io.github.piotr_janczukowicz.github.pagination.GitHubPageRequest;
 import io.github.piotr_janczukowicz.github.sdk.actions.Artifact;
@@ -83,6 +85,10 @@ import io.github.piotr_janczukowicz.github.sdk.issues.Milestone;
 import io.github.piotr_janczukowicz.github.sdk.notifications.Notification;
 import io.github.piotr_janczukowicz.github.sdk.pages.PagesSite;
 import io.github.piotr_janczukowicz.github.sdk.pulls.PullRequest;
+import io.github.piotr_janczukowicz.github.sdk.security.CodeScanningAlert;
+import io.github.piotr_janczukowicz.github.sdk.security.DependabotAlert;
+import io.github.piotr_janczukowicz.github.sdk.security.RepositorySecurity;
+import io.github.piotr_janczukowicz.github.sdk.security.SecretScanningAlert;
 import io.github.piotr_janczukowicz.github.sdk.webhooks.Webhook;
 import java.io.IOException;
 import java.util.Base64;
@@ -1794,6 +1800,142 @@ public final class Repository {
      */
     public PagesSite enablePages(final GitHubCreatePagesSitePayload payload) throws IOException {
         return new PagesSite(this, sdk.github().pages().createPagesSite(owner, name, requireNonNull(payload, PAYLOAD)));
+    }
+
+    /**
+     * Lists the Dependabot alerts ({@code GET /repos/{owner}/{repo}/dependabot/alerts}). See
+     * {@link #dependabotAlerts(GitHubListAlertsForRepoFilter)}.
+     *
+     * @return the alerts
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<DependabotAlert> dependabotAlerts() throws IOException {
+        return dependabotAlerts(GitHubListAlertsForRepoFilter.empty());
+    }
+
+    /**
+     * Lists the Dependabot alerts ({@code GET /repos/{owner}/{repo}/dependabot/alerts}). Pages are fetched only as the
+     * stream is consumed; transport failures during iteration are {@link java.io.UncheckedIOException}.
+     *
+     * @param filter the filter for state, severity, ecosystem, package and more
+     * @return the alerts
+     * @throws NullPointerException if {@code filter} is {@code null}
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<DependabotAlert> dependabotAlerts(final GitHubListAlertsForRepoFilter filter) throws IOException {
+        return sdk
+                .github()
+                .dependabot()
+                .alerts()
+                .listAlertsForRepo(owner, name, requireNonNull(filter, FILTER))
+                .stream()
+                .map(listed -> new DependabotAlert(this, listed));
+    }
+
+    /**
+     * Loads one Dependabot alert ({@code GET /repos/{owner}/{repo}/dependabot/alerts/{alert_number}}).
+     *
+     * @param number the alert number
+     * @return the alert, or empty when GitHub answers HTTP 404
+     * @throws IOException if the transport fails
+     */
+    public Optional<DependabotAlert> dependabotAlert(final int number) throws IOException {
+        return sdk.github()
+                .dependabot()
+                .alerts()
+                .getAlert(owner, name, number)
+                .map(loaded -> new DependabotAlert(this, loaded));
+    }
+
+    /**
+     * Lists the secret scanning alerts ({@code GET /repos/{owner}/{repo}/secret-scanning/alerts}). See
+     * {@link #secretScanningAlerts(GitHubListSecretScanningAlertsFilter)}.
+     *
+     * @return the alerts
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<SecretScanningAlert> secretScanningAlerts() throws IOException {
+        return secretScanningAlerts(GitHubListSecretScanningAlertsFilter.empty());
+    }
+
+    /**
+     * Lists the secret scanning alerts ({@code GET /repos/{owner}/{repo}/secret-scanning/alerts}). GitHub's list holds
+     * less than a single lookup, so each alert is loaded with one more request as the stream reaches it;
+     * {@code limit(...)} bounds the cost. Pages are fetched only as the stream is consumed; transport failures during
+     * iteration are {@link java.io.UncheckedIOException}.
+     *
+     * @param filter the filter for state, secret type, provider and more
+     * @return the alerts
+     * @throws NullPointerException if {@code filter} is {@code null}
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<SecretScanningAlert> secretScanningAlerts(final GitHubListSecretScanningAlertsFilter filter)
+            throws IOException {
+        return sdk
+                .github()
+                .secretScanning()
+                .alerts()
+                .listRepoAlerts(owner, name, requireNonNull(filter, FILTER))
+                .stream()
+                .map(listed -> Lookups.require(
+                        () -> secretScanningAlert(listed.number()),
+                        () -> "Secret scanning alert " + listed.number() + IS_GONE));
+    }
+
+    /**
+     * Loads one secret scanning alert ({@code GET /repos/{owner}/{repo}/secret-scanning/alerts/{alert_number}}).
+     *
+     * @param number the alert number
+     * @return the alert, or empty when GitHub answers HTTP 404
+     * @throws IOException if the transport fails
+     */
+    public Optional<SecretScanningAlert> secretScanningAlert(final int number) throws IOException {
+        return sdk.github()
+                .secretScanning()
+                .alerts()
+                .getAlert(owner, name, number)
+                .map(loaded -> new SecretScanningAlert(this, loaded));
+    }
+
+    /**
+     * Lists the code scanning alerts ({@code GET /repos/{owner}/{repo}/code-scanning/alerts}). GitHub's list holds less
+     * than a single lookup, so each alert is loaded with one more request as the stream reaches it; {@code limit(...)}
+     * bounds the cost. Pages are fetched only as the stream is consumed; transport failures during iteration are
+     * {@link java.io.UncheckedIOException}.
+     *
+     * @return the alerts
+     * @throws IOException if the first page cannot be loaded
+     */
+    public Stream<CodeScanningAlert> codeScanningAlerts() throws IOException {
+        return sdk.github().codeScanning().codeScanning().listAlertsForRepo(owner, name).stream()
+                .map(listed -> Lookups.require(
+                        () -> codeScanningAlert(listed.number()),
+                        () -> "Code scanning alert " + listed.number() + IS_GONE));
+    }
+
+    /**
+     * Loads one code scanning alert ({@code GET /repos/{owner}/{repo}/code-scanning/alerts/{alert_number}}).
+     *
+     * @param number the alert number
+     * @return the alert, or empty when GitHub answers HTTP 404
+     * @throws IOException if the transport fails
+     */
+    public Optional<CodeScanningAlert> codeScanningAlert(final int number) throws IOException {
+        return sdk.github()
+                .codeScanning()
+                .codeScanning()
+                .getAlert(owner, name, number)
+                .map(loaded -> new CodeScanningAlert(this, loaded));
+    }
+
+    /**
+     * Returns the security switches of the repository, such as Dependabot alerts and private vulnerability reporting.
+     * Nothing is requested until a method of the result is called.
+     *
+     * @return the security switches
+     */
+    public RepositorySecurity security() {
+        return new RepositorySecurity(this);
     }
 
     Repository apply(final GitHubUpdatePayload payload) throws IOException {

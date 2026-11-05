@@ -59,7 +59,7 @@ try (GitHubClient client = GitHubClients.create(AuthenticationProviders.bearer(S
 
 The entry points (`GitHubSdk`, `Repository`, `User`, `Organization`, `Team`, `Search`, `RateLimit`) are in
 `io.github.piotr_janczukowicz.github.sdk`. The other objects are grouped by area in sub-packages: `issues`, `pulls`,
-`content` (branches, commits, files, releases), `git` (refs, comparisons, multi-file commits), `gists`, `notifications`, `deploykeys`, `deployments`, `pages`, `actions`, `checks`, `collaborators`, `reactions` and `webhooks`. The `internal`
+`content` (branches, commits, files, releases), `git` (refs, comparisons, multi-file commits), `gists`, `notifications`, `deploykeys`, `deployments`, `pages`, `security`, `actions`, `checks`, `collaborators`, `reactions` and `webhooks`. The `internal`
 package is not exported by the module and is not part of the API.
 
 ## What is covered
@@ -80,6 +80,7 @@ package is not exported by the module and is not part of the API.
 | `sdk.notifications()`, `repository.notifications()` | `Notification`: `markRead()`, `markDone()`, `subscription()`, `subscribe()`, `ignore()`, `unsubscribe()`, `refresh()`; `sdk.markNotificationsRead()` marks all as read. Needs a classic token, because GitHub does not support fine-grained tokens for notifications |
 | `Repository` (deployments) | `deployments()`, `deployment(id)`, `deploy(ref, environment)` (GitHub's auto merge is off), `deploy(payload)`; a `Deployment` has `statuses()`, `latestStatus()`, `createStatus(state)`, `refresh()` and `delete()`; `environments()`, `environment(name)` and `saveEnvironment(name)` give `Environment` objects with `refresh()` and `delete()` |
 | `Repository` (Pages) | `pages()` gives a `PagesSite` with `update(...)`, `delete()`, `builds()`, `latestBuild()` and `requestBuild()`; `enablePages(branch)` turns Pages on |
+| `Repository` (security) | `dependabotAlerts()`, `secretScanningAlerts()`, `codeScanningAlerts()` and a lookup by number for each; every alert has `refresh()`, `dismiss(...)` or `resolve(...)` and `reopen()`. A secret scanning alert never returns the secret from its accessors, only from `response()`. `security()` reads and switches Dependabot alerts, automated security fixes, private vulnerability reporting and immutable releases |
 | `Repository` (deploy keys) | `deployKeys()`, `deployKey(id)`, `addDeployKey(title, key[, isReadOnly])`; a `DeployKey` has `refresh()` and `delete()` |
 | `Repository` (git data) | `commitTo(branch)` collects `write(...)` and `delete(...)` and `send(message)` makes one commit; `compare(base, head)` gives a `Comparison` (status, ahead and behind, commits, files, `diff()`, `patch()`); `refs(prefix)`, `ref(name)`, `createRef(...)` and `createBranch(...)` give `Ref` objects with `update(...)` and `delete()`; `tree(sha)` and `blob(sha)` read git objects |
 | `Branch` (protection) | `protection()` reads the rule (`BranchProtection`: `refresh()`, `remove()`); `protect()` collects status checks, review requirements, admin enforcement, push restrictions and the other options, and `send()` sets the rule. GitHub replaces the whole rule, so anything not chosen is switched off |
