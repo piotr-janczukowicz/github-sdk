@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.github.piotr_janczukowicz.github.api.GitHub;
+import io.github.piotr_janczukowicz.github.api.packages.GitHubListPackagesFilter;
 import io.github.piotr_janczukowicz.github.api.packages.GitHubPackage;
 import io.github.piotr_janczukowicz.github.api.packages.GitHubPackageType;
 import io.github.piotr_janczukowicz.github.api.packages.GitHubPackageVersion;
@@ -21,7 +22,6 @@ import org.junit.jupiter.api.Test;
 @UnitTest
 class AuthenticatedPackageGatewayTest {
 
-    private static final String LOGIN = "octocat";
     private static final String NAME = PackageFixtures.NAME;
     private static final GitHubPackageType TYPE = GitHubPackageType.CONTAINER;
     private static final long ID = PackageFixtures.VERSION_ID;
@@ -32,11 +32,7 @@ class AuthenticatedPackageGatewayTest {
     @Test
     void packages_shouldStreamThePackages_whenTheyExist() throws IOException {
         final GitHubPackage listed = PackageFixtures.registryPackage();
-        when(github
-                        .packages()
-                        .listPackagesForAuthenticatedUser(
-                                io.github.piotr_janczukowicz.github.api.packages.GitHubListPackagesFilter.of(TYPE))
-                        .stream())
+        when(github.packages().listPackagesForAuthenticatedUser(GitHubListPackagesFilter.of(TYPE)).stream())
                 .thenReturn(Stream.of(listed));
 
         final List<GitHubPackage> packages = sut.packages(TYPE).toList();

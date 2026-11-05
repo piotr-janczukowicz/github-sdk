@@ -127,6 +127,24 @@ class RepositoryUpdateTest {
     }
 
     @Test
+    void name_shouldThrowNullPointerException_whenNameIsNull() {
+        final RepositoryUpdate update = repository.update();
+
+        final Throwable thrown = catchThrowable(() -> update.name(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("name");
+    }
+
+    @Test
+    void defaultBranch_shouldThrowNullPointerException_whenBranchIsNull() {
+        final RepositoryUpdate update = repository.update();
+
+        final Throwable thrown = catchThrowable(() -> update.defaultBranch(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("defaultBranch");
+    }
+
+    @Test
     void description_shouldThrowNullPointerException_whenDescriptionIsNull() {
         final RepositoryUpdate update = repository.update();
 

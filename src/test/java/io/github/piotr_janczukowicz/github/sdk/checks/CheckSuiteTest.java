@@ -48,15 +48,30 @@ class CheckSuiteTest {
     }
 
     @Test
-    void accessors_shouldBeEmptyOrFalse_whenTheSuiteHasNotCompleted() {
-        final CheckSuite running = new CheckSuite(
-                repository, ExtrasFixtures.checkSuiteWith(null, GitHubCheckSuiteStatus.IN_PROGRESS, null));
+    void headBranch_shouldBeEmpty_whenGitHubReportsNone() {
+        final CheckSuite running = runningSuite();
 
-        assertSoftly(softly -> {
-            softly.assertThat(running.headBranch()).isEmpty();
-            softly.assertThat(running.conclusion()).isEmpty();
-            softly.assertThat(running.isSuccessful()).isFalse();
-        });
+        final Optional<String> headBranch = running.headBranch();
+
+        assertThat(headBranch).isEmpty();
+    }
+
+    @Test
+    void conclusion_shouldBeEmpty_whenTheSuiteHasNotCompleted() {
+        final CheckSuite running = runningSuite();
+
+        final Optional<GitHubCheckSuiteConclusion> conclusion = running.conclusion();
+
+        assertThat(conclusion).isEmpty();
+    }
+
+    @Test
+    void isSuccessful_shouldBeFalse_whenTheSuiteHasNotCompleted() {
+        final CheckSuite running = runningSuite();
+
+        final boolean successful = running.isSuccessful();
+
+        assertThat(successful).isFalse();
     }
 
     @Test
@@ -85,6 +100,11 @@ class CheckSuiteTest {
         final Throwable thrown = catchThrowable(sut::refresh);
 
         assertThat(thrown).isInstanceOf(IllegalStateException.class).hasMessageContaining("is gone");
+    }
+
+    private CheckSuite runningSuite() {
+        return new CheckSuite(
+                repository, ExtrasFixtures.checkSuiteWith(null, GitHubCheckSuiteStatus.IN_PROGRESS, null));
     }
 
     @Test

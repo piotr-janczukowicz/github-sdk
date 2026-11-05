@@ -142,6 +142,13 @@ class RepositoryFilesTest {
     }
 
     @Test
+    void file_shouldThrowIllegalArgumentException_whenRefIsBlank() {
+        final Throwable thrown = catchThrowable(() -> sut.file(PATH, " "));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("ref");
+    }
+
+    @Test
     @SuppressWarnings("unchecked")
     void writeFile_shouldCreateTheFileWithoutASha_whenItDoesNotExist() throws IOException {
         when(github.repositories()
@@ -214,5 +221,14 @@ class RepositoryFilesTest {
         final Throwable thrown = catchThrowable(() -> sut.writeFile(PATH, " ", content));
 
         assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("message");
+    }
+
+    @Test
+    void writeFile_shouldThrowIllegalArgumentException_whenBranchIsBlank() {
+        final byte[] content = "Hello".getBytes(StandardCharsets.UTF_8);
+
+        final Throwable thrown = catchThrowable(() -> sut.writeFile(PATH, "Add the file", content, " "));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("branch");
     }
 }

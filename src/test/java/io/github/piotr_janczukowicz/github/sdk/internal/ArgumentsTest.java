@@ -46,6 +46,34 @@ class ArgumentsTest {
     }
 
     @Test
+    void requireNotBlankValues_shouldThrowNullPointerException_whenTheArrayIsNull() {
+        final Throwable thrown = catchThrowable(() -> Arguments.requireNotBlankValues((String[]) null, "names"));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("names");
+    }
+
+    @Test
+    void requireNotBlankValues_shouldThrowNullPointerException_whenTheListIsNull() {
+        final Throwable thrown = catchThrowable(() -> Arguments.requireNotBlankValues((List<String>) null, "labels"));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("labels");
+    }
+
+    @Test
+    void requireSafePath_shouldThrowNullPointerException_whenTheValueIsNull() {
+        final Throwable thrown = catchThrowable(() -> Arguments.requireSafePath(null, "ref"));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("ref");
+    }
+
+    @Test
+    void requireFilePath_shouldThrowNullPointerException_whenThePathIsNull() {
+        final Throwable thrown = catchThrowable(() -> Arguments.requireFilePath(null, "path"));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("path");
+    }
+
+    @Test
     void constructor_shouldThrowUnsupportedOperationException_whenCalled() throws ReflectiveOperationException {
         final Constructor<Arguments> constructor = Arguments.class.getDeclaredConstructor();
         constructor.setAccessible(true);

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositorySubscription;
+import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
 import io.github.piotr_janczukowicz.github.client.exception.GitHubForbiddenException;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
 import io.github.piotr_janczukowicz.github.sdk.User;
@@ -80,9 +81,9 @@ class ActivitySmokeIT {
     void watchers_shouldBeListed_whenTheRepositoryHasWatchers() throws IOException {
         final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
 
-        final long count = repository.watchers().limit(5).count();
+        final List<GitHubSimpleUser> watchers = repository.watchers().limit(5).toList();
 
-        assertThat(count).isNotNegative();
+        assertThat(watchers).allSatisfy(watcher -> assertThat(watcher.login()).isNotBlank());
     }
 
     @Test

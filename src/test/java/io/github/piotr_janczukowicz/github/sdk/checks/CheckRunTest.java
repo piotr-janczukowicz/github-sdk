@@ -59,34 +59,62 @@ class CheckRunTest {
     }
 
     @Test
-    void optionalAccessors_shouldBeEmpty_whenTheCheckHasNotCompleted() {
-        final GitHubCheckRun running = GitHubCheckRunBuilder.builder(response)
-                .status(GitHubCheckRunStatus.IN_PROGRESS)
-                .conclusion(null)
-                .detailsUrl(null)
-                .build();
-        final CheckRun checkRun = new CheckRun(repository, running);
+    void conclusion_shouldBeEmpty_whenTheCheckHasNotCompleted() {
+        final CheckRun running = runningCheckRun();
 
-        assertSoftly(softly -> {
-            softly.assertThat(checkRun.conclusion()).isEmpty();
-            softly.assertThat(checkRun.detailsUrl()).isEmpty();
-        });
+        final Optional<GitHubCheckRunConclusion> conclusion = running.conclusion();
+
+        assertThat(conclusion).isEmpty();
     }
 
     @Test
-    void outcomeChecks_shouldMatchStatusAndConclusion_whenCalled() {
-        final CheckRun passed = sut;
-        final CheckRun failed = checkRun(GitHubCheckRunStatus.COMPLETED, GitHubCheckRunConclusion.FAILURE);
+    void detailsUrl_shouldBeEmpty_whenTheCheckHasNoDetails() {
+        final CheckRun running = runningCheckRun();
+
+        final Optional<String> detailsUrl = running.detailsUrl();
+
+        assertThat(detailsUrl).isEmpty();
+    }
+
+    @Test
+    void isCompleted_shouldBeTrue_whenStatusIsCompleted() {
+        final boolean completed = sut.isCompleted();
+
+        assertThat(completed).isTrue();
+    }
+
+    @Test
+    void isCompleted_shouldBeFalse_whenStatusIsInProgress() {
         final CheckRun running = checkRun(GitHubCheckRunStatus.IN_PROGRESS, null);
 
-        assertSoftly(softly -> {
-            softly.assertThat(passed.isCompleted()).isTrue();
-            softly.assertThat(passed.isSuccessful()).isTrue();
-            softly.assertThat(failed.isCompleted()).isTrue();
-            softly.assertThat(failed.isSuccessful()).isFalse();
-            softly.assertThat(running.isCompleted()).isFalse();
-            softly.assertThat(running.isSuccessful()).isFalse();
-        });
+        final boolean completed = running.isCompleted();
+
+        assertThat(completed).isFalse();
+    }
+
+    @Test
+    void isSuccessful_shouldBeTrue_whenTheConclusionIsSuccess() {
+        final boolean successful = sut.isSuccessful();
+
+        assertThat(successful).isTrue();
+    }
+
+    @Test
+    void isSuccessful_shouldBeFalse_whenTheConclusionIsFailure() {
+        final CheckRun failed = checkRun(GitHubCheckRunStatus.COMPLETED, GitHubCheckRunConclusion.FAILURE);
+
+        final boolean successful = failed.isSuccessful();
+
+        assertThat(successful).isFalse();
+    }
+
+    @Test
+    void isSuccessful_shouldBeFalse_whenTheCheckIsStillRunning() {
+        final CheckRun running = checkRun(GitHubCheckRunStatus.IN_PROGRESS, null);
+
+        final boolean successful = running.isSuccessful();
+
+        assertThat(successful).isFalse();
     }
 
     @Test
@@ -122,6 +150,15 @@ class CheckRunTest {
         final Throwable thrown = catchThrowable(sut::refresh);
 
         assertThat(thrown).isInstanceOf(IllegalStateException.class).hasMessageContaining("is gone");
+    }
+
+    private CheckRun runningCheckRun() {
+        final GitHubCheckRun running = GitHubCheckRunBuilder.builder(response)
+                .status(GitHubCheckRunStatus.IN_PROGRESS)
+                .conclusion(null)
+                .detailsUrl(null)
+                .build();
+        return new CheckRun(repository, running);
     }
 
     private CheckRun checkRun(final GitHubCheckRunStatus status, final GitHubCheckRunConclusion conclusion) {

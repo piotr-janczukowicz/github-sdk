@@ -30,25 +30,63 @@ class RefTest {
     private static final String NAME = "hello-world";
 
     private final GitHub github = mock(GitHub.class, RETURNS_DEEP_STUBS);
+    private final GitHubGitRefsApi refs = github.gitDatabase().refs();
     private final Repository repository = GitHubSdk.of(github).repository(OWNER, NAME);
     private final GitHubGitRef response = GitFixtures.ref();
     private final Ref sut = new Ref(repository, response);
 
     @Test
-    void accessors_shouldExposeTheResponse_whenRefIsLoaded() {
-        assertSoftly(softly -> {
-            softly.assertThat(sut.repository()).isSameAs(repository);
-            softly.assertThat(sut.name()).isEqualTo("refs/heads/main");
-            softly.assertThat(sut.sha()).isEqualTo(GitFixtures.SHA);
-            softly.assertThat(sut.type()).isEqualTo("commit");
-            softly.assertThat(sut.response()).isSameAs(response);
-        });
+    void constructor_shouldThrowNullPointerException_whenRepositoryIsNull() {
+        final Throwable thrown = catchThrowable(() -> new Ref(null, response));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("repository");
+    }
+
+    @Test
+    void constructor_shouldThrowNullPointerException_whenResponseIsNull() {
+        final Throwable thrown = catchThrowable(() -> new Ref(repository, null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("response");
+    }
+
+    @Test
+    void repository_shouldReturnTheRepository_whenRefIsLoaded() {
+        final Repository result = sut.repository();
+
+        assertThat(result).isSameAs(repository);
+    }
+
+    @Test
+    void name_shouldReturnTheFullName_whenRefIsLoaded() {
+        final String result = sut.name();
+
+        assertThat(result).isEqualTo("refs/heads/main");
+    }
+
+    @Test
+    void sha_shouldReturnTheSha_whenRefIsLoaded() {
+        final String result = sut.sha();
+
+        assertThat(result).isEqualTo(GitFixtures.SHA);
+    }
+
+    @Test
+    void type_shouldReturnTheObjectType_whenRefIsLoaded() {
+        final String result = sut.type();
+
+        assertThat(result).isEqualTo("commit");
+    }
+
+    @Test
+    void response_shouldReturnTheResponse_whenRefIsLoaded() {
+        final GitHubGitRef result = sut.response();
+
+        assertThat(result).isSameAs(response);
     }
 
     @Test
     void refresh_shouldReturnTheReloadedRef_whenItExists() throws IOException {
         final GitHubGitRef reloaded = GitFixtures.refWith("refs/heads/main", GitFixtures.NEW_SHA);
-        final GitHubGitRefsApi refs = github.gitDatabase().refs();
         doReturn(Optional.of(reloaded)).when(refs).getRef(OWNER, NAME, "heads/main");
 
         final Ref result = sut.refresh();
@@ -58,7 +96,6 @@ class RefTest {
 
     @Test
     void refresh_shouldThrowIllegalStateException_whenTheRefIsGone() throws IOException {
-        final GitHubGitRefsApi refs = github.gitDatabase().refs();
         doReturn(Optional.empty()).when(refs).getRef(OWNER, NAME, "heads/main");
 
         final Throwable thrown = catchThrowable(sut::refresh);
@@ -69,7 +106,6 @@ class RefTest {
     @Test
     void update_shouldMoveWithoutForce_whenOnlyTheShaIsGiven() throws IOException {
         final GitHubGitRef moved = GitFixtures.refWith("refs/heads/main", GitFixtures.NEW_SHA);
-        final GitHubGitRefsApi refs = github.gitDatabase().refs();
         doReturn(moved).when(refs).updateRef(eq(OWNER), eq(NAME), eq("heads/main"), any(GitHubUpdateRefPayload.class));
         final ArgumentCaptor<GitHubUpdateRefPayload> payload = ArgumentCaptor.forClass(GitHubUpdateRefPayload.class);
 
@@ -86,7 +122,6 @@ class RefTest {
 
     @Test
     void update_shouldForce_whenAskedTo() throws IOException {
-        final GitHubGitRefsApi refs = github.gitDatabase().refs();
         doReturn(response).when(refs).updateRef(eq(OWNER), eq(NAME), eq("heads/main"), any());
         final ArgumentCaptor<GitHubUpdateRefPayload> payload = ArgumentCaptor.forClass(GitHubUpdateRefPayload.class);
 
@@ -104,8 +139,14 @@ class RefTest {
     }
 
     @Test
+    void update_shouldThrowNullPointerException_whenShaIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.update(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("sha");
+    }
+
+    @Test
     void delete_shouldDeleteTheRef_whenCalled() throws IOException {
-        final GitHubGitRefsApi refs = github.gitDatabase().refs();
 
         sut.delete();
 
@@ -115,7 +156,6 @@ class RefTest {
     @Test
     void delete_shouldUseTheNameAsItIs_whenItHasNoRefsPrefix() throws IOException {
         final Ref unprefixed = new Ref(repository, GitFixtures.refWith("heads/feature", GitFixtures.SHA));
-        final GitHubGitRefsApi refs = github.gitDatabase().refs();
 
         unprefixed.delete();
 

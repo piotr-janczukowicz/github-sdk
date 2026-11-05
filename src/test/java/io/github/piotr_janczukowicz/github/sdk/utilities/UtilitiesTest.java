@@ -145,6 +145,23 @@ class UtilitiesTest {
     }
 
     @Test
+    void gitignoreTemplate_shouldReturnEmpty_whenGitHubHasNoTemplate() throws IOException {
+        final GitHubGitignoreApi api = github.gitignore();
+        doReturn(Optional.empty()).when(api).get("Missing");
+
+        final Optional<GitHubGitignoreTemplate> found = sut.gitignoreTemplate("Missing");
+
+        assertThat(found).isEmpty();
+    }
+
+    @Test
+    void gitignoreTemplate_shouldThrowNullPointerException_whenNameIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.gitignoreTemplate(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
     void gitignoreTemplate_shouldThrowIllegalArgumentException_whenNameIsBlank() {
         final Throwable thrown = catchThrowable(() -> sut.gitignoreTemplate(" "));
 

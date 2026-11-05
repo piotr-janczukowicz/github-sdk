@@ -2,6 +2,7 @@ package io.github.piotr_janczukowicz.github.sdk.advisories;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -41,10 +42,12 @@ class RepositoryAdvisoriesTest {
 
         final List<Advisory> advisories = sut.all().toList();
 
-        assertThat(advisories).singleElement().satisfies(advisory -> {
-            assertThat(advisory.response()).isSameAs(listed);
-            assertThat(advisory.repository()).isSameAs(repository);
-        });
+        assertThat(advisories)
+                .singleElement()
+                .satisfies(advisory -> assertSoftly(softly -> {
+                    softly.assertThat(advisory.response()).isSameAs(listed);
+                    softly.assertThat(advisory.repository()).isSameAs(repository);
+                }));
     }
 
     @Test
@@ -54,8 +57,27 @@ class RepositoryAdvisoriesTest {
 
         final Optional<Advisory> found = sut.find(GHSA);
 
-        assertThat(found).isPresent();
-        assertThat(found.orElseThrow().response()).isSameAs(loaded);
+        assertThat(found)
+                .hasValueSatisfying(advisory -> assertSoftly(softly -> {
+                    softly.assertThat(advisory.response()).isSameAs(loaded);
+                    softly.assertThat(advisory.repository()).isSameAs(repository);
+                }));
+    }
+
+    @Test
+    void find_shouldBeEmpty_whenGitHubHasNoSuchAdvisory() throws IOException {
+        when(api.getRepositoryAdvisory(OWNER, NAME, GHSA)).thenReturn(Optional.empty());
+
+        final Optional<Advisory> found = sut.find(GHSA);
+
+        assertThat(found).isEmpty();
+    }
+
+    @Test
+    void find_shouldThrowNullPointerException_whenIdIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.find(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("ghsaId");
     }
 
     @Test

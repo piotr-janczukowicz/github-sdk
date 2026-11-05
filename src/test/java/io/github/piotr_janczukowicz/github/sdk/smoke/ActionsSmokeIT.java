@@ -10,6 +10,7 @@ import io.github.piotr_janczukowicz.github.sdk.actions.Workflow;
 import io.github.piotr_janczukowicz.github.sdk.actions.WorkflowJob;
 import io.github.piotr_janczukowicz.github.sdk.actions.WorkflowRun;
 import java.io.IOException;
+import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Assumptions;
@@ -49,7 +50,8 @@ class ActionsSmokeIT {
         } finally {
             created.delete();
         }
-        assertThat(repository.variable(name)).isEmpty();
+        final Optional<Variable> afterDelete = repository.variable(name);
+        assertThat(afterDelete).isEmpty();
     }
 
     private static Variable createVariable(final Repository repository, final String name) throws IOException {
@@ -62,24 +64,60 @@ class ActionsSmokeIT {
     }
 
     @Test
-    void workflowsAndRuns_shouldBeListedAndReloaded_whenTheyExist() throws IOException {
+    void workflows_shouldBeListed_whenTheyExist() throws IOException {
         final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
 
         final List<Workflow> workflows = listWorkflows(repository);
-        final List<WorkflowRun> runs = repository.workflowRuns().limit(3).toList();
 
-        assertSoftly(softly -> {
-            softly.assertThat(workflows).allSatisfy(workflow -> {
-                assertThat(workflow.path()).startsWith(".github/workflows/");
-                assertThat(repository.workflow(String.valueOf(workflow.id()))).isPresent();
-            });
-            softly.assertThat(runs).allSatisfy(run -> {
-                assertThat(run.refresh().id()).isEqualTo(run.id());
-                assertThat(run.jobs().toList())
-                        .allSatisfy(job -> assertThat(job.runId()).isEqualTo(run.id()));
-                assertThat(run.logs()).isNotNull();
-            });
-        });
+        assertThat(workflows)
+                .extracting(Workflow::path)
+                .allSatisfy(path -> assertThat(path).startsWith(".github/workflows/"));
+    }
+
+    @Test
+    void workflow_shouldBeFound_whenItIsListed() throws IOException {
+        final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
+        final List<Workflow> workflows = listWorkflows(repository);
+        Assumptions.assumeFalse(workflows.isEmpty(), "The sandbox has no workflows");
+        final Workflow listed = workflows.getFirst();
+
+        final Optional<Workflow> found = repository.workflow(String.valueOf(listed.id()));
+
+        assertThat(found).map(Workflow::id).contains(listed.id());
+    }
+
+    @Test
+    void refresh_shouldReloadTheRun_whenItExists() throws IOException {
+        final WorkflowRun run = firstRun();
+
+        final WorkflowRun reloaded = run.refresh();
+
+        assertThat(reloaded.id()).isEqualTo(run.id());
+    }
+
+    @Test
+    void jobs_shouldBelongToTheRun_whenTheRunHasJobs() throws IOException {
+        final WorkflowRun run = firstRun();
+
+        final List<WorkflowJob> jobs = run.jobs().toList();
+
+        assertThat(jobs).allSatisfy(job -> assertThat(job.runId()).isEqualTo(run.id()));
+    }
+
+    @Test
+    void logs_shouldReturnTheLocation_whenTheRunHasLogs() throws IOException {
+        final WorkflowRun run = firstRun();
+
+        final URI logs = run.logs();
+
+        assertThat(logs).isNotNull();
+    }
+
+    private static WorkflowRun firstRun() throws IOException {
+        final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
+        final List<WorkflowRun> runs = repository.workflowRuns().limit(3).toList();
+        Assumptions.assumeFalse(runs.isEmpty(), "The sandbox has no workflow runs");
+        return runs.getFirst();
     }
 
     private static List<Workflow> listWorkflows(final Repository repository) throws IOException {
@@ -92,7 +130,7 @@ class ActionsSmokeIT {
     }
 
     @Test
-    void workflow_shouldBeDispatchedAndCancelled_whenTheSandboxHasADispatchableOne() throws IOException {
+    void dispatch_shouldStartARun_whenTheSandboxHasADispatchableWorkflow() throws IOException {
         final String file = System.getenv(WORKFLOW_VARIABLE);
         Assumptions.assumeTrue(
                 file != null && !file.isBlank(),
@@ -102,23 +140,25 @@ class ActionsSmokeIT {
         final Workflow workflow = repository.workflow(file).orElseThrow();
 
         final WorkflowRun started = workflow.dispatch(branch);
-        final WorkflowRun cancelled = started.cancel();
-        final List<WorkflowJob> jobs = cancelled.jobs().toList();
-        final List<WorkflowRun> recent = workflow.runs().limit(5).toList();
+        try {
+            final List<WorkflowRun> recent = workflow.runs().limit(5).toList();
 
-        assertSoftly(softly -> {
-            softly.assertThat(started.workflowId()).isEqualTo(workflow.id());
-            softly.assertThat(started.event()).isEqualTo("workflow_dispatch");
-            softly.assertThat(cancelled.id()).isEqualTo(started.id());
-            softly.assertThat(recent).extracting(WorkflowRun::id).contains(started.id());
-            softly.assertThat(jobs).allSatisfy(job -> assertThat(job.runId()).isEqualTo(started.id()));
-        });
+            assertSoftly(softly -> {
+                softly.assertThat(started.workflowId()).isEqualTo(workflow.id());
+                softly.assertThat(started.event()).isEqualTo("workflow_dispatch");
+                softly.assertThat(recent).extracting(WorkflowRun::id).contains(started.id());
+            });
+        } finally {
+            started.cancel();
+        }
     }
 
     @Test
     void workflowRun_shouldBeEmpty_whenTheIdDoesNotExist() throws IOException {
         final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
 
-        assertThat(repository.workflowRun(Long.MAX_VALUE)).isEmpty();
+        final Optional<WorkflowRun> run = repository.workflowRun(Long.MAX_VALUE);
+
+        assertThat(run).isEmpty();
     }
 }

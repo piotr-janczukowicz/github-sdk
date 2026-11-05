@@ -1,6 +1,7 @@
 package io.github.piotr_janczukowicz.github.sdk.smoke;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 import io.github.piotr_janczukowicz.github.api.search.GitHubCommitSearchResultItem;
 import io.github.piotr_janczukowicz.github.sdk.RateLimit;
@@ -32,9 +33,11 @@ class SearchSmokeIT {
                 .limit(3)
                 .toList();
 
-        assertThat(issues).isNotEmpty().hasSizeLessThanOrEqualTo(3);
-        assertThat(issues)
-                .allSatisfy(issue -> assertThat(issue.repository().name()).isEqualToIgnoringCase(ENV.repo()));
+        assertSoftly(softly -> {
+            softly.assertThat(issues).isNotEmpty().hasSizeLessThanOrEqualTo(3);
+            softly.assertThat(issues)
+                    .allSatisfy(issue -> assertThat(issue.repository().name()).isEqualToIgnoringCase(ENV.repo()));
+        });
     }
 
     @Test
@@ -53,8 +56,10 @@ class SearchSmokeIT {
         final List<User> users =
                 ENV.sdk().search().users("github in:login type:org").limit(3).toList();
 
-        assertThat(users).isNotEmpty();
-        assertThat(users).allSatisfy(user -> assertThat(user.login()).isNotBlank());
+        assertSoftly(softly -> {
+            softly.assertThat(users).isNotEmpty();
+            softly.assertThat(users).allSatisfy(user -> assertThat(user.login()).isNotBlank());
+        });
     }
 
     @Test
@@ -80,13 +85,14 @@ class SearchSmokeIT {
     }
 
     @Test
-    void rateLimit_shouldReportTheCoreResource_whenGitHubReportsIt() throws IOException {
+    void rateLimit_shouldReportLimitRemainingAndReset_whenGitHubReportsIt() throws IOException {
         final Optional<RateLimit> rateLimit = ENV.sdk().rateLimit();
 
-        assertThat(rateLimit).isPresent();
-        assertThat(rateLimit.orElseThrow().limit()).isPositive();
-        assertThat(rateLimit.orElseThrow().remaining())
-                .isBetween(0, rateLimit.orElseThrow().limit());
-        assertThat(rateLimit.orElseThrow().resetAt()).isAfter(Instant.now().minusSeconds(3600));
+        assertThat(rateLimit)
+                .hasValueSatisfying(limit -> assertSoftly(softly -> {
+                    softly.assertThat(limit.limit()).isPositive();
+                    softly.assertThat(limit.remaining()).isBetween(0, limit.limit());
+                    softly.assertThat(limit.resetAt()).isAfter(Instant.now().minusSeconds(3600));
+                }));
     }
 }

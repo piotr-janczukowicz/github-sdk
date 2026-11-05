@@ -25,6 +25,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 
 @UnitTest
@@ -62,11 +64,15 @@ class ReleaseReactionsTest {
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("content");
     }
 
-    @Test
-    void react_shouldThrowIllegalArgumentException_whenTheReleaseDoesNotAcceptTheEmoji() {
-        final Throwable thrown = catchThrowable(() -> sut.react(GitHubReactionContent.MINUS_ONE));
+    @ParameterizedTest
+    @EnumSource(
+            value = GitHubReactionContent.class,
+            names = {"MINUS_ONE", "CONFUSED"})
+    void react_shouldThrowIllegalArgumentException_whenTheReleaseDoesNotAcceptTheEmoji(
+            final GitHubReactionContent content) {
+        final Throwable thrown = catchThrowable(() -> sut.react(content));
 
-        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("MINUS_ONE");
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining(content.name());
     }
 
     @Test
@@ -82,7 +88,7 @@ class ReleaseReactionsTest {
     }
 
     @Test
-    void reactionDelete_shouldDeleteFromTheParent_whenCalled() throws IOException {
+    void reactions_shouldDeleteFromTheParent_whenAReactionIsDeleted() throws IOException {
         when(github.reactions().listForRelease(OWNER, NAME, ID).stream())
                 .thenReturn(Stream.of(ReactionsFixtures.reaction()));
         final Reaction reaction = sut.reactions().toList().getFirst();

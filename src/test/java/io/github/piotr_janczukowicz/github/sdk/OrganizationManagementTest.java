@@ -79,6 +79,16 @@ class OrganizationManagementTest {
     }
 
     @Test
+    void membership_shouldBeEmpty_whenTheUserHasNone() throws IOException {
+        final GitHubOrganizationsMembersApi api = github.organizations().members();
+        doReturn(Optional.empty()).when(api).getMembership(ORG, "hubot");
+
+        final Optional<GitHubOrgMembership> found = sut.membership("hubot");
+
+        assertThat(found).isEmpty();
+    }
+
+    @Test
     void changeMembership_shouldSendTheRoleAndReturnTheMembership_whenCalled() throws IOException {
         final GitHubOrgMembership membership = mock(GitHubOrgMembership.class);
         final GitHubOrganizationsMembersApi api = github.organizations().members();
@@ -196,10 +206,12 @@ class OrganizationManagementTest {
 
         final List<OrganizationInvitation> invitations = sut.invitations().toList();
 
-        assertThat(invitations).singleElement().satisfies(invitation -> {
-            assertThat(invitation.response()).isSameAs(listed);
-            assertThat(invitation.organization()).isEqualTo(ORG);
-        });
+        assertThat(invitations)
+                .singleElement()
+                .satisfies(invitation -> assertSoftly(softly -> {
+                    softly.assertThat(invitation.response()).isSameAs(listed);
+                    softly.assertThat(invitation.organization()).isEqualTo(ORG);
+                }));
     }
 
     @Test
@@ -242,20 +254,27 @@ class OrganizationManagementTest {
 
         final List<OrganizationWebhook> webhooks = sut.webhooks().toList();
 
-        assertThat(webhooks).singleElement().satisfies(webhook -> {
-            assertThat(webhook.response()).isSameAs(listed);
-            assertThat(webhook.organization()).isEqualTo(ORG);
-        });
+        assertThat(webhooks)
+                .singleElement()
+                .satisfies(webhook -> assertSoftly(softly -> {
+                    softly.assertThat(webhook.response()).isSameAs(listed);
+                    softly.assertThat(webhook.organization()).isEqualTo(ORG);
+                }));
     }
 
     @Test
     void webhook_shouldReturnTheWebhook_whenGitHubHasIt() throws IOException {
         final GitHubOrganizationsWebhooksApi api = github.organizations().webhooks();
-        doReturn(Optional.of(OrganizationFixtures.hook())).when(api).getWebhook(ORG, OrganizationFixtures.HOOK_ID);
+        final GitHubOrgHook hook = OrganizationFixtures.hook();
+        doReturn(Optional.of(hook)).when(api).getWebhook(ORG, OrganizationFixtures.HOOK_ID);
 
         final Optional<OrganizationWebhook> found = sut.webhook(OrganizationFixtures.HOOK_ID);
 
-        assertThat(found).isPresent();
+        assertThat(found)
+                .hasValueSatisfying(webhook -> assertSoftly(softly -> {
+                    softly.assertThat(webhook.response()).isSameAs(hook);
+                    softly.assertThat(webhook.organization()).isEqualTo(ORG);
+                }));
     }
 
     @Test
@@ -294,10 +313,12 @@ class OrganizationManagementTest {
 
         final List<OrganizationVariable> variables = sut.variables().toList();
 
-        assertThat(variables).singleElement().satisfies(variable -> {
-            assertThat(variable.name()).isEqualTo("DEPLOY_ENV");
-            assertThat(variable.organization()).isEqualTo(ORG);
-        });
+        assertThat(variables)
+                .singleElement()
+                .satisfies(variable -> assertSoftly(softly -> {
+                    softly.assertThat(variable.name()).isEqualTo("DEPLOY_ENV");
+                    softly.assertThat(variable.organization()).isEqualTo(ORG);
+                }));
     }
 
     @Test
@@ -307,7 +328,11 @@ class OrganizationManagementTest {
 
         final Optional<OrganizationVariable> found = sut.variable("DEPLOY_ENV");
 
-        assertThat(found).isPresent();
+        assertThat(found)
+                .hasValueSatisfying(variable -> assertSoftly(softly -> {
+                    softly.assertThat(variable.name()).isEqualTo("DEPLOY_ENV");
+                    softly.assertThat(variable.organization()).isEqualTo(ORG);
+                }));
     }
 
     @Test

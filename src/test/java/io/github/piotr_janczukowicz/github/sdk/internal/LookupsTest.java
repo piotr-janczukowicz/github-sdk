@@ -39,10 +39,13 @@ class LookupsTest {
 
     @Test
     void find_shouldThrowUncheckedIoException_whenTheLookupFails() {
-        final Throwable thrown = catchThrowable(() -> Lookups.find(() -> {
-            throw new IOException("transport failed");
-        }));
+        final IOException failure = new IOException("transport failed");
+        final Lookups.IoLookup<String> lookup = () -> {
+            throw failure;
+        };
 
-        assertThat(thrown).isInstanceOf(UncheckedIOException.class);
+        final Throwable thrown = catchThrowable(() -> Lookups.find(lookup));
+
+        assertThat(thrown).isInstanceOf(UncheckedIOException.class).hasCause(failure);
     }
 }

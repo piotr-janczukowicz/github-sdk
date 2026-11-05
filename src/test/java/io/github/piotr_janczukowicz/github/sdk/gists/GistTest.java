@@ -13,12 +13,14 @@ import static org.mockito.Mockito.when;
 
 import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.gists.GitHubBaseGist;
+import io.github.piotr_janczukowicz.github.api.gists.GitHubBaseGistBuilder;
 import io.github.piotr_janczukowicz.github.api.gists.GitHubCreateCommentPayload;
 import io.github.piotr_janczukowicz.github.api.gists.GitHubGistApi;
 import io.github.piotr_janczukowicz.github.api.gists.GitHubGistComment;
 import io.github.piotr_janczukowicz.github.api.gists.GitHubGistCommit;
 import io.github.piotr_janczukowicz.github.api.gists.GitHubGistSimple;
 import io.github.piotr_janczukowicz.github.api.gists.GitHubGistSimpleBuilder;
+import io.github.piotr_janczukowicz.github.api.gists.GitHubGistSimpleFile;
 import io.github.piotr_janczukowicz.github.api.gists.GitHubGistsCommentsApi;
 import io.github.piotr_janczukowicz.github.sdk.GitHubSdk;
 import io.github.piotr_janczukowicz.github.sdk.fixtures.GistFixtures;
@@ -41,31 +43,97 @@ class GistTest {
     private final Gist sut = new Gist(sdk, response);
 
     @Test
-    void accessors_shouldExposeTheResponse_whenGistIsLoaded() {
-        assertSoftly(softly -> {
-            softly.assertThat(sut.id()).isEqualTo(ID);
-            softly.assertThat(sut.description()).hasValue("A greeting");
-            softly.assertThat(sut.isPublic()).isTrue();
-            softly.assertThat(sut.htmlUrl())
-                    .hasValueSatisfying(url -> assertThat(url).endsWith(ID));
-            softly.assertThat(sut.owner()).hasValue("octocat");
-            softly.assertThat(sut.files()).containsOnlyKeys(GistFixtures.FILE);
-            softly.assertThat(sut.content(GistFixtures.FILE)).hasValue("hello");
-            softly.assertThat(sut.response()).isSameAs(response);
-        });
+    void id_shouldReturnTheId_whenGistIsLoaded() {
+        final String id = sut.id();
+
+        assertThat(id).isEqualTo(ID);
     }
 
     @Test
-    void accessors_shouldBeEmptyOrNeutral_whenGitHubReportsNothing() {
+    void description_shouldReturnTheDescription_whenGistHasOne() {
+        final Optional<String> description = sut.description();
+
+        assertThat(description).hasValue("A greeting");
+    }
+
+    @Test
+    void description_shouldBeEmpty_whenGitHubReportsNone() {
         final Gist bare = new Gist(sdk, GistFixtures.bareGist());
 
-        assertSoftly(softly -> {
-            softly.assertThat(bare.description()).isEmpty();
-            softly.assertThat(bare.isPublic()).isFalse();
-            softly.assertThat(bare.owner()).isEmpty();
-            softly.assertThat(bare.files()).isEmpty();
-            softly.assertThat(bare.content(GistFixtures.FILE)).isEmpty();
-        });
+        final Optional<String> description = bare.description();
+
+        assertThat(description).isEmpty();
+    }
+
+    @Test
+    void isPublic_shouldBeTrue_whenGistIsPublic() {
+        final boolean isPublic = sut.isPublic();
+
+        assertThat(isPublic).isTrue();
+    }
+
+    @Test
+    void isPublic_shouldBeFalse_whenGitHubReportsNothing() {
+        final Gist bare = new Gist(sdk, GistFixtures.bareGist());
+
+        final boolean isPublic = bare.isPublic();
+
+        assertThat(isPublic).isFalse();
+    }
+
+    @Test
+    void htmlUrl_shouldReturnTheUrl_whenGistIsLoaded() {
+        final Optional<String> htmlUrl = sut.htmlUrl();
+
+        assertThat(htmlUrl).hasValue("https://gist.github.com/" + ID);
+    }
+
+    @Test
+    void owner_shouldReturnTheLogin_whenGistHasOwner() {
+        final Optional<String> owner = sut.owner();
+
+        assertThat(owner).hasValue("octocat");
+    }
+
+    @Test
+    void owner_shouldBeEmpty_whenGitHubReportsNone() {
+        final Gist bare = new Gist(sdk, GistFixtures.bareGist());
+
+        final Optional<String> owner = bare.owner();
+
+        assertThat(owner).isEmpty();
+    }
+
+    @Test
+    void files_shouldReturnTheFiles_whenGistIsLoaded() {
+        final Map<String, GitHubGistSimpleFile> files = sut.files();
+
+        assertThat(files).containsOnlyKeys(GistFixtures.FILE);
+    }
+
+    @Test
+    void files_shouldBeEmpty_whenGitHubReportsNone() {
+        final Gist bare = new Gist(sdk, GistFixtures.bareGist());
+
+        final Map<String, GitHubGistSimpleFile> files = bare.files();
+
+        assertThat(files).isEmpty();
+    }
+
+    @Test
+    void content_shouldReturnTheContent_whenTheFileExists() {
+        final Optional<String> content = sut.content(GistFixtures.FILE);
+
+        assertThat(content).hasValue("hello");
+    }
+
+    @Test
+    void content_shouldBeEmpty_whenTheGistHasNoSuchFile() {
+        final Gist bare = new Gist(sdk, GistFixtures.bareGist());
+
+        final Optional<String> content = bare.content(GistFixtures.FILE);
+
+        assertThat(content).isEmpty();
     }
 
     @Test
@@ -73,7 +141,40 @@ class GistTest {
         final Gist cut =
                 new Gist(sdk, GistFixtures.gistWithFiles(Map.of(GistFixtures.FILE, GistFixtures.file("hel", true))));
 
-        assertThat(cut.content(GistFixtures.FILE)).isEmpty();
+        final Optional<String> content = cut.content(GistFixtures.FILE);
+
+        assertThat(content).isEmpty();
+    }
+
+    @Test
+    void response_shouldReturnTheResponse_whenGistIsLoaded() {
+        final GitHubGistSimple result = sut.response();
+
+        assertThat(result).isSameAs(response);
+    }
+
+    @Test
+    void constructor_shouldThrowNullPointerException_whenSdkIsNull() {
+        final Throwable thrown = catchThrowable(() -> new Gist(null, response));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("sdk");
+    }
+
+    @Test
+    void constructor_shouldThrowNullPointerException_whenResponseIsNull() {
+        final Throwable thrown = catchThrowable(() -> new Gist(sdk, null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("response");
+    }
+
+    @Test
+    void constructor_shouldThrowNullPointerException_whenResponseHasNoId() {
+        final GitHubGistSimple withoutId =
+                GitHubGistSimpleBuilder.builder(response).id(null).build();
+
+        final Throwable thrown = catchThrowable(() -> new Gist(sdk, withoutId));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("id");
     }
 
     @Test
@@ -137,8 +238,9 @@ class GistTest {
 
     @Test
     void fork_shouldReturnTheLoadedFork_whenCalled() throws IOException {
-        final GitHubBaseGist forked = mock(GitHubBaseGist.class);
-        when(forked.id()).thenReturn("fork1");
+        final GitHubBaseGist forked = GitHubBaseGistBuilder.builder(GistFixtures.baseGist())
+                .id("fork1")
+                .build();
         final GitHubGistApi api = github.gists().gist();
         doReturn(forked).when(api).forkGist(ID);
         final GitHubGistSimple loaded =
@@ -152,8 +254,9 @@ class GistTest {
 
     @Test
     void fork_shouldThrowIllegalStateException_whenTheForkIsGone() throws IOException {
-        final GitHubBaseGist forked = mock(GitHubBaseGist.class);
-        when(forked.id()).thenReturn("fork1");
+        final GitHubBaseGist forked = GitHubBaseGistBuilder.builder(GistFixtures.baseGist())
+                .id("fork1")
+                .build();
         final GitHubGistApi api = github.gists().gist();
         doReturn(forked).when(api).forkGist(ID);
         doReturn(Optional.empty()).when(api).getGist("fork1");
@@ -193,8 +296,10 @@ class GistTest {
 
         final Optional<Gist> found = sut.revision("abc");
 
-        assertThat(found).isPresent();
-        assertThat(found.orElseThrow().response()).isSameAs(old);
+        assertSoftly(softly -> {
+            softly.assertThat(found).isPresent();
+            softly.assertThat(found.orElseThrow().response()).isSameAs(old);
+        });
     }
 
     @Test
@@ -215,15 +320,23 @@ class GistTest {
     }
 
     @Test
+    void revision_shouldThrowNullPointerException_whenShaIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.revision(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("sha");
+    }
+
+    @Test
     void comments_shouldStreamTheComments_whenTheyExist() throws IOException {
         final GitHubGistComment listed = GistFixtures.comment();
         when(github.gists().comments().listComments(eq(ID), any()).stream()).thenReturn(Stream.of(listed));
 
         final List<GistComment> comments = sut.comments().toList();
 
-        assertThat(comments).singleElement().satisfies(comment -> {
-            assertThat(comment.id()).isEqualTo(GistFixtures.COMMENT_ID);
-            assertThat(comment.gist()).isSameAs(sut);
+        assertSoftly(softly -> {
+            softly.assertThat(comments).hasSize(1);
+            softly.assertThat(comments.getFirst().id()).isEqualTo(GistFixtures.COMMENT_ID);
+            softly.assertThat(comments.getFirst().gist()).isSameAs(sut);
         });
     }
 
@@ -234,7 +347,11 @@ class GistTest {
 
         final Optional<GistComment> found = sut.findComment(GistFixtures.COMMENT_ID);
 
-        assertThat(found).isPresent();
+        assertSoftly(softly -> {
+            softly.assertThat(found).isPresent();
+            softly.assertThat(found.orElseThrow().id()).isEqualTo(GistFixtures.COMMENT_ID);
+            softly.assertThat(found.orElseThrow().gist()).isSameAs(sut);
+        });
     }
 
     @Test
@@ -268,9 +385,23 @@ class GistTest {
     }
 
     @Test
+    void comment_shouldThrowNullPointerException_whenBodyIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.comment(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("body");
+    }
+
+    @Test
     void content_shouldThrowIllegalArgumentException_whenTheFileNameIsBlank() {
         final Throwable thrown = catchThrowable(() -> sut.content(" "));
 
         assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("fileName");
+    }
+
+    @Test
+    void content_shouldThrowNullPointerException_whenTheFileNameIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.content(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("fileName");
     }
 }

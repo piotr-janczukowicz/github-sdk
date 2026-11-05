@@ -45,8 +45,16 @@ class ProjectsTest {
 
         final Optional<Project> found = Projects.forOrganization(sdk, "acme").find(NUMBER);
 
-        assertThat(found).isPresent();
-        assertThat(found.orElseThrow().response()).isSameAs(project);
+        assertThat(found).get().extracting(Project::response).isSameAs(project);
+    }
+
+    @Test
+    void find_shouldBeEmpty_whenTheOrganizationHasNoSuchProject() throws IOException {
+        when(github.projects().project().getForOrg("acme", NUMBER)).thenReturn(Optional.empty());
+
+        final Optional<Project> found = Projects.forOrganization(sdk, "acme").find(NUMBER);
+
+        assertThat(found).isEmpty();
     }
 
     @Test
@@ -78,6 +86,13 @@ class ProjectsTest {
     }
 
     @Test
+    void forOrganization_shouldThrowNullPointerException_whenLoginIsNull() {
+        final Throwable thrown = catchThrowable(() -> Projects.forOrganization(sdk, null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("login");
+    }
+
+    @Test
     void forOrganization_shouldThrowNullPointerException_whenSdkIsNull() {
         final Throwable thrown = catchThrowable(() -> Projects.forOrganization(null, "acme"));
 
@@ -89,6 +104,13 @@ class ProjectsTest {
         final Throwable thrown = catchThrowable(() -> Projects.forUser(sdk, " "));
 
         assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("login");
+    }
+
+    @Test
+    void forUser_shouldThrowNullPointerException_whenLoginIsNull() {
+        final Throwable thrown = catchThrowable(() -> Projects.forUser(sdk, null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("login");
     }
 
     @Test

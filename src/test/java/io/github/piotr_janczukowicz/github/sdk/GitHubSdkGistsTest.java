@@ -56,6 +56,13 @@ class GitHubSdkGistsTest {
     }
 
     @Test
+    void gist_shouldThrowNullPointerException_whenIdIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.gist(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("id");
+    }
+
+    @Test
     void gist_shouldThrowIllegalArgumentException_whenIdIsBlank() {
         final Throwable thrown = catchThrowable(() -> sut.gist(" "));
 

@@ -55,6 +55,7 @@ class GitHubSdkTest {
     void of_shouldReturnAnEntryPoint_whenCalledWithAClient() {
         try (GitHubClient client =
                 GitHubClients.create(AuthenticationProviders.bearer("token-for-a-test"), "my-app/1.0")) {
+
             final GitHubSdk sdk = GitHubSdk.of(client);
 
             assertThat(sdk.repository("octocat", "Hello-World").owner()).isEqualTo("octocat");
@@ -66,6 +67,7 @@ class GitHubSdkTest {
         try (GitHubClient client =
                 GitHubClients.create(AuthenticationProviders.bearer("token-for-a-test"), "my-app/1.0")) {
             final GitHubCaller caller = GitHubCaller.of(client);
+
             final GitHubSdk sdk = GitHubSdk.of(caller);
 
             assertThat(sdk.repository("octocat", "Hello-World").owner()).isEqualTo("octocat");
@@ -102,6 +104,24 @@ class GitHubSdkTest {
         final Throwable thrown = catchThrowable(() -> sut.repository("octocat", ""));
 
         assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("name");
+    }
+
+    @Test
+    void repository_shouldThrowNullPointerException_whenOwnerIsNull() {
+        final GitHubSdk sut = GitHubSdk.of(mock(GitHub.class));
+
+        final Throwable thrown = catchThrowable(() -> sut.repository(null, "hello-world"));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("owner");
+    }
+
+    @Test
+    void repository_shouldThrowNullPointerException_whenNameIsNull() {
+        final GitHubSdk sut = GitHubSdk.of(mock(GitHub.class));
+
+        final Throwable thrown = catchThrowable(() -> sut.repository("octocat", null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("name");
     }
 
     @Test
@@ -150,6 +170,15 @@ class GitHubSdkTest {
     }
 
     @Test
+    void user_shouldThrowNullPointerException_whenLoginIsNull() {
+        final GitHubSdk sut = GitHubSdk.of(mock(GitHub.class, RETURNS_DEEP_STUBS));
+
+        final Throwable thrown = catchThrowable(() -> sut.user(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("login");
+    }
+
+    @Test
     void organization_shouldReturnTheOrganization_whenGitHubHasTheLogin() throws IOException {
         final GitHub github = mock(GitHub.class, RETURNS_DEEP_STUBS);
         final GitHubOrganizationFull response = mock(GitHubOrganizationFull.class);
@@ -179,6 +208,15 @@ class GitHubSdkTest {
         final Throwable thrown = catchThrowable(() -> sut.organization(" "));
 
         assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("login");
+    }
+
+    @Test
+    void organization_shouldThrowNullPointerException_whenLoginIsNull() {
+        final GitHubSdk sut = GitHubSdk.of(mock(GitHub.class, RETURNS_DEEP_STUBS));
+
+        final Throwable thrown = catchThrowable(() -> sut.organization(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("login");
     }
 
     @Test

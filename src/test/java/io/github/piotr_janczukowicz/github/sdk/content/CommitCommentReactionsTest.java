@@ -74,7 +74,7 @@ class CommitCommentReactionsTest {
     }
 
     @Test
-    void reactionDelete_shouldDeleteFromTheParent_whenCalled() throws IOException {
+    void reactions_shouldDeleteFromTheParent_whenAReactionIsDeleted() throws IOException {
         when(github.reactions().listForCommitComment(OWNER, NAME, ID).stream())
                 .thenReturn(Stream.of(ReactionsFixtures.reaction()));
         final Reaction reaction = sut.reactions().toList().getFirst();

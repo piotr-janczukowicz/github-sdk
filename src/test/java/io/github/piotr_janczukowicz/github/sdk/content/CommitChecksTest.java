@@ -52,10 +52,12 @@ class CommitChecksTest {
 
         final List<CheckRun> checkRuns = sut.checkRuns().toList();
 
-        assertThat(checkRuns).singleElement().satisfies(checkRun -> {
-            assertThat(checkRun.response()).isSameAs(listed);
-            assertThat(checkRun.repository()).isSameAs(repository);
-        });
+        assertThat(checkRuns)
+                .singleElement()
+                .satisfies(checkRun -> assertSoftly(softly -> {
+                    softly.assertThat(checkRun.response()).isSameAs(listed);
+                    softly.assertThat(checkRun.repository()).isSameAs(repository);
+                }));
     }
 
     @Test
@@ -82,6 +84,13 @@ class CommitChecksTest {
     }
 
     @Test
+    void checkRuns_shouldThrowNullPointerException_whenNameIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.checkRuns(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("name");
+    }
+
+    @Test
     void statuses_shouldStreamTheStatuses_whenTheyExist() throws IOException {
         final GitHubCommitStatus listed = ChecksFixtures.commitStatus();
         when(github.commits().statuses().listCommitStatusesForRef(OWNER, NAME, SHA).stream())
@@ -89,10 +98,12 @@ class CommitChecksTest {
 
         final List<CommitStatus> statuses = sut.statuses().toList();
 
-        assertThat(statuses).singleElement().satisfies(status -> {
-            assertThat(status.response()).isSameAs(listed);
-            assertThat(status.commit()).isSameAs(sut);
-        });
+        assertThat(statuses)
+                .singleElement()
+                .satisfies(status -> assertSoftly(softly -> {
+                    softly.assertThat(status.response()).isSameAs(listed);
+                    softly.assertThat(status.commit()).isSameAs(sut);
+                }));
     }
 
     @Test
@@ -103,10 +114,11 @@ class CommitChecksTest {
 
         final Optional<CombinedStatus> status = sut.combinedStatus();
 
-        assertThat(status).hasValueSatisfying(combined -> {
-            assertThat(combined.response()).isSameAs(loaded);
-            assertThat(combined.commit()).isSameAs(sut);
-        });
+        assertThat(status)
+                .hasValueSatisfying(combined -> assertSoftly(softly -> {
+                    softly.assertThat(combined.response()).isSameAs(loaded);
+                    softly.assertThat(combined.commit()).isSameAs(sut);
+                }));
     }
 
     @Test
@@ -162,6 +174,13 @@ class CommitChecksTest {
         final Throwable thrown = catchThrowable(() -> sut.createStatus(null, "ci/build"));
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("state");
+    }
+
+    @Test
+    void createStatus_shouldThrowNullPointerException_whenContextIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.createStatus(GitHubCommitStatusState.SUCCESS, null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("context");
     }
 
     @Test

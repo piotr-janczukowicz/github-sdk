@@ -9,6 +9,8 @@ import io.github.piotr_janczukowicz.github.sdk.pulls.PullRequest;
 import io.github.piotr_janczukowicz.github.sdk.pulls.PullRequestReview;
 import io.github.piotr_janczukowicz.github.sdk.pulls.PullRequestReviewComment;
 import java.io.IOException;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -99,8 +101,9 @@ class PullRequestReviewsSmokeIT {
             final PullRequestReview draft = pullRequest.draftReview("to be discarded");
 
             draft.deletePending();
+            final Optional<PullRequestReview> afterDelete = pullRequest.review(draft.id());
 
-            assertThat(pullRequest.review(draft.id())).isEmpty();
+            assertThat(afterDelete).isEmpty();
         } finally {
             if (pullRequest != null) {
                 pullRequest.close();
@@ -162,11 +165,11 @@ class PullRequestReviewsSmokeIT {
             final long reviewId = comment.response().pullRequestReviewId();
 
             final PullRequestReview review = pullRequest.review(reviewId).orElseThrow();
-
-            assertThat(review.comments())
-                    .extracting(PullRequestReviewComment::id)
-                    .contains(comment.id());
+            final List<Long> ids =
+                    review.comments().map(PullRequestReviewComment::id).toList();
             comment.delete();
+
+            assertThat(ids).contains(comment.id());
         } finally {
             if (pullRequest != null) {
                 pullRequest.close();

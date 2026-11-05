@@ -36,7 +36,7 @@ class CheckRunUpdateTest {
     private final CheckRun sut = new CheckRun(repository, ChecksFixtures.checkRun());
 
     @Test
-    void send_shouldSendOnlyTheSetFields_whenSeveralAreSet() throws IOException {
+    void send_shouldSendTheSetFields_whenSeveralAreSet() throws IOException {
         final GitHubCheckRun updated = ChecksFixtures.checkRun();
         when(github.checks().runs().updateCheckRun(eq(OWNER), eq(NAME), eq(ID), any()))
                 .thenReturn(updated);

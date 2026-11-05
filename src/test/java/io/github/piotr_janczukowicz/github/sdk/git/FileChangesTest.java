@@ -2,6 +2,7 @@ package io.github.piotr_janczukowicz.github.sdk.git;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -90,8 +91,8 @@ class FileChangesTest {
             softly.assertThat(tree.getValue().baseTree()).isEqualTo(TREE);
             softly.assertThat(entries).extracting(GitHubCreateTreeEntry::path).containsExactly("docs/a.txt", "old.txt");
             softly.assertThat(entries.getFirst().content()).isEqualTo("hello");
-            softly.assertThat(entries.get(0).sha()).isNull();
-            softly.assertThat(entries.get(0).mode()).isEqualTo(GitHubCreateTreeEntryMode.FILE);
+            softly.assertThat(entries.getFirst().sha()).isNull();
+            softly.assertThat(entries.getFirst().mode()).isEqualTo(GitHubCreateTreeEntryMode.FILE);
             softly.assertThat(entries.get(1).sha().value()).isNull();
             softly.assertThat(commit.getValue().message()).isEqualTo("Update docs");
             softly.assertThat(commit.getValue().tree()).isEqualTo(NEW_TREE);
@@ -122,12 +123,12 @@ class FileChangesTest {
         assertThat(tree.getValue().tree())
                 .extracting(GitHubCreateTreeEntry::path, GitHubCreateTreeEntry::mode)
                 .containsExactly(
-                        org.assertj.core.api.Assertions.tuple("run.sh", GitHubCreateTreeEntryMode.EXECUTABLE),
-                        org.assertj.core.api.Assertions.tuple("docs/old.md", GitHubCreateTreeEntryMode.FILE),
-                        org.assertj.core.api.Assertions.tuple("docs/new.md", GitHubCreateTreeEntryMode.FILE),
-                        org.assertj.core.api.Assertions.tuple("docs/old.md/inner", GitHubCreateTreeEntryMode.FILE),
-                        org.assertj.core.api.Assertions.tuple("link", GitHubCreateTreeEntryMode.SYMLINK),
-                        org.assertj.core.api.Assertions.tuple("link/inner", GitHubCreateTreeEntryMode.FILE));
+                        tuple("run.sh", GitHubCreateTreeEntryMode.EXECUTABLE),
+                        tuple("docs/old.md", GitHubCreateTreeEntryMode.FILE),
+                        tuple("docs/new.md", GitHubCreateTreeEntryMode.FILE),
+                        tuple("docs/old.md/inner", GitHubCreateTreeEntryMode.FILE),
+                        tuple("link", GitHubCreateTreeEntryMode.SYMLINK),
+                        tuple("link/inner", GitHubCreateTreeEntryMode.FILE));
     }
 
     @Test
@@ -181,6 +182,27 @@ class FileChangesTest {
     }
 
     @Test
+    void send_shouldCreateABlob_whenTheTextIsMalformedUtf8() throws IOException {
+        arrangeBranch();
+        doReturn(new GitHubShortBlob("https://api.github.com/blob", BLOB))
+                .when(blobs)
+                .createBlob(eq(OWNER), eq(NAME), any(GitHubCreateBlobPayload.class));
+        doReturn(Optional.of(RepositoryContentFixtures.commit()))
+                .when(commitApi)
+                .getCommit(OWNER, NAME, NEW_COMMIT);
+        final byte[] content = {(byte) 0xFF, 0x41};
+        final ArgumentCaptor<GitHubCreateTreePayload> tree = ArgumentCaptor.forClass(GitHubCreateTreePayload.class);
+
+        sut.write("bad.txt", content).send("Malformed");
+
+        verify(blobs).createBlob(eq(OWNER), eq(NAME), any(GitHubCreateBlobPayload.class));
+        verify(trees).createTree(eq(OWNER), eq(NAME), tree.capture());
+        assertThat(tree.getValue().tree())
+                .extracting(entry -> entry.sha().value(), GitHubCreateTreeEntry::content)
+                .containsExactly(tuple(BLOB, null));
+    }
+
+    @Test
     void send_shouldKeepOnlyTheLastChoiceForAPath_whenAPathIsChosenTwice() throws IOException {
         arrangeBranch();
         doReturn(Optional.of(RepositoryContentFixtures.commit()))
@@ -192,10 +214,9 @@ class FileChangesTest {
 
         verify(trees).createTree(eq(OWNER), eq(NAME), tree.capture());
         verify(blobs, never()).createBlob(any(), any(), any());
-        assertThat(tree.getValue().tree()).singleElement().satisfies(entry -> {
-            assertThat(entry.path()).isEqualTo("a.txt");
-            assertThat(entry.sha().value()).isNull();
-        });
+        assertThat(tree.getValue().tree())
+                .extracting(GitHubCreateTreeEntry::path, entry -> entry.sha().value())
+                .containsExactly(tuple("a.txt", null));
     }
 
     @Test

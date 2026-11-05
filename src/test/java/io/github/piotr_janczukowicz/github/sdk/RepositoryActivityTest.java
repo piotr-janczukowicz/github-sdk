@@ -144,32 +144,31 @@ class RepositoryActivityTest {
     }
 
     @Test
-    void forks_shouldReturnHandlesOfTheListedForks_whenTheyExist() throws IOException {
-        final GitHubSimpleUser owner = mock(GitHubSimpleUser.class);
-        when(owner.login()).thenReturn("hubot");
-        final GitHubMinimalRepository listed = mock(GitHubMinimalRepository.class);
-        when(listed.owner()).thenReturn(owner);
-        when(listed.name()).thenReturn("hello-world");
+    void forks_shouldReturnTheRepositories_whenTheyExist() throws IOException {
+        final GitHubMinimalRepository listed = listedFork();
         when(github.repositories().forks().listForks(eq(OWNER), eq(NAME), any(), any()).stream())
                 .thenReturn(Stream.of(listed));
 
         final List<Repository> forks = sut.forks().toList();
 
-        assertThat(forks).singleElement().satisfies(fork -> {
-            assertThat(fork.owner()).isEqualTo("hubot");
-            assertThat(fork.name()).isEqualTo("hello-world");
-        });
+        assertThat(forks)
+                .singleElement()
+                .satisfies(fork -> assertSoftly(softly -> {
+                    softly.assertThat(fork.owner()).isEqualTo("hubot");
+                    softly.assertThat(fork.name()).isEqualTo("hello-world");
+                }));
     }
 
     @Test
     void forks_shouldPassTheFilterOn_whenOneIsGiven() throws IOException {
         final GitHubListForksFilter filter = mock(GitHubListForksFilter.class);
+        final GitHubMinimalRepository listed = listedFork();
         when(github.repositories().forks().listForks(eq(OWNER), eq(NAME), eq(filter), any()).stream())
-                .thenReturn(Stream.empty());
+                .thenReturn(Stream.of(listed));
 
         final List<Repository> forks = sut.forks(filter).toList();
 
-        assertThat(forks).isEmpty();
+        assertThat(forks).hasSize(1);
     }
 
     @Test
@@ -180,7 +179,7 @@ class RepositoryActivityTest {
     }
 
     @Test
-    void fork_shouldReturnTheLoadedFork_whenCalled() throws IOException {
+    void fork_shouldReturnTheFork_whenCalled() throws IOException {
         final GitHubFullRepository created = forked();
         when(github.repositories().forks().createFork(OWNER, NAME, null)).thenReturn(created);
 
@@ -201,7 +200,10 @@ class RepositoryActivityTest {
 
         final Repository fork = sut.fork(payload);
 
-        assertThat(fork.owner()).isEqualTo("hubot");
+        assertSoftly(softly -> {
+            softly.assertThat(fork.owner()).isEqualTo("hubot");
+            softly.assertThat(fork.response()).isSameAs(created);
+        });
     }
 
     @Test
@@ -209,6 +211,15 @@ class RepositoryActivityTest {
         final Throwable thrown = catchThrowable(() -> sut.fork(null));
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("payload");
+    }
+
+    private static GitHubMinimalRepository listedFork() {
+        final GitHubSimpleUser owner = mock(GitHubSimpleUser.class);
+        when(owner.login()).thenReturn("hubot");
+        final GitHubMinimalRepository listed = mock(GitHubMinimalRepository.class);
+        when(listed.owner()).thenReturn(owner);
+        when(listed.name()).thenReturn("hello-world");
+        return listed;
     }
 
     private static GitHubFullRepository forked() {

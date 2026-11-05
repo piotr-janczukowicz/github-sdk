@@ -13,7 +13,6 @@ import io.github.piotr_janczukowicz.github.api.packages.GitHubListPackagesFilter
 import io.github.piotr_janczukowicz.github.api.packages.GitHubPackage;
 import io.github.piotr_janczukowicz.github.api.packages.GitHubPackageType;
 import io.github.piotr_janczukowicz.github.api.users.GitHubUser;
-import io.github.piotr_janczukowicz.github.api.users.GitHubUserApi;
 import io.github.piotr_janczukowicz.github.sdk.fixtures.PackageFixtures;
 import io.github.piotr_janczukowicz.github.sdk.packages.RegistryPackage;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
@@ -61,6 +60,16 @@ class OwnerRegistryPackagesTest {
     }
 
     @Test
+    void registryPackage_shouldBeEmpty_whenTheOrganizationDoesNotHaveIt() throws IOException {
+        when(github.packages().getPackageForOrg("acme", TYPE, NAME)).thenReturn(Optional.empty());
+        final Organization sut = organization();
+
+        final Optional<RegistryPackage> found = sut.registryPackage(TYPE, NAME);
+
+        assertThat(found).isEmpty();
+    }
+
+    @Test
     void registryPackages_shouldListThePackagesOfTheUser_whenTheyExist() throws IOException {
         final GitHubPackage listed = PackageFixtures.registryPackage();
         when(github.packages().listPackagesForUser("octocat", GitHubListPackagesFilter.of(TYPE)).stream())
@@ -89,6 +98,16 @@ class OwnerRegistryPackagesTest {
     }
 
     @Test
+    void registryPackage_shouldBeEmpty_whenTheUserDoesNotHaveIt() throws IOException {
+        when(github.packages().getPackageForUser("octocat", TYPE, NAME)).thenReturn(Optional.empty());
+        final User sut = user();
+
+        final Optional<RegistryPackage> found = sut.registryPackage(TYPE, NAME);
+
+        assertThat(found).isEmpty();
+    }
+
+    @Test
     void registryPackages_shouldListThePackagesOfTheAuthenticatedUser_whenTheyExist() throws IOException {
         final GitHubPackage listed = PackageFixtures.registryPackage();
         when(github.packages().listPackagesForAuthenticatedUser(GitHubListPackagesFilter.of(TYPE)).stream())
@@ -114,17 +133,24 @@ class OwnerRegistryPackagesTest {
         });
     }
 
+    @Test
+    void registryPackage_shouldBeEmpty_whenTheAuthenticatedUserDoesNotHaveIt() throws IOException {
+        when(github.packages().getPackageForAuthenticatedUser(TYPE, NAME)).thenReturn(Optional.empty());
+
+        final Optional<RegistryPackage> found = sdk.me().registryPackage(TYPE, NAME);
+
+        assertThat(found).isEmpty();
+    }
+
     private Organization organization() {
         final GitHubOrganizationFull response = mock(GitHubOrganizationFull.class);
         lenient().when(response.login()).thenReturn("acme");
         return new Organization(sdk, response);
     }
 
-    private User user() throws IOException {
+    private User user() {
         final GitHubUser response = mock(GitHubUser.class);
         lenient().when(response.login()).thenReturn("octocat");
-        final GitHubUserApi api = github.users().user();
-        lenient().doReturn(response).when(api).getAuthenticatedUser();
         return new User(sdk, response);
     }
 }

@@ -12,6 +12,8 @@ import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.lang.reflect.Constructor;
 import java.util.Arrays;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 @UnitTest
 class ClientValuesTest {
@@ -26,12 +28,22 @@ class ClientValuesTest {
         assertThat(isEveryNameKept).isTrue();
     }
 
-    @Test
-    void releaseReactionToClient_shouldThrowIllegalArgumentException_whenTheEmojiIsConfused() {
-        final Throwable thrown =
-                catchThrowable(() -> ClientValues.releaseReactionToClient(GitHubReactionContent.CONFUSED));
+    @ParameterizedTest
+    @EnumSource(
+            value = GitHubReactionContent.class,
+            names = {"MINUS_ONE", "CONFUSED"})
+    void releaseReactionToClient_shouldThrowIllegalArgumentException_whenTheEmojiIsNotAccepted(
+            final GitHubReactionContent content) {
+        final Throwable thrown = catchThrowable(() -> ClientValues.releaseReactionToClient(content));
 
-        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("CONFUSED");
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining(content.name());
+    }
+
+    @Test
+    void releaseReactionToClient_shouldThrowNullPointerException_whenTheEmojiIsNull() {
+        final Throwable thrown = catchThrowable(() -> ClientValues.releaseReactionToClient(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -73,10 +85,23 @@ class ClientValuesTest {
     }
 
     @Test
-    void releaseReactionToClient_shouldThrowIllegalArgumentException_whenTheEmojiIsMinusOne() {
-        final Throwable thrown =
-                catchThrowable(() -> ClientValues.releaseReactionToClient(GitHubReactionContent.MINUS_ONE));
+    void permissionToClient_shouldThrowNullPointerException_whenThePermissionIsNull() {
+        final Throwable thrown = catchThrowable(() -> ClientValues.permissionToClient(null));
 
-        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("MINUS_ONE");
+        assertThat(thrown).isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void invitationRoleToClient_shouldThrowNullPointerException_whenTheRoleIsNull() {
+        final Throwable thrown = catchThrowable(() -> ClientValues.invitationRoleToClient(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void variableVisibilityToClient_shouldThrowNullPointerException_whenTheVisibilityIsNull() {
+        final Throwable thrown = catchThrowable(() -> ClientValues.variableVisibilityToClient(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class);
     }
 }

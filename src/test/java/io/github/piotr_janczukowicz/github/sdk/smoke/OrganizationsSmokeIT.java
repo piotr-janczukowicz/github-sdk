@@ -1,6 +1,7 @@
 package io.github.piotr_janczukowicz.github.sdk.smoke;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 import io.github.piotr_janczukowicz.github.sdk.Organization;
 import io.github.piotr_janczukowicz.github.sdk.Team;
@@ -35,7 +36,6 @@ class OrganizationsSmokeIT {
                 ENV.sdk().currentUser().organizations().limit(3).toList();
 
         Assumptions.assumeFalse(organizations.isEmpty(), "the current user belongs to no public organization");
-        assertThat(organizations).hasSizeLessThanOrEqualTo(3);
         assertThat(organizations)
                 .allSatisfy(organization -> assertThat(organization.login()).isNotBlank());
     }
@@ -51,10 +51,13 @@ class OrganizationsSmokeIT {
                 .limit(100)
                 .anyMatch(repository -> repository.name().equals(ENV.repo()));
         final List<Team> teams = organization.teams().limit(3).toList();
+        final List<?> members = organization.members().limit(3).toList();
 
-        assertThat(organization.login()).isEqualToIgnoringCase(ENV.owner());
-        assertThat(hasSandbox).isTrue();
-        assertThat(organization.members().limit(3).toList()).hasSizeLessThanOrEqualTo(3);
-        assertThat(teams).allSatisfy(team -> assertThat(team.slug()).isNotBlank());
+        assertSoftly(softly -> {
+            softly.assertThat(organization.login()).isEqualToIgnoringCase(ENV.owner());
+            softly.assertThat(hasSandbox).isTrue();
+            softly.assertThat(members).doesNotContainNull();
+            softly.assertThat(teams).allSatisfy(team -> assertThat(team.slug()).isNotBlank());
+        });
     }
 }

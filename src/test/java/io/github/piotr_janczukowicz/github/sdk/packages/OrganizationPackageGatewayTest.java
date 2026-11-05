@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.github.piotr_janczukowicz.github.api.GitHub;
+import io.github.piotr_janczukowicz.github.api.packages.GitHubListPackagesFilter;
 import io.github.piotr_janczukowicz.github.api.packages.GitHubPackage;
 import io.github.piotr_janczukowicz.github.api.packages.GitHubPackageType;
 import io.github.piotr_janczukowicz.github.api.packages.GitHubPackageVersion;
@@ -32,12 +33,7 @@ class OrganizationPackageGatewayTest {
     @Test
     void packages_shouldStreamThePackages_whenTheyExist() throws IOException {
         final GitHubPackage listed = PackageFixtures.registryPackage();
-        when(github
-                        .packages()
-                        .listPackagesForOrg(
-                                LOGIN,
-                                io.github.piotr_janczukowicz.github.api.packages.GitHubListPackagesFilter.of(TYPE))
-                        .stream())
+        when(github.packages().listPackagesForOrg(LOGIN, GitHubListPackagesFilter.of(TYPE)).stream())
                 .thenReturn(Stream.of(listed));
 
         final List<GitHubPackage> packages = sut.packages(TYPE).toList();

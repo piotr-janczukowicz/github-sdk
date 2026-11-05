@@ -9,6 +9,7 @@ import io.github.piotr_janczukowicz.github.sdk.Repository;
 import io.github.piotr_janczukowicz.github.sdk.content.RepositoryFile;
 import io.github.piotr_janczukowicz.github.sdk.git.Ref;
 import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
@@ -38,13 +39,12 @@ class RepositoryReadsSmokeIT {
     void activitiesAndCodeowners_shouldBeRead_whenTheyAreRequested() throws IOException {
         final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
 
-        final long activities = repository.activities().limit(5).count();
-        final boolean hasCodeownersAnswer = repository.codeownersErrors().isPresent()
-                || repository.codeownersErrors().isEmpty();
+        final List<?> activities = repository.activities().limit(5).toList();
+        final Optional<?> codeowners = repository.codeownersErrors();
 
         assertSoftly(softly -> {
-            softly.assertThat(activities).isBetween(0L, 5L);
-            softly.assertThat(hasCodeownersAnswer).isTrue();
+            softly.assertThat(activities).doesNotContainNull();
+            softly.assertThat(codeowners).isNotNull();
         });
     }
 
@@ -53,7 +53,9 @@ class RepositoryReadsSmokeIT {
         final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
 
         try {
-            assertThat(repository.teams().limit(5).count()).isBetween(0L, 5L);
+            final List<?> teams = repository.teams().limit(5).toList();
+
+            assertThat(teams).doesNotContainNull();
         } catch (final GitHubApiException e) {
             Assumptions.abort("GitHub lists teams only for an organization repository (" + e.getMessage() + ")");
         }

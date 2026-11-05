@@ -3,6 +3,8 @@ package io.github.piotr_janczukowicz.github.sdk.rulesets;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -84,10 +86,13 @@ class RulesetTest {
     }
 
     @Test
-    void edit_shouldStartAnUpdate_whenCalled() {
-        final RulesetUpdate update = sut.edit();
+    void edit_shouldStartAnUpdateOfTheRuleset_whenCalled() throws IOException {
+        final GitHubRepositoriesRulesApi api = github.repositories().rules();
+        doReturn(RulesetFixtures.ruleset()).when(api).updateRepoRuleset(eq(OWNER), eq(NAME), eq(ID), any());
 
-        assertThat(update).isNotNull();
+        sut.edit().send();
+
+        verify(api).updateRepoRuleset(eq(OWNER), eq(NAME), eq(ID), any());
     }
 
     @Test

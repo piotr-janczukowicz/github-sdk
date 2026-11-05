@@ -3,7 +3,7 @@ package io.github.piotr_janczukowicz.github.sdk.smoke;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 import io.github.piotr_janczukowicz.github.api.packages.GitHubPackageType;
-import io.github.piotr_janczukowicz.github.client.exception.GitHubApiException;
+import io.github.piotr_janczukowicz.github.client.exception.GitHubForbiddenException;
 import io.github.piotr_janczukowicz.github.sdk.packages.RegistryPackage;
 import java.io.IOException;
 import java.util.List;
@@ -25,6 +25,7 @@ class PackagesSmokeIT {
     @Test
     void packages_shouldBeListed_whenTheTokenMayReadThem() throws IOException {
         final List<RegistryPackage> packages = list();
+        Assumptions.assumeFalse(packages.isEmpty(), "the sandbox owner has no container packages");
 
         assertSoftly(softly -> softly.assertThat(packages).allSatisfy(found -> {
             softly.assertThat(found.name()).isNotBlank();
@@ -39,7 +40,7 @@ class PackagesSmokeIT {
                     .orElseThrow()
                     .registryPackages(GitHubPackageType.CONTAINER)
                     .toList();
-        } catch (final GitHubApiException e) {
+        } catch (final GitHubForbiddenException e) {
             Assumptions.abort("GitHub refuses packages here: the REST API for packages needs a classic token with"
                     + " read:packages (" + e.getMessage() + ")");
             throw e;

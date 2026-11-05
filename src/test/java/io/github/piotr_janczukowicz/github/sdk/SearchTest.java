@@ -134,6 +134,18 @@ class SearchTest {
     }
 
     @Test
+    void repositories_shouldThrowIllegalArgumentException_whenTheFullNameHasNoOwner() throws IOException {
+        final GitHubRepoSearchResultItem item = mock(GitHubRepoSearchResultItem.class);
+        when(item.fullName()).thenReturn("/hello");
+        when(github.search().searchRepos("hello").stream()).thenReturn(Stream.of(item));
+        final Stream<Repository> repositories = sut.repositories("hello");
+
+        final Throwable thrown = catchThrowable(repositories::toList);
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("hello");
+    }
+
+    @Test
     void users_shouldLoadEachFoundUser_whenTheQueryMatches() throws IOException {
         final GitHubUserSearchResultItem item = mock(GitHubUserSearchResultItem.class);
         when(item.login()).thenReturn("octocat");

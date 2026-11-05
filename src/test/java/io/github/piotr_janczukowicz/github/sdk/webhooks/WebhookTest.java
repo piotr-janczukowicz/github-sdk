@@ -81,6 +81,20 @@ class WebhookTest {
     }
 
     @Test
+    void constructor_shouldThrowNullPointerException_whenRepositoryIsNull() {
+        final Throwable thrown = catchThrowable(() -> new Webhook(null, response));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void constructor_shouldThrowNullPointerException_whenResponseIsNull() {
+        final Throwable thrown = catchThrowable(() -> new Webhook(repository, null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
     void delete_shouldDeleteTheWebhook_whenCalled() throws IOException {
         sut.delete();
 

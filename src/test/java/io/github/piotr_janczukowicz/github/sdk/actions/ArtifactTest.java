@@ -46,11 +46,28 @@ class ArtifactTest {
     }
 
     @Test
+    void constructor_shouldThrowNullPointerException_whenRepositoryIsNull() {
+        final Throwable thrown = catchThrowable(() -> new Artifact(null, response));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("repository");
+    }
+
+    @Test
+    void constructor_shouldThrowNullPointerException_whenResponseIsNull() {
+        final Throwable thrown = catchThrowable(() -> new Artifact(repository, null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("response");
+    }
+
+    @Test
     void isExpired_shouldBeTrue_whenTheRetentionEnded() {
         final GitHubArtifact expired =
                 GitHubArtifactBuilder.builder(response).expired(true).build();
+        final Artifact artifact = new Artifact(repository, expired);
 
-        assertThat(new Artifact(repository, expired).isExpired()).isTrue();
+        final boolean result = artifact.isExpired();
+
+        assertThat(result).isTrue();
     }
 
     @Test

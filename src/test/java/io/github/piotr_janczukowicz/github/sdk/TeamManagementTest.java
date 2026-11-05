@@ -61,6 +61,18 @@ class TeamManagementTest {
     }
 
     @Test
+    void childTeams_shouldSkipTheTeam_whenAListedTeamIsGone() throws IOException {
+        final GitHubTeam listed = OrganizationFixtures.listedTeam("backend");
+        when(github.teams().team().listChildTeams(ORG, SLUG).stream()).thenReturn(Stream.of(listed));
+        final GitHubTeamApi api = github.teams().team();
+        doReturn(Optional.empty()).when(api).getByName(ORG, "backend");
+
+        final List<Team> children = sut.childTeams().toList();
+
+        assertThat(children).isEmpty();
+    }
+
+    @Test
     void update_shouldSendThePayloadAndReturnTheTeam_whenCalled() throws IOException {
         final GitHubUpdateTeamPayload payload = mock(GitHubUpdateTeamPayload.class);
         final GitHubTeamFull updated = mock(GitHubTeamFull.class);
@@ -149,6 +161,16 @@ class TeamManagementTest {
         final Optional<GitHubTeamMembership> found = sut.membership("hubot");
 
         assertThat(found).containsSame(membership);
+    }
+
+    @Test
+    void membership_shouldBeEmpty_whenTheUserHasNone() throws IOException {
+        final GitHubTeamsMembersApi api = github.teams().members();
+        doReturn(Optional.empty()).when(api).getMembership(ORG, SLUG, "hubot");
+
+        final Optional<GitHubTeamMembership> found = sut.membership("hubot");
+
+        assertThat(found).isEmpty();
     }
 
     @Test

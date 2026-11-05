@@ -1,6 +1,7 @@
 package io.github.piotr_janczukowicz.github.sdk.smoke;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 import io.github.piotr_janczukowicz.github.api.releases.GitHubCreateReleasePayloadBuilder;
 import io.github.piotr_janczukowicz.github.api.releases.GitHubReleaseNotesContent;
@@ -54,12 +55,14 @@ class ReleasesSmokeIT {
                     .anyMatch(listed ->
                             listed.response().id() == created.response().id());
 
-            assertThat(created.isDraft()).isTrue();
-            assertThat(renamed.isDraft()).isTrue();
-            assertThat(renamed.name()).contains("smoke renamed");
-            assertThat(refreshed.name()).contains("smoke renamed");
-            assertThat(isListed).isTrue();
-            assertThat(isStillListed).isFalse();
+            assertSoftly(softly -> {
+                softly.assertThat(created.isDraft()).isTrue();
+                softly.assertThat(renamed.isDraft()).isTrue();
+                softly.assertThat(renamed.name()).contains("smoke renamed");
+                softly.assertThat(refreshed.name()).contains("smoke renamed");
+                softly.assertThat(isListed).isTrue();
+                softly.assertThat(isStillListed).isFalse();
+            });
         } finally {
             if (!isDeleted) {
                 created.delete();
@@ -74,8 +77,10 @@ class ReleasesSmokeIT {
         final Optional<Release> latest = repository.latestRelease();
         final List<GitHubRepositoryTag> tags = repository.tags().limit(3).toList();
 
-        assertThat(latest.map(Release::isDraft).orElse(false)).isFalse();
-        assertThat(tags).hasSizeLessThanOrEqualTo(3);
+        assertSoftly(softly -> {
+            softly.assertThat(latest.map(Release::isDraft).orElse(false)).isFalse();
+            softly.assertThat(tags).doesNotContainNull();
+        });
     }
 
     @Test
@@ -98,11 +103,13 @@ class ReleasesSmokeIT {
             relabeled.delete();
             final Optional<ReleaseAsset> afterDelete = repository.releaseAsset(uploaded.id());
 
-            assertThat(uploaded.name()).isEqualTo("smoke.txt");
-            assertThat(isListed).isTrue();
-            assertThat(relabeled.label()).contains("Smoke label");
-            assertThat(content).isEqualTo("smoke content");
-            assertThat(afterDelete).isEmpty();
+            assertSoftly(softly -> {
+                softly.assertThat(uploaded.name()).isEqualTo("smoke.txt");
+                softly.assertThat(isListed).isTrue();
+                softly.assertThat(relabeled.label()).contains("Smoke label");
+                softly.assertThat(content).isEqualTo("smoke content");
+                softly.assertThat(afterDelete).isEmpty();
+            });
         } finally {
             release.delete();
         }

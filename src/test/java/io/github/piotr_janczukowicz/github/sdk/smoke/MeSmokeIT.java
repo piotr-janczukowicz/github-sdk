@@ -3,6 +3,7 @@ package io.github.piotr_janczukowicz.github.sdk.smoke;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
+import io.github.piotr_janczukowicz.github.api.users.GitHubEmail;
 import io.github.piotr_janczukowicz.github.client.exception.GitHubForbiddenException;
 import io.github.piotr_janczukowicz.github.sdk.User;
 import io.github.piotr_janczukowicz.github.sdk.accounts.Me;
@@ -17,7 +18,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-/** Following, blocking and email changes are not run live, because they would affect real accounts. */
 @Tag("smoke")
 class MeSmokeIT {
 
@@ -45,7 +45,10 @@ class MeSmokeIT {
         } finally {
             added.delete();
         }
-        assertThat(isGone(me, added.id())).isTrue();
+
+        final boolean isGone = me.sshKey(added.id()).isEmpty();
+
+        assertThat(isGone).isTrue();
     }
 
     private static SshKey addSshKey(final Me me, final String title) throws IOException, GeneralSecurityException {
@@ -54,14 +57,6 @@ class MeSmokeIT {
         } catch (final GitHubForbiddenException e) {
             Assumptions.abort("The token has no SSH keys permission, so GitHub refuses managing SSH keys");
             throw e;
-        }
-    }
-
-    private static boolean isGone(final Me me, final long id) throws IOException {
-        try {
-            return me.sshKey(id).isEmpty();
-        } catch (final GitHubForbiddenException e) {
-            return true;
         }
     }
 
@@ -97,17 +92,17 @@ class MeSmokeIT {
         final Me me = ENV.sdk().me();
         final User profile = me.profile();
 
-        final long emails = readEmails(me);
+        final List<GitHubEmail> emails = readEmails(me);
 
         assertSoftly(softly -> {
             softly.assertThat(profile.login()).isNotBlank();
-            softly.assertThat(emails).isGreaterThanOrEqualTo(0);
+            softly.assertThat(emails).doesNotContainNull();
         });
     }
 
-    private static long readEmails(final Me me) throws IOException {
+    private static List<GitHubEmail> readEmails(final Me me) throws IOException {
         try {
-            return me.emails().count();
+            return me.emails().toList();
         } catch (final GitHubForbiddenException e) {
             Assumptions.abort("The token has no Email addresses permission");
             throw e;

@@ -68,6 +68,25 @@ class RepositoryContentTest {
 
     @Test
     void branches_shouldLoadEachListedBranch_whenCalledWithAFilter() throws IOException {
+        final GitHubListBranchesFilter filter = mock(GitHubListBranchesFilter.class);
+        final GitHubShortBranch listed = mock(GitHubShortBranch.class);
+        when(listed.name()).thenReturn("main");
+        final GitHubBranchWithProtection response = RepositoryContentFixtures.branch();
+        when(github
+                        .branches()
+                        .branch()
+                        .listBranches(eq(OWNER), eq(NAME), eq(filter), any(GitHubPageRequest.class))
+                        .stream())
+                .thenReturn(Stream.of(listed));
+        when(github.branches().branch().getBranch(OWNER, NAME, "main")).thenReturn(Optional.of(response));
+
+        final List<Branch> branches = sut.branches(filter).toList();
+
+        assertThat(branches).extracting(Branch::response).containsExactly(response);
+    }
+
+    @Test
+    void branches_shouldListWithAnEmptyFilter_whenCalledWithoutOne() throws IOException {
         final GitHubShortBranch listed = mock(GitHubShortBranch.class);
         when(listed.name()).thenReturn("main");
         final GitHubBranchWithProtection response = RepositoryContentFixtures.branch();
@@ -80,25 +99,9 @@ class RepositoryContentTest {
                 .thenReturn(Stream.of(listed));
         when(github.branches().branch().getBranch(OWNER, NAME, "main")).thenReturn(Optional.of(response));
 
-        final List<Branch> branches =
-                sut.branches(GitHubListBranchesFilter.empty()).toList();
-
-        assertThat(branches).extracting(Branch::response).containsExactly(response);
-    }
-
-    @Test
-    void branches_shouldListWithAnEmptyFilter_whenCalledWithoutOne() throws IOException {
-        when(github
-                        .branches()
-                        .branch()
-                        .listBranches(
-                                eq(OWNER), eq(NAME), any(GitHubListBranchesFilter.class), any(GitHubPageRequest.class))
-                        .stream())
-                .thenReturn(Stream.empty());
-
         final List<Branch> branches = sut.branches().toList();
 
-        assertThat(branches).isEmpty();
+        assertThat(branches).extracting(Branch::response).containsExactly(response);
     }
 
     @Test
@@ -113,9 +116,8 @@ class RepositoryContentTest {
                         .stream())
                 .thenReturn(Stream.of(listed));
         when(github.branches().branch().getBranch(OWNER, NAME, "main")).thenReturn(Optional.empty());
-        final Stream<Branch> branches = sut.branches();
 
-        final long count = branches.count();
+        final long count = sut.branches().count();
 
         assertThat(count).isZero();
     }
@@ -171,6 +173,22 @@ class RepositoryContentTest {
 
     @Test
     void commits_shouldWrapEachCommit_whenCalledWithAFilter() throws IOException {
+        final GitHubListCommitsFilter filter = mock(GitHubListCommitsFilter.class);
+        final GitHubCommit response = RepositoryContentFixtures.commit();
+        when(github
+                        .commits()
+                        .commit()
+                        .listCommits(eq(OWNER), eq(NAME), eq(filter), any(GitHubPageRequest.class))
+                        .stream())
+                .thenReturn(Stream.of(response));
+
+        final List<Commit> commits = sut.commits(filter).toList();
+
+        assertThat(commits).extracting(Commit::response).containsExactly(response);
+    }
+
+    @Test
+    void commits_shouldListWithAnEmptyFilter_whenCalledWithoutOne() throws IOException {
         final GitHubCommit response = RepositoryContentFixtures.commit();
         when(github
                         .commits()
@@ -180,25 +198,9 @@ class RepositoryContentTest {
                         .stream())
                 .thenReturn(Stream.of(response));
 
-        final List<Commit> commits =
-                sut.commits(GitHubListCommitsFilter.empty()).toList();
-
-        assertThat(commits).extracting(Commit::response).containsExactly(response);
-    }
-
-    @Test
-    void commits_shouldListWithAnEmptyFilter_whenCalledWithoutOne() throws IOException {
-        when(github
-                        .commits()
-                        .commit()
-                        .listCommits(
-                                eq(OWNER), eq(NAME), any(GitHubListCommitsFilter.class), any(GitHubPageRequest.class))
-                        .stream())
-                .thenReturn(Stream.empty());
-
         final List<Commit> commits = sut.commits().toList();
 
-        assertThat(commits).isEmpty();
+        assertThat(commits).extracting(Commit::response).containsExactly(response);
     }
 
     @Test

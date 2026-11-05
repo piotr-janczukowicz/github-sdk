@@ -55,10 +55,12 @@ class RepositoryNotificationsAndKeysTest {
 
         final List<Notification> notifications = sut.notifications().toList();
 
-        assertThat(notifications).singleElement().satisfies(notification -> {
-            assertThat(notification.response()).isSameAs(listed);
-            assertThat(notification.id()).isEqualTo(NotificationFixtures.THREAD_ID);
-        });
+        assertThat(notifications)
+                .singleElement()
+                .satisfies(notification -> assertSoftly(softly -> {
+                    softly.assertThat(notification.response()).isSameAs(listed);
+                    softly.assertThat(notification.id()).isEqualTo(NotificationFixtures.THREAD_ID);
+                }));
     }
 
     @Test
@@ -69,7 +71,7 @@ class RepositoryNotificationsAndKeysTest {
     }
 
     @Test
-    void markNotificationsRead_shouldMarkTheRepositoryNotificationsAsRead_whenCalled() throws IOException {
+    void markNotificationsRead_shouldMarkTheRepositoryNotificationsAsRead() throws IOException {
         final GitHubActivityNotificationsApi api = github.activity().notifications();
 
         sut.markNotificationsRead();
@@ -85,22 +87,27 @@ class RepositoryNotificationsAndKeysTest {
 
         final List<DeployKey> keys = sut.deployKeys().toList();
 
-        assertThat(keys).singleElement().satisfies(key -> {
-            assertThat(key.response()).isSameAs(listed);
-            assertThat(key.repository()).isSameAs(sut);
-        });
+        assertThat(keys)
+                .singleElement()
+                .satisfies(key -> assertSoftly(softly -> {
+                    softly.assertThat(key.response()).isSameAs(listed);
+                    softly.assertThat(key.repository()).isSameAs(sut);
+                }));
     }
 
     @Test
     void deployKey_shouldReturnTheKey_whenGitHubHasIt() throws IOException {
         final GitHubDeployKeysApi api = github.deployKeys();
-        doReturn(Optional.of(NotificationFixtures.deployKey()))
-                .when(api)
-                .getDeployKey(OWNER, NAME, NotificationFixtures.KEY_ID);
+        final GitHubDeployKey loaded = NotificationFixtures.deployKey();
+        doReturn(Optional.of(loaded)).when(api).getDeployKey(OWNER, NAME, NotificationFixtures.KEY_ID);
 
         final Optional<DeployKey> found = sut.deployKey(NotificationFixtures.KEY_ID);
 
-        assertThat(found).isPresent();
+        assertThat(found)
+                .hasValueSatisfying(key -> assertSoftly(softly -> {
+                    softly.assertThat(key.response()).isSameAs(loaded);
+                    softly.assertThat(key.repository()).isSameAs(sut);
+                }));
     }
 
     @Test

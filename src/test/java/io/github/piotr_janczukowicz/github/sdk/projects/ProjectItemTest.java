@@ -16,6 +16,7 @@ import io.github.piotr_janczukowicz.github.sdk.fixtures.ProjectFixtures;
 import io.github.piotr_janczukowicz.json.OptionalNull;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.io.IOException;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -36,12 +37,15 @@ class ProjectItemTest {
     void content_shouldBeEmpty_whenTheResponseHasNone() {
         final GitHubProjectItem bare = mock(GitHubProjectItem.class);
         when(bare.content()).thenReturn(null);
+        final ProjectItem item = new ProjectItem(project, bare);
 
-        assertThat(new ProjectItem(project, bare).content()).isEmpty();
+        final Map<String, Object> content = item.content();
+
+        assertThat(content).isEmpty();
     }
 
     @Test
-    void accessors_shouldExposeTheResponse_whenItemIsLoaded() {
+    void constructor_shouldExposeTheResponse_whenItemIsLoaded() {
         assertSoftly(softly -> {
             softly.assertThat(sut.project()).isSameAs(project);
             softly.assertThat(sut.id()).isEqualTo(ID);
@@ -60,7 +64,14 @@ class ProjectItemTest {
     }
 
     @Test
-    void setField_shouldSendTheValueAndReturnTheItem_whenCalled() throws IOException {
+    void constructor_shouldThrowNullPointerException_whenResponseIsNull() {
+        final Throwable thrown = catchThrowable(() -> new ProjectItem(project, null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("response");
+    }
+
+    @Test
+    void setField_shouldSendTheValueAndReturnTheItem() throws IOException {
         final GitHubProjectItem updated = ProjectFixtures.item();
         when(gateway.updateItem(eq(NUMBER), eq(ID), any())).thenReturn(updated);
         final ArgumentCaptor<GitHubUpdateProjectItemPayload> payload =
@@ -71,15 +82,17 @@ class ProjectItemTest {
         verify(gateway).updateItem(eq(NUMBER), eq(ID), payload.capture());
         assertSoftly(softly -> {
             softly.assertThat(result.response()).isSameAs(updated);
-            softly.assertThat(payload.getValue().fields()).singleElement().satisfies(field -> {
-                assertThat(field.id()).isEqualTo(FIELD);
-                assertThat(field.value()).isEqualTo(OptionalNull.of("Done"));
-            });
+            softly.assertThat(payload.getValue().fields())
+                    .singleElement()
+                    .satisfies(field -> assertSoftly(inner -> {
+                        inner.assertThat(field.id()).isEqualTo(FIELD);
+                        inner.assertThat(field.value()).isEqualTo(OptionalNull.of("Done"));
+                    }));
         });
     }
 
     @Test
-    void clearField_shouldSendANullValue_whenCalled() throws IOException {
+    void clearField_shouldSendANullValue() throws IOException {
         final GitHubProjectItem updated = ProjectFixtures.item();
         when(gateway.updateItem(eq(NUMBER), eq(ID), any())).thenReturn(updated);
         final ArgumentCaptor<GitHubUpdateProjectItemPayload> payload =
@@ -120,7 +133,7 @@ class ProjectItemTest {
     }
 
     @Test
-    void delete_shouldRemoveTheItem_whenCalled() throws IOException {
+    void delete_shouldRemoveTheItem() throws IOException {
         sut.delete();
 
         verify(gateway).deleteItem(NUMBER, ID);

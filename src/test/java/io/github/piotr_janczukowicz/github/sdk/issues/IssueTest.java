@@ -375,26 +375,28 @@ class IssueTest {
     }
 
     @Test
-    void varargs_shouldThrowIllegalArgumentException_whenAValueIsBlank() {
-        final Throwable label = catchThrowable(() -> sut.addLabels("bug", " "));
-        final Throwable assignee = catchThrowable(() -> sut.assign(" "));
-        final Throwable unassignee = catchThrowable(() -> sut.unassign("hubot", " "));
+    void addLabels_shouldThrowIllegalArgumentException_whenANameIsBlank() {
+        final Throwable thrown = catchThrowable(() -> sut.addLabels("bug", " "));
 
-        assertSoftly(softly -> {
-            softly.assertThat(label)
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("names");
-            softly.assertThat(assignee)
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("logins");
-            softly.assertThat(unassignee)
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("logins");
-        });
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("names");
     }
 
     @Test
-    void varargs_shouldThrowNullPointerException_whenAValueIsNull() {
+    void assign_shouldThrowIllegalArgumentException_whenALoginIsBlank() {
+        final Throwable thrown = catchThrowable(() -> sut.assign(" "));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("logins");
+    }
+
+    @Test
+    void unassign_shouldThrowIllegalArgumentException_whenALoginIsBlank() {
+        final Throwable thrown = catchThrowable(() -> sut.unassign("hubot", " "));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("logins");
+    }
+
+    @Test
+    void assign_shouldThrowNullPointerException_whenALoginIsNull() {
         final Throwable thrown = catchThrowable(() -> sut.assign("hubot", null));
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("logins");

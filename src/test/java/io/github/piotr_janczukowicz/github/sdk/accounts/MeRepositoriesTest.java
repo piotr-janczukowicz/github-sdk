@@ -55,17 +55,28 @@ class MeRepositoriesTest {
 
     @Test
     void repositories_shouldUseTheFilter_whenCalledWithOne() throws IOException {
-        final GitHubListForAuthenticatedUserFilter filter = GitHubListForAuthenticatedUserFilter.empty();
+        final GitHubListForAuthenticatedUserFilter filter =
+                new GitHubListForAuthenticatedUserFilter(null, "owner", null, null, null, null, null);
+        final GitHubSimpleUser owner = mock(GitHubSimpleUser.class);
+        when(owner.login()).thenReturn("octocat");
+        final GitHubRepository listed = mock(GitHubRepository.class);
+        when(listed.owner()).thenReturn(owner);
+        when(listed.name()).thenReturn("private-notes");
         when(github
                         .repositories()
                         .repository()
                         .listForAuthenticatedUser(eq(filter), any(GitHubPageRequest.class))
                         .stream())
-                .thenReturn(Stream.empty());
+                .thenReturn(Stream.of(listed));
 
         final List<Repository> repositories = sut.repositories(filter).toList();
 
-        assertThat(repositories).isEmpty();
+        assertThat(repositories)
+                .singleElement()
+                .satisfies(repository -> assertSoftly(softly -> {
+                    softly.assertThat(repository.owner()).isEqualTo("octocat");
+                    softly.assertThat(repository.name()).isEqualTo("private-notes");
+                }));
     }
 
     @Test

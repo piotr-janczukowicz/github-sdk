@@ -12,6 +12,7 @@ import io.github.piotr_janczukowicz.github.sdk.git.Comparison;
 import io.github.piotr_janczukowicz.github.sdk.git.Ref;
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -27,7 +28,7 @@ class GitDataSmokeIT {
     }
 
     @Test
-    void commit_shouldWriteAndDeleteFilesInOneCommit_whenChangesAreCollected() throws IOException {
+    void commit_shouldWriteAndDeleteFiles_whenChangesAreCollected() throws IOException {
         final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
         final String base = repository.fetch().orElseThrow().response().defaultBranch();
         final String baseSha = repository.branch(base).orElseThrow().commit().sha();
@@ -46,6 +47,8 @@ class GitDataSmokeIT {
             final List<GitHubDiffEntry> files = comparison.files();
             final Ref ref = repository.ref("heads/" + name).orElseThrow();
             final Ref moved = ref.update(baseSha, true);
+            final GitHubCommitComparisonStatus statusAfterMove =
+                    repository.compare(base, name).orElseThrow().status();
 
             assertSoftly(softly -> {
                 softly.assertThat(branch.name()).isEqualTo(name);
@@ -56,13 +59,15 @@ class GitDataSmokeIT {
                 softly.assertThat(comparison.commits()).extracting(Commit::sha).contains(first.sha(), second.sha());
                 softly.assertThat(files).extracting(GitHubDiffEntry::filename).containsExactly(keep);
                 softly.assertThat(moved.sha()).isEqualTo(baseSha);
+                softly.assertThat(statusAfterMove).isEqualTo(GitHubCommitComparisonStatus.IDENTICAL);
             });
-            assertThat(repository.compare(base, name).orElseThrow().status())
-                    .isEqualTo(GitHubCommitComparisonStatus.IDENTICAL);
         } finally {
             SandboxBranches.deleteBranch(ENV, name);
         }
-        assertThat(repository.ref("heads/" + name)).isEmpty();
+
+        final Optional<Ref> afterDelete = repository.ref("heads/" + name);
+
+        assertThat(afterDelete).isEmpty();
     }
 
     @Test
@@ -73,11 +78,14 @@ class GitDataSmokeIT {
         final List<Ref> heads = repository.refs("heads/").toList();
         final Ref head = repository.ref("heads/" + base).orElseThrow();
 
+        final Optional<?> tree = repository.tree(head.sha(), true);
+        final Optional<Ref> missing = repository.ref("heads/" + ENV.name("missing"));
+
         assertSoftly(softly -> {
             softly.assertThat(heads).extracting(Ref::name).contains("refs/heads/" + base);
             softly.assertThat(head.type()).isEqualTo("commit");
+            softly.assertThat(tree).isPresent();
+            softly.assertThat(missing).isEmpty();
         });
-        assertThat(repository.tree(head.sha(), true)).isPresent();
-        assertThat(repository.ref("heads/" + ENV.name("missing"))).isEmpty();
     }
 }

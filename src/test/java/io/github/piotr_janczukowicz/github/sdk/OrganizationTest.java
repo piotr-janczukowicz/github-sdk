@@ -15,6 +15,7 @@ import io.github.piotr_janczukowicz.github.api.repositories.GitHubMinimalReposit
 import io.github.piotr_janczukowicz.github.api.teams.GitHubTeam;
 import io.github.piotr_janczukowicz.github.api.teams.GitHubTeamFull;
 import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
+import io.github.piotr_janczukowicz.github.sdk.fixtures.OrganizationFixtures;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -32,12 +33,6 @@ class OrganizationTest {
     private final GitHubSdk sdk = GitHubSdk.of(github);
     private final GitHubOrganizationFull response = mock(GitHubOrganizationFull.class);
     private final Organization sut = new Organization(sdk, response);
-
-    private GitHubTeam listedTeam(final String slug) {
-        final GitHubTeam listed = mock(GitHubTeam.class);
-        when(listed.slug()).thenReturn(slug);
-        return listed;
-    }
 
     @Test
     void login_shouldReadTheLoginOfTheResponse_whenCalled() {
@@ -164,7 +159,7 @@ class OrganizationTest {
     void teams_shouldLoadEachListedTeam_whenTheOrganizationHasTeams() throws IOException {
         when(response.login()).thenReturn(ORG);
         final GitHubTeamFull teamResponse = mock(GitHubTeamFull.class);
-        final GitHubTeam listed = listedTeam("core");
+        final GitHubTeam listed = OrganizationFixtures.listedTeam("core");
         when(github.teams().team().list(ORG).stream()).thenReturn(Stream.of(listed));
         when(github.teams().team().getByName(ORG, "core")).thenReturn(Optional.of(teamResponse));
 
@@ -176,7 +171,7 @@ class OrganizationTest {
     @Test
     void teams_shouldSkipTheItem_whenAListedTeamIsGone() throws IOException {
         when(response.login()).thenReturn(ORG);
-        final GitHubTeam listed = listedTeam("core");
+        final GitHubTeam listed = OrganizationFixtures.listedTeam("core");
         when(github.teams().team().list(ORG).stream()).thenReturn(Stream.of(listed));
         when(github.teams().team().getByName(ORG, "core")).thenReturn(Optional.empty());
         final Stream<Team> teams = sut.teams();
@@ -189,7 +184,7 @@ class OrganizationTest {
     @Test
     void teams_shouldThrowUncheckedIoException_whenLoadingAListedTeamFails() throws IOException {
         when(response.login()).thenReturn(ORG);
-        final GitHubTeam listed = listedTeam("core");
+        final GitHubTeam listed = OrganizationFixtures.listedTeam("core");
         when(github.teams().team().list(ORG).stream()).thenReturn(Stream.of(listed));
         when(github.teams().team().getByName(ORG, "core")).thenThrow(new IOException("transport failed"));
         final Stream<Team> teams = sut.teams();

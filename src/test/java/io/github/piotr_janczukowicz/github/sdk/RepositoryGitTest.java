@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 
 import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.branches.GitHubBranchApi;
+import io.github.piotr_janczukowicz.github.api.branches.GitHubBranchWithProtection;
 import io.github.piotr_janczukowicz.github.api.commits.GitHubCommitApi;
 import io.github.piotr_janczukowicz.github.api.commits.GitHubCommitComparison;
 import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubBlob;
@@ -92,10 +93,12 @@ class RepositoryGitTest {
 
         final List<Ref> refs = sut.refs("heads/").toList();
 
-        assertThat(refs).singleElement().satisfies(ref -> {
-            assertThat(ref.response()).isSameAs(listed);
-            assertThat(ref.repository()).isSameAs(sut);
-        });
+        assertThat(refs)
+                .singleElement()
+                .satisfies(ref -> assertSoftly(softly -> {
+                    softly.assertThat(ref.response()).isSameAs(listed);
+                    softly.assertThat(ref.repository()).isSameAs(sut);
+                }));
     }
 
     @Test
@@ -144,7 +147,7 @@ class RepositoryGitTest {
     }
 
     @Test
-    void createRef_shouldSendTheNameAndShaAndReturnTheRef_whenCalled() throws IOException {
+    void createRef_shouldSendTheNameAndShaAndReturnTheRef() throws IOException {
         final GitHubGitRef created = GitFixtures.refWith("refs/tags/v1", GitFixtures.SHA);
         final GitHubGitRefsApi refs = github.gitDatabase().refs();
         doReturn(created).when(refs).createRef(eq(OWNER), eq(NAME), any(GitHubCreateRefPayload.class));
@@ -161,6 +164,13 @@ class RepositoryGitTest {
     }
 
     @Test
+    void createRef_shouldThrowIllegalArgumentException_whenRefIsBlank() {
+        final Throwable thrown = catchThrowable(() -> sut.createRef(" ", GitFixtures.SHA));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("ref");
+    }
+
+    @Test
     void createRef_shouldThrowIllegalArgumentException_whenShaIsBlank() {
         final Throwable thrown = catchThrowable(() -> sut.createRef("refs/tags/v1", " "));
 
@@ -168,13 +178,14 @@ class RepositoryGitTest {
     }
 
     @Test
-    void createBranch_shouldCreateTheRefAndReturnTheBranch_whenCalled() throws IOException {
+    void createBranch_shouldCreateTheRefAndReturnTheBranch() throws IOException {
         final GitHubGitRefsApi refs = github.gitDatabase().refs();
         doReturn(GitFixtures.refWith("refs/heads/feature", GitFixtures.SHA))
                 .when(refs)
                 .createRef(eq(OWNER), eq(NAME), any(GitHubCreateRefPayload.class));
         final GitHubBranchApi branches = github.branches().branch();
-        doReturn(Optional.of(RepositoryContentFixtures.branch())).when(branches).getBranch(OWNER, NAME, "feature");
+        final GitHubBranchWithProtection loaded = RepositoryContentFixtures.branch();
+        doReturn(Optional.of(loaded)).when(branches).getBranch(OWNER, NAME, "feature");
         final ArgumentCaptor<GitHubCreateRefPayload> payload = ArgumentCaptor.forClass(GitHubCreateRefPayload.class);
 
         final Branch branch = sut.createBranch("feature", GitFixtures.SHA);
@@ -182,6 +193,7 @@ class RepositoryGitTest {
         verify(refs).createRef(eq(OWNER), eq(NAME), payload.capture());
         assertSoftly(softly -> {
             softly.assertThat(payload.getValue().ref()).isEqualTo("refs/heads/feature");
+            softly.assertThat(branch.response()).isSameAs(loaded);
             softly.assertThat(branch.repository()).isSameAs(sut);
         });
     }
@@ -232,6 +244,16 @@ class RepositoryGitTest {
     }
 
     @Test
+    void tree_shouldBeEmpty_whenGitHubDoesNotHaveIt() throws IOException {
+        final GitHubGitTreesApi trees = github.gitDatabase().trees();
+        doReturn(Optional.empty()).when(trees).getTree(OWNER, NAME, GitFixtures.SHA, GitHubGetTreeFilter.empty());
+
+        final Optional<GitHubGitTree> tree = sut.tree(GitFixtures.SHA);
+
+        assertThat(tree).isEmpty();
+    }
+
+    @Test
     void tree_shouldThrowIllegalArgumentException_whenShaIsBlank() {
         final Throwable thrown = catchThrowable(() -> sut.tree(" "));
 
@@ -247,6 +269,16 @@ class RepositoryGitTest {
         final Optional<GitHubBlob> blob = sut.blob(GitFixtures.SHA);
 
         assertThat(blob).containsSame(loaded);
+    }
+
+    @Test
+    void blob_shouldBeEmpty_whenGitHubDoesNotHaveIt() throws IOException {
+        final GitHubGitBlobsApi blobs = github.gitDatabase().blobs();
+        doReturn(Optional.empty()).when(blobs).getBlob(OWNER, NAME, GitFixtures.SHA);
+
+        final Optional<GitHubBlob> blob = sut.blob(GitFixtures.SHA);
+
+        assertThat(blob).isEmpty();
     }
 
     @Test

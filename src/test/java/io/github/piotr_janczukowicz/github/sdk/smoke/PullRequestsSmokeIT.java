@@ -1,6 +1,7 @@
 package io.github.piotr_janczukowicz.github.sdk.smoke;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubCreateRefPayload;
@@ -15,6 +16,7 @@ import io.github.piotr_janczukowicz.github.sdk.pulls.PullRequestState;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
@@ -74,12 +76,19 @@ class PullRequestsSmokeIT {
                     .limit(50)
                     .anyMatch(listed -> listed.number() == read.orElseThrow().number());
 
-            assertThat(created.state()).isEqualTo(PullRequestState.OPEN);
-            assertThat(read).map(PullRequest::title).contains(ENV.name("pr"));
-            assertThat(isListed).isTrue();
-            assertThat(read.orElseThrow().files().map(GitHubDiffEntry::filename))
-                    .contains(path);
-            assertThat(read.orElseThrow().commits().count()).isEqualTo(1);
+            final PullRequest loaded = read.orElseThrow();
+            final List<String> files =
+                    loaded.files().map(GitHubDiffEntry::filename).toList();
+            final long commits = loaded.commits().count();
+
+            final PullRequest opened = created;
+            assertSoftly(softly -> {
+                softly.assertThat(opened.state()).isEqualTo(PullRequestState.OPEN);
+                softly.assertThat(read).map(PullRequest::title).contains(ENV.name("pr"));
+                softly.assertThat(isListed).isTrue();
+                softly.assertThat(files).contains(path);
+                softly.assertThat(commits).isEqualTo(1);
+            });
         } finally {
             if (created != null) {
                 github.pullRequests()

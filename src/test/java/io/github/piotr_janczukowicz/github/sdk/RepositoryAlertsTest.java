@@ -2,11 +2,13 @@ package io.github.piotr_janczukowicz.github.sdk;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.github.piotr_janczukowicz.github.api.GitHub;
@@ -53,10 +55,12 @@ class RepositoryAlertsTest {
 
         final List<DependabotAlert> alerts = sut.dependabotAlerts().toList();
 
-        assertThat(alerts).singleElement().satisfies(alert -> {
-            assertThat(alert.response()).isSameAs(listed);
-            assertThat(alert.repository()).isSameAs(sut);
-        });
+        assertThat(alerts)
+                .singleElement()
+                .satisfies(alert -> assertSoftly(softly -> {
+                    softly.assertThat(alert.response()).isSameAs(listed);
+                    softly.assertThat(alert.repository()).isSameAs(sut);
+                }));
     }
 
     @Test
@@ -69,13 +73,16 @@ class RepositoryAlertsTest {
     @Test
     void dependabotAlert_shouldReturnTheAlert_whenGitHubHasIt() throws IOException {
         final GitHubDependabotAlertsApi api = github.dependabot().alerts();
-        doReturn(Optional.of(SecurityFixtures.dependabotAlert()))
-                .when(api)
-                .getAlert(OWNER, NAME, SecurityFixtures.DEPENDABOT_NUMBER);
+        final GitHubDependabotAlert loaded = SecurityFixtures.dependabotAlert();
+        doReturn(Optional.of(loaded)).when(api).getAlert(OWNER, NAME, SecurityFixtures.DEPENDABOT_NUMBER);
 
         final Optional<DependabotAlert> found = sut.dependabotAlert(SecurityFixtures.DEPENDABOT_NUMBER);
 
-        assertThat(found).isPresent();
+        assertSoftly(softly -> {
+            softly.assertThat(found).isPresent();
+            softly.assertThat(found.orElseThrow().response()).isSameAs(loaded);
+            softly.assertThat(found.orElseThrow().repository()).isSameAs(sut);
+        });
     }
 
     @Test
@@ -121,9 +128,8 @@ class RepositoryAlertsTest {
                 .thenReturn(Stream.of(listed));
         final GitHubSecretScanningAlertsApi api = github.secretScanning().alerts();
         doReturn(Optional.empty()).when(api).getAlert(OWNER, NAME, SecurityFixtures.SECRET_NUMBER);
-        final Stream<SecretScanningAlert> alerts = sut.secretScanningAlerts();
 
-        final long count = alerts.count();
+        final long count = sut.secretScanningAlerts().count();
 
         assertThat(count).isZero();
     }
@@ -138,13 +144,16 @@ class RepositoryAlertsTest {
     @Test
     void secretScanningAlert_shouldReturnTheAlert_whenGitHubHasIt() throws IOException {
         final GitHubSecretScanningAlertsApi api = github.secretScanning().alerts();
-        doReturn(Optional.of(SecurityFixtures.secretAlert()))
-                .when(api)
-                .getAlert(OWNER, NAME, SecurityFixtures.SECRET_NUMBER);
+        final GitHubSecretScanningAlertWithMetadata loaded = SecurityFixtures.secretAlert();
+        doReturn(Optional.of(loaded)).when(api).getAlert(OWNER, NAME, SecurityFixtures.SECRET_NUMBER);
 
         final Optional<SecretScanningAlert> found = sut.secretScanningAlert(SecurityFixtures.SECRET_NUMBER);
 
-        assertThat(found).isPresent();
+        assertSoftly(softly -> {
+            softly.assertThat(found).isPresent();
+            softly.assertThat(found.orElseThrow().response()).isSameAs(loaded);
+            softly.assertThat(found.orElseThrow().repository()).isSameAs(sut);
+        });
     }
 
     @Test
@@ -182,9 +191,8 @@ class RepositoryAlertsTest {
                 .thenReturn(Stream.of(listed));
         final GitHubCodeScanningCodeScanningApi api = github.codeScanning().codeScanning();
         doReturn(Optional.empty()).when(api).getAlert(OWNER, NAME, SecurityFixtures.CODE_NUMBER);
-        final Stream<CodeScanningAlert> alerts = sut.codeScanningAlerts();
 
-        final long count = alerts.count();
+        final long count = sut.codeScanningAlerts().count();
 
         assertThat(count).isZero();
     }
@@ -192,13 +200,16 @@ class RepositoryAlertsTest {
     @Test
     void codeScanningAlert_shouldReturnTheAlert_whenGitHubHasIt() throws IOException {
         final GitHubCodeScanningCodeScanningApi api = github.codeScanning().codeScanning();
-        doReturn(Optional.of(SecurityFixtures.codeAlert()))
-                .when(api)
-                .getAlert(OWNER, NAME, SecurityFixtures.CODE_NUMBER);
+        final GitHubCodeScanningAlert loaded = SecurityFixtures.codeAlert();
+        doReturn(Optional.of(loaded)).when(api).getAlert(OWNER, NAME, SecurityFixtures.CODE_NUMBER);
 
         final Optional<CodeScanningAlert> found = sut.codeScanningAlert(SecurityFixtures.CODE_NUMBER);
 
-        assertThat(found).isPresent();
+        assertSoftly(softly -> {
+            softly.assertThat(found).isPresent();
+            softly.assertThat(found.orElseThrow().response()).isSameAs(loaded);
+            softly.assertThat(found.orElseThrow().repository()).isSameAs(sut);
+        });
     }
 
     @Test
@@ -216,5 +227,6 @@ class RepositoryAlertsTest {
         final RepositorySecurity security = sut.security();
 
         assertThat(security).isNotNull();
+        verifyNoInteractions(github);
     }
 }

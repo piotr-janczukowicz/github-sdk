@@ -1,6 +1,7 @@
 package io.github.piotr_janczukowicz.github.sdk.internal;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
@@ -23,8 +24,6 @@ class UpdateStateTest {
         final UpdateState sut = new UpdateState();
         sut.mark();
 
-        final Throwable thrown = catchThrowable(sut::requireChange);
-
-        assertThat(thrown).isNull();
+        assertThatCode(sut::requireChange).doesNotThrowAnyException();
     }
 }

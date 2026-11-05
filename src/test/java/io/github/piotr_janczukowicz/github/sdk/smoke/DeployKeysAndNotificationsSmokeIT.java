@@ -11,6 +11,7 @@ import io.github.piotr_janczukowicz.github.sdk.notifications.Notification;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
@@ -46,7 +47,8 @@ class DeployKeysAndNotificationsSmokeIT {
         } finally {
             added.delete();
         }
-        assertThat(repository.deployKey(added.id())).isEmpty();
+        final Optional<DeployKey> afterDelete = repository.deployKey(added.id());
+        assertThat(afterDelete).isEmpty();
     }
 
     private static DeployKey add(final Repository repository, final String title, final String key) throws IOException {
@@ -62,10 +64,14 @@ class DeployKeysAndNotificationsSmokeIT {
     void notifications_shouldBeListed_whenTheTokenSupportsThem() throws IOException {
         final List<Notification> notifications = listNotifications();
 
-        assertThat(notifications).allSatisfy(notification -> {
-            assertThat(notification.id()).isNotBlank();
-            assertThat(notification.title()).isNotBlank();
-            assertThat(notification.repository().owner()).isNotBlank();
+        Assumptions.assumeFalse(notifications.isEmpty(), "The token has no notifications");
+
+        assertSoftly(softly -> {
+            softly.assertThat(notifications).extracting(Notification::id).noneMatch(String::isBlank);
+            softly.assertThat(notifications).extracting(Notification::title).noneMatch(String::isBlank);
+            softly.assertThat(notifications)
+                    .extracting(notification -> notification.repository().owner())
+                    .noneMatch(String::isBlank);
         });
     }
 

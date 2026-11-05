@@ -68,6 +68,23 @@ class GlobalAdvisoriesTest {
     }
 
     @Test
+    void globalAdvisory_shouldBeEmpty_whenGitHubDoesNotHaveIt() throws IOException {
+        when(github.securityAdvisories().globalAdvisories().getGlobalAdvisory("GHSA-none-none-none"))
+                .thenReturn(Optional.empty());
+
+        final Optional<GitHubGlobalAdvisory> found = sdk.globalAdvisory("GHSA-none-none-none");
+
+        assertThat(found).isEmpty();
+    }
+
+    @Test
+    void globalAdvisory_shouldThrowNullPointerException_whenIdIsNull() {
+        final Throwable thrown = catchThrowable(() -> sdk.globalAdvisory(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("ghsaId");
+    }
+
+    @Test
     void globalAdvisory_shouldThrowIllegalArgumentException_whenIdIsBlank() {
         final Throwable thrown = catchThrowable(() -> sdk.globalAdvisory(" "));
 

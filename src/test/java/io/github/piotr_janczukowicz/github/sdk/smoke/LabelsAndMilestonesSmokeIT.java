@@ -1,6 +1,7 @@
 package io.github.piotr_janczukowicz.github.sdk.smoke;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 import io.github.piotr_janczukowicz.github.api.search.GitHubMilestoneState;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
@@ -8,6 +9,7 @@ import io.github.piotr_janczukowicz.github.sdk.issues.Issue;
 import io.github.piotr_janczukowicz.github.sdk.issues.Label;
 import io.github.piotr_janczukowicz.github.sdk.issues.Milestone;
 import java.io.IOException;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -34,11 +36,14 @@ class LabelsAndMilestonesSmokeIT {
                     repository.labels().anyMatch(listed -> listed.name().equals(name));
             created.delete();
             isDeleted = true;
+            final Optional<Label> afterDelete = repository.label(name);
 
-            assertThat(created.color()).isEqualTo("ededed");
-            assertThat(isRead).isTrue();
-            assertThat(isListed).isTrue();
-            assertThat(repository.label(name)).isEmpty();
+            assertSoftly(softly -> {
+                softly.assertThat(created.color()).isEqualTo("ededed");
+                softly.assertThat(isRead).isTrue();
+                softly.assertThat(isListed).isTrue();
+                softly.assertThat(afterDelete).isEmpty();
+            });
         } finally {
             if (!isDeleted) {
                 created.delete();
@@ -47,7 +52,7 @@ class LabelsAndMilestonesSmokeIT {
     }
 
     @Test
-    void milestone_shouldBeCreatedAssignedToAnIssueAndDeleted_whenItIsOpen() throws IOException {
+    void milestone_shouldBeCreatedAndAssignedToAnIssue_whenItIsOpen() throws IOException {
         final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
         final Milestone created = repository.createMilestone(ENV.name("milestone"));
         Issue issue = null;
@@ -56,12 +61,14 @@ class LabelsAndMilestonesSmokeIT {
             final Issue planned = issue.update().milestone(created.number()).send();
             issue = planned;
 
-            assertThat(repository.milestone(created.number()))
-                    .map(Milestone::title)
-                    .contains(ENV.name("milestone"));
-            assertThat(repository.milestones().anyMatch(listed -> listed.number() == created.number()))
-                    .isTrue();
-            assertThat(planned.milestone()).map(Milestone::number).contains(created.number());
+            final Optional<Milestone> loaded = repository.milestone(created.number());
+            final boolean isListed = repository.milestones().anyMatch(listed -> listed.number() == created.number());
+
+            assertSoftly(softly -> {
+                softly.assertThat(loaded).map(Milestone::title).contains(ENV.name("milestone"));
+                softly.assertThat(isListed).isTrue();
+                softly.assertThat(planned.milestone()).map(Milestone::number).contains(created.number());
+            });
         } finally {
             if (issue != null) {
                 issue.close();
@@ -78,9 +85,11 @@ class LabelsAndMilestonesSmokeIT {
             final Label updated = created.update().color("ffffff").send();
             final Label refreshed = updated.refresh();
 
-            assertThat(updated.color()).isEqualTo("ffffff");
-            assertThat(refreshed.color()).isEqualTo("ffffff");
-            assertThat(created.color()).isEqualTo("ededed");
+            assertSoftly(softly -> {
+                softly.assertThat(updated.color()).isEqualTo("ffffff");
+                softly.assertThat(refreshed.color()).isEqualTo("ffffff");
+                softly.assertThat(created.color()).isEqualTo("ededed");
+            });
         } finally {
             created.delete();
         }
@@ -97,10 +106,12 @@ class LabelsAndMilestonesSmokeIT {
             final Milestone reopened = closed.reopen();
             final Milestone refreshed = reopened.refresh();
 
-            assertThat(renamed.title()).isEqualTo(ENV.name("phase-two"));
-            assertThat(closed.response().state()).isEqualTo(GitHubMilestoneState.CLOSED);
-            assertThat(reopened.response().state()).isEqualTo(GitHubMilestoneState.OPEN);
-            assertThat(refreshed.title()).isEqualTo(ENV.name("phase-two"));
+            assertSoftly(softly -> {
+                softly.assertThat(renamed.title()).isEqualTo(ENV.name("phase-two"));
+                softly.assertThat(closed.response().state()).isEqualTo(GitHubMilestoneState.CLOSED);
+                softly.assertThat(reopened.response().state()).isEqualTo(GitHubMilestoneState.OPEN);
+                softly.assertThat(refreshed.title()).isEqualTo(ENV.name("phase-two"));
+            });
         } finally {
             created.delete();
         }

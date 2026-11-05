@@ -72,9 +72,12 @@ class ReactionsSmokeIT {
             final Reaction eyes = comment.react(GitHubReactionContent.EYES);
             final List<Long> ids = comment.reactions().map(Reaction::id).toList();
             eyes.delete();
+            final List<Long> remaining = comment.reactions().map(Reaction::id).toList();
 
-            assertThat(ids).contains(eyes.id());
-            assertThat(comment.reactions().map(Reaction::id)).doesNotContain(eyes.id());
+            assertSoftly(softly -> {
+                softly.assertThat(ids).contains(eyes.id());
+                softly.assertThat(remaining).doesNotContain(eyes.id());
+            });
         } finally {
             issue.close();
         }

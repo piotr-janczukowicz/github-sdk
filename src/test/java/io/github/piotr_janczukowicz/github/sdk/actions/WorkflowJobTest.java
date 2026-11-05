@@ -53,41 +53,92 @@ class WorkflowJobTest {
     }
 
     @Test
+    void constructor_shouldThrowNullPointerException_whenRepositoryIsNull() {
+        final Throwable thrown = catchThrowable(() -> new WorkflowJob(null, response));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("repository");
+    }
+
+    @Test
+    void constructor_shouldThrowNullPointerException_whenResponseIsNull() {
+        final Throwable thrown = catchThrowable(() -> new WorkflowJob(repository, null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("response");
+    }
+
+    @Test
     void steps_shouldReturnTheSteps_whenGitHubListsThem() {
         final GitHubJobStep step = mock(GitHubJobStep.class);
         final GitHubJob withSteps =
                 GitHubJobBuilder.builder(response).steps(List.of(step)).build();
 
-        final List<GitHubJobStep> steps = new WorkflowJob(repository, withSteps).steps();
+        final WorkflowJob job = new WorkflowJob(repository, withSteps);
+
+        final List<GitHubJobStep> steps = job.steps();
 
         assertThat(steps).containsExactly(step);
     }
 
     @Test
-    void optionalAccessors_shouldBeEmptyOrNeutral_whenGitHubReportsNothing() {
+    void conclusion_shouldBeEmpty_whenGitHubReportsNone() {
         final GitHubJob bare =
-                GitHubJobBuilder.builder(response).conclusion(null).steps(null).build();
+                GitHubJobBuilder.builder(response).conclusion(null).build();
         final WorkflowJob job = new WorkflowJob(repository, bare);
 
-        assertSoftly(softly -> {
-            softly.assertThat(job.conclusion()).isEmpty();
-            softly.assertThat(job.steps()).isEmpty();
-        });
+        final Optional<GitHubJobConclusion> conclusion = job.conclusion();
+
+        assertThat(conclusion).isEmpty();
     }
 
     @Test
-    void outcomeChecks_shouldMatchStatusAndConclusion_whenCalled() {
-        final WorkflowJob failed = job(GitHubJobStatus.COMPLETED, GitHubJobConclusion.FAILURE);
+    void steps_shouldBeEmpty_whenGitHubReportsNone() {
+        final GitHubJob bare = GitHubJobBuilder.builder(response).steps(null).build();
+        final WorkflowJob job = new WorkflowJob(repository, bare);
+
+        final List<GitHubJobStep> steps = job.steps();
+
+        assertThat(steps).isEmpty();
+    }
+
+    @Test
+    void isCompleted_shouldBeTrue_whenTheStatusIsCompleted() {
+        final boolean result = sut.isCompleted();
+
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    void isCompleted_shouldBeFalse_whenTheJobIsInProgress() {
         final WorkflowJob running = job(GitHubJobStatus.IN_PROGRESS, null);
 
-        assertSoftly(softly -> {
-            softly.assertThat(sut.isCompleted()).isTrue();
-            softly.assertThat(sut.isSuccessful()).isTrue();
-            softly.assertThat(failed.isCompleted()).isTrue();
-            softly.assertThat(failed.isSuccessful()).isFalse();
-            softly.assertThat(running.isCompleted()).isFalse();
-            softly.assertThat(running.isSuccessful()).isFalse();
-        });
+        final boolean result = running.isCompleted();
+
+        assertThat(result).isFalse();
+    }
+
+    @Test
+    void isSuccessful_shouldBeTrue_whenTheConclusionIsSuccess() {
+        final boolean result = sut.isSuccessful();
+
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    void isSuccessful_shouldBeFalse_whenTheConclusionIsFailure() {
+        final WorkflowJob failed = job(GitHubJobStatus.COMPLETED, GitHubJobConclusion.FAILURE);
+
+        final boolean result = failed.isSuccessful();
+
+        assertThat(result).isFalse();
+    }
+
+    @Test
+    void isSuccessful_shouldBeFalse_whenTheJobIsInProgress() {
+        final WorkflowJob running = job(GitHubJobStatus.IN_PROGRESS, null);
+
+        final boolean result = running.isSuccessful();
+
+        assertThat(result).isFalse();
     }
 
     @Test

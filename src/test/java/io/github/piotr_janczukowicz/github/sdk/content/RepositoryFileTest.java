@@ -178,4 +178,22 @@ class RepositoryFileTest {
 
         assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("message");
     }
+
+    @Test
+    void delete_shouldThrowIllegalArgumentException_whenBranchIsBlank() {
+        final RepositoryFile sut = fileOf("Hello".getBytes(StandardCharsets.UTF_8));
+
+        final Throwable thrown = catchThrowable(() -> sut.delete("Remove the file", " "));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("branch");
+    }
+
+    @Test
+    void delete_shouldThrowNullPointerException_whenBranchIsNull() {
+        final RepositoryFile sut = fileOf("Hello".getBytes(StandardCharsets.UTF_8));
+
+        final Throwable thrown = catchThrowable(() -> sut.delete("Remove the file", null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("branch");
+    }
 }

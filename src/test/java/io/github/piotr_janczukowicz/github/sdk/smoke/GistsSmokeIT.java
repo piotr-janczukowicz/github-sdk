@@ -8,6 +8,7 @@ import io.github.piotr_janczukowicz.github.sdk.gists.Gist;
 import io.github.piotr_janczukowicz.github.sdk.gists.GistComment;
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
@@ -47,6 +48,7 @@ class GistsSmokeIT {
             final boolean isOwnGist =
                     ENV.sdk().gists().limit(5).anyMatch(gist -> gist.id().equals(created.id()));
             edited.delete();
+            final Optional<GistComment> afterDelete = moved.findComment(comment.id());
 
             assertSoftly(softly -> {
                 softly.assertThat(created.isPublic()).isFalse();
@@ -61,12 +63,13 @@ class GistsSmokeIT {
                 softly.assertThat(isStillStarred).isFalse();
                 softly.assertThat(revisions).isGreaterThanOrEqualTo(3);
                 softly.assertThat(isOwnGist).isTrue();
+                softly.assertThat(afterDelete).isEmpty();
             });
-            assertThat(moved.findComment(comment.id())).isEmpty();
         } finally {
             created.delete();
         }
-        assertThat(ENV.sdk().gist(created.id())).isEmpty();
+        final Optional<Gist> afterGistDelete = ENV.sdk().gist(created.id());
+        assertThat(afterGistDelete).isEmpty();
     }
 
     private static Gist create(final String file) throws IOException {
@@ -80,6 +83,8 @@ class GistsSmokeIT {
 
     @Test
     void gist_shouldBeEmpty_whenTheIdDoesNotExist() throws IOException {
-        assertThat(ENV.sdk().gist("0000000000000000000000000000000f")).isEmpty();
+        final Optional<Gist> gist = ENV.sdk().gist("0000000000000000000000000000000f");
+
+        assertThat(gist).isEmpty();
     }
 }

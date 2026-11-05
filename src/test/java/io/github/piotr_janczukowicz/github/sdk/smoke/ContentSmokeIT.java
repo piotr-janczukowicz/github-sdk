@@ -1,6 +1,7 @@
 package io.github.piotr_janczukowicz.github.sdk.smoke;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubCreateRefPayload;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
@@ -23,36 +24,82 @@ class ContentSmokeIT {
     }
 
     @Test
-    void branch_shouldBeReadAndListed_whenItIsTheDefaultBranch() throws IOException {
+    void branch_shouldBeFound_whenItIsTheDefaultBranch() throws IOException {
         final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
         final String name = repository.fetch().orElseThrow().response().defaultBranch();
 
         final Optional<Branch> branch = repository.branch(name);
-        final boolean isListed =
-                repository.branches().limit(50).anyMatch(listed -> listed.name().equals(name));
 
         assertThat(branch).map(Branch::name).contains(name);
+    }
+
+    @Test
+    void branches_shouldListTheDefaultBranch_whenTheRepositoryHasOne() throws IOException {
+        final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
+        final String name = repository.fetch().orElseThrow().response().defaultBranch();
+
+        final boolean isListed =
+                repository.branches().anyMatch(listed -> listed.name().equals(name));
+
         assertThat(isListed).isTrue();
     }
 
     @Test
-    void commit_shouldBeReadAndListed_whenItIsTheHeadOfTheDefaultBranch() throws IOException {
+    void commit_shouldBeFound_whenItIsTheHeadOfTheDefaultBranch() throws IOException {
         final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
         final String name = repository.fetch().orElseThrow().response().defaultBranch();
         final Commit head = repository.branch(name).orElseThrow().commit();
 
         final Optional<Commit> read = repository.commit(head.sha());
+
+        assertSoftly(softly -> {
+            softly.assertThat(read).map(Commit::sha).contains(head.sha());
+            softly.assertThat(read)
+                    .map(Commit::message)
+                    .hasValueSatisfying(message -> assertThat(message).isNotBlank());
+        });
+    }
+
+    @Test
+    void commits_shouldListTheHead_whenItIsTheHeadOfTheDefaultBranch() throws IOException {
+        final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
+        final String name = repository.fetch().orElseThrow().response().defaultBranch();
+        final Commit head = repository.branch(name).orElseThrow().commit();
+
         final boolean isListed =
                 repository.commits().limit(10).anyMatch(listed -> listed.sha().equals(head.sha()));
 
-        assertThat(read).map(Commit::sha).contains(head.sha());
-        assertThat(read.orElseThrow().message()).isNotBlank();
         assertThat(isListed).isTrue();
     }
 
     @Test
-    void branch_shouldBeReadAndListed_whenItsNameContainsASlash() throws IOException {
+    void branch_shouldBeFound_whenItsNameContainsASlash() throws IOException {
         final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
+        final String name = createSlashBranch(repository);
+        try {
+            final Optional<Branch> branch = repository.branch(name);
+
+            assertThat(branch).map(Branch::name).contains(name);
+        } finally {
+            deleteSlashBranch(name);
+        }
+    }
+
+    @Test
+    void branches_shouldListTheBranch_whenItsNameContainsASlash() throws IOException {
+        final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
+        final String name = createSlashBranch(repository);
+        try {
+            final boolean isListed =
+                    repository.branches().anyMatch(listed -> listed.name().equals(name));
+
+            assertThat(isListed).isTrue();
+        } finally {
+            deleteSlashBranch(name);
+        }
+    }
+
+    private static String createSlashBranch(final Repository repository) throws IOException {
         final String base = repository.fetch().orElseThrow().response().defaultBranch();
         final String sha = repository.branch(base).orElseThrow().commit().sha();
         final String name = ENV.name("slash") + "/nested";
@@ -60,18 +107,11 @@ class ContentSmokeIT {
                 .gitDatabase()
                 .refs()
                 .createRef(ENV.owner(), ENV.repo(), new GitHubCreateRefPayload("refs/heads/" + name, sha));
-        try {
-            final Optional<Branch> branch = repository.branch(name);
-            final boolean isListed = repository
-                    .branches()
-                    .limit(100)
-                    .anyMatch(listed -> listed.name().equals(name));
+        return name;
+    }
 
-            assertThat(branch).map(Branch::name).contains(name);
-            assertThat(isListed).isTrue();
-        } finally {
-            ENV.github().gitDatabase().refs().deleteRef(ENV.owner(), ENV.repo(), "heads/" + name);
-        }
+    private static void deleteSlashBranch(final String name) throws IOException {
+        ENV.github().gitDatabase().refs().deleteRef(ENV.owner(), ENV.repo(), "heads/" + name);
     }
 
     @Test

@@ -18,27 +18,52 @@ import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.lang.reflect.Constructor;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 @UnitTest
 class RulesTest {
 
     @Test
-    void simpleRules_shouldBuildTheMatchingRecords_whenCalled() {
-        final GitHubRepositoryRule creation = Rules.restrictCreation();
-        final GitHubRepositoryRule deletion = Rules.restrictDeletion();
-        final GitHubRepositoryRule update = Rules.restrictUpdates();
-        final GitHubRepositoryRule forcePush = Rules.blockForcePushes();
-        final GitHubRepositoryRule linear = Rules.requireLinearHistory();
-        final GitHubRepositoryRule signed = Rules.requireSignedCommits();
+    void restrictCreation_shouldBuildTheMatchingRecord_whenCalled() {
+        final GitHubRepositoryRule rule = Rules.restrictCreation();
 
-        assertSoftly(softly -> {
-            softly.assertThat(creation).isInstanceOf(GitHubRepositoryRuleCreation.class);
-            softly.assertThat(deletion).isInstanceOf(GitHubRepositoryRuleDeletion.class);
-            softly.assertThat(update).isInstanceOf(GitHubRepositoryRuleUpdate.class);
-            softly.assertThat(forcePush).isInstanceOf(GitHubRepositoryRuleNonFastForward.class);
-            softly.assertThat(linear).isInstanceOf(GitHubRepositoryRuleRequiredLinearHistory.class);
-            softly.assertThat(signed).isInstanceOf(GitHubRepositoryRuleRequiredSignatures.class);
-        });
+        assertThat(rule).isInstanceOf(GitHubRepositoryRuleCreation.class);
+    }
+
+    @Test
+    void restrictDeletion_shouldBuildTheMatchingRecord_whenCalled() {
+        final GitHubRepositoryRule rule = Rules.restrictDeletion();
+
+        assertThat(rule).isInstanceOf(GitHubRepositoryRuleDeletion.class);
+    }
+
+    @Test
+    void restrictUpdates_shouldBuildTheMatchingRecord_whenCalled() {
+        final GitHubRepositoryRule rule = Rules.restrictUpdates();
+
+        assertThat(rule).isInstanceOf(GitHubRepositoryRuleUpdate.class);
+    }
+
+    @Test
+    void blockForcePushes_shouldBuildTheMatchingRecord_whenCalled() {
+        final GitHubRepositoryRule rule = Rules.blockForcePushes();
+
+        assertThat(rule).isInstanceOf(GitHubRepositoryRuleNonFastForward.class);
+    }
+
+    @Test
+    void requireLinearHistory_shouldBuildTheMatchingRecord_whenCalled() {
+        final GitHubRepositoryRule rule = Rules.requireLinearHistory();
+
+        assertThat(rule).isInstanceOf(GitHubRepositoryRuleRequiredLinearHistory.class);
+    }
+
+    @Test
+    void requireSignedCommits_shouldBuildTheMatchingRecord_whenCalled() {
+        final GitHubRepositoryRule rule = Rules.requireSignedCommits();
+
+        assertThat(rule).isInstanceOf(GitHubRepositoryRuleRequiredSignatures.class);
     }
 
     @Test
@@ -69,18 +94,21 @@ class RulesTest {
         });
     }
 
-    @Test
-    void requirePullRequest_shouldThrowIllegalArgumentException_whenApprovalsAreAboveTen() {
-        final Throwable thrown = catchThrowable(() -> Rules.requirePullRequest(11));
+    @ParameterizedTest
+    @ValueSource(ints = {-1, 11})
+    void requirePullRequest_shouldThrowIllegalArgumentException_whenApprovalsAreOutOfRange(final int approvals) {
+        final Throwable thrown = catchThrowable(() -> Rules.requirePullRequest(approvals));
 
         assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("approvals");
     }
 
-    @Test
-    void requirePullRequest_shouldThrowIllegalArgumentException_whenApprovalsAreNegative() {
-        final Throwable thrown = catchThrowable(() -> Rules.requirePullRequest(-1));
+    @ParameterizedTest
+    @ValueSource(ints = {0, 10})
+    void requirePullRequest_shouldKeepTheApprovals_whenTheyAreOnTheBoundary(final int approvals) {
+        final GitHubRepositoryRulePullRequest rule =
+                (GitHubRepositoryRulePullRequest) Rules.requirePullRequest(approvals);
 
-        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("approvals");
+        assertThat(rule.parameters().requiredApprovingReviewCount()).isEqualTo(approvals);
     }
 
     @Test
@@ -95,6 +123,14 @@ class RulesTest {
                     .extracting(GitHubRepositoryRuleParamsStatusCheckConfiguration::context)
                     .containsExactly("build", "lint");
         });
+    }
+
+    @Test
+    void requireStatusChecks_shouldAcceptAnEmptyList_whenNoContextIsGiven() {
+        final GitHubRepositoryRuleRequiredStatusChecks rule =
+                (GitHubRepositoryRuleRequiredStatusChecks) Rules.requireStatusChecks(false, List.of());
+
+        assertThat(rule.parameters().requiredStatusChecks()).isEmpty();
     }
 
     @Test

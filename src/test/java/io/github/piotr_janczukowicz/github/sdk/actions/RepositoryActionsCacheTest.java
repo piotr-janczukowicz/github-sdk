@@ -26,6 +26,7 @@ import io.github.piotr_janczukowicz.github.sdk.Repository;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -49,12 +50,14 @@ class RepositoryActionsCacheTest {
 
         final List<ActionsCache> caches = sut.caches().toList();
 
-        assertThat(caches).singleElement().satisfies(cache -> {
-            assertThat(cache.id()).isEqualTo(7L);
-            assertThat(cache.key()).contains("maven-key");
-            assertThat(cache.ref()).contains("refs/heads/main");
-            assertThat(cache.response()).isSameAs(listed);
-        });
+        assertThat(caches)
+                .singleElement()
+                .satisfies(cache -> assertSoftly(softly -> {
+                    softly.assertThat(cache.id()).isEqualTo(7L);
+                    softly.assertThat(cache.key()).contains("maven-key");
+                    softly.assertThat(cache.ref()).contains("refs/heads/main");
+                    softly.assertThat(cache.response()).isSameAs(listed);
+                }));
     }
 
     @Test
@@ -104,6 +107,13 @@ class RepositoryActionsCacheTest {
             softly.assertThat(result).extracting(ActionsCache::id).containsExactly(8L);
             softly.assertThat(filter.getValue().key()).contains("maven-key");
         });
+    }
+
+    @Test
+    void deleteByKey_shouldThrowNullPointerException_whenKeyIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.deleteByKey(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("key");
     }
 
     @Test
@@ -215,15 +225,47 @@ class RepositoryActionsCacheTest {
     }
 
     @Test
-    void actionsCache_constructor_shouldThrowNullPointerException_whenResponseIsNull() {
+    void constructor_shouldThrowNullPointerException_whenTheCacheResponseIsNull() {
         final Throwable thrown = catchThrowable(() -> new ActionsCache(sut, null));
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("response");
     }
 
+    @Test
+    void constructor_shouldThrowNullPointerException_whenTheCacheResponseHasNoId() {
+        final GitHubActionsCache noId = mock(GitHubActionsCache.class);
+        when(noId.id()).thenReturn(null);
+
+        final Throwable thrown = catchThrowable(() -> new ActionsCache(sut, noId));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("response.id");
+    }
+
+    @Test
+    void key_shouldBeEmpty_whenTheCacheResponseHasNoKey() {
+        final GitHubActionsCache noKey = mock(GitHubActionsCache.class);
+        when(noKey.id()).thenReturn(7L);
+        final ActionsCache cache = new ActionsCache(sut, noKey);
+
+        final Optional<String> key = cache.key();
+
+        assertThat(key).isEmpty();
+    }
+
+    @Test
+    void ref_shouldBeEmpty_whenTheCacheResponseHasNoRef() {
+        final GitHubActionsCache noRef = mock(GitHubActionsCache.class);
+        when(noRef.id()).thenReturn(7L);
+        final ActionsCache cache = new ActionsCache(sut, noRef);
+
+        final Optional<String> ref = cache.ref();
+
+        assertThat(ref).isEmpty();
+    }
+
     private static GitHubActionsCache cache(final long id) {
         final GitHubActionsCache cache = mock(GitHubActionsCache.class);
-        lenient().when(cache.id()).thenReturn(id);
+        when(cache.id()).thenReturn(id);
         lenient().when(cache.key()).thenReturn("maven-key");
         lenient().when(cache.ref()).thenReturn("refs/heads/main");
         return cache;

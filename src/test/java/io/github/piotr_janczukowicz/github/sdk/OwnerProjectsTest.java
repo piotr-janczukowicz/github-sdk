@@ -56,6 +56,16 @@ class OwnerProjectsTest {
     }
 
     @Test
+    void project_shouldBeEmpty_whenTheOrganizationDoesNotHaveIt() throws IOException {
+        when(github.projects().project().getForOrg("acme", NUMBER)).thenReturn(Optional.empty());
+        final Organization sut = organization();
+
+        final Optional<Project> found = sut.project(NUMBER);
+
+        assertThat(found).isEmpty();
+    }
+
+    @Test
     void projects_shouldListTheProjectsOfTheUser_whenTheyExist() throws IOException {
         final GitHubProject listed = ProjectFixtures.project();
         when(github.projects().project().listForUser("octocat").stream()).thenReturn(Stream.of(listed));
@@ -80,6 +90,16 @@ class OwnerProjectsTest {
             softly.assertThat(found).isPresent();
             softly.assertThat(found.orElseThrow().response()).isSameAs(loaded);
         });
+    }
+
+    @Test
+    void project_shouldBeEmpty_whenTheUserDoesNotHaveIt() throws IOException {
+        when(github.projects().project().getForUser("octocat", NUMBER)).thenReturn(Optional.empty());
+        final User sut = user();
+
+        final Optional<Project> found = sut.project(NUMBER);
+
+        assertThat(found).isEmpty();
     }
 
     private Organization organization() {

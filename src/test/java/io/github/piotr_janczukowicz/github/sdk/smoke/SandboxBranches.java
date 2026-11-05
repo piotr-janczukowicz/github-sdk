@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
-/** Creates and removes the branches, commits and pull request payloads that the pull request smoke tests need. */
 final class SandboxBranches {
 
     private SandboxBranches() {

@@ -7,7 +7,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -54,7 +53,7 @@ class ProjectTest {
             GitHubSdk.of(mock(GitHub.class, RETURNS_DEEP_STUBS)).repository("octocat", "hello-world");
 
     @Test
-    void accessors_shouldExposeTheResponse_whenProjectIsLoaded() {
+    void constructor_shouldExposeTheResponse_whenProjectIsLoaded() {
         assertSoftly(softly -> {
             softly.assertThat(sut.number()).isEqualTo(NUMBER);
             softly.assertThat(sut.nodeId()).contains("PVT_1");
@@ -93,7 +92,7 @@ class ProjectTest {
     }
 
     @Test
-    void items_shouldStreamTheItemsWithoutAFilter_whenCalled() throws IOException {
+    void items_shouldStreamTheItemsWithoutAFilter() throws IOException {
         final GitHubProjectItem listed = ProjectFixtures.item();
         when(gateway.items(eq(NUMBER), any())).thenReturn(Stream.of(listed));
         final ArgumentCaptor<GitHubListProjectItemsFilter> filter =
@@ -103,10 +102,12 @@ class ProjectTest {
 
         verify(gateway).items(eq(NUMBER), filter.capture());
         assertSoftly(softly -> {
-            softly.assertThat(items).singleElement().satisfies(item -> {
-                assertThat(item.response()).isSameAs(listed);
-                assertThat(item.project()).isSameAs(sut);
-            });
+            softly.assertThat(items)
+                    .singleElement()
+                    .satisfies(item -> assertSoftly(inner -> {
+                        inner.assertThat(item.response()).isSameAs(listed);
+                        inner.assertThat(item.project()).isSameAs(sut);
+                    }));
             softly.assertThat(filter.getValue().q()).isNull();
         });
     }
@@ -118,10 +119,19 @@ class ProjectTest {
                 ArgumentCaptor.forClass(GitHubListProjectItemsFilter.class);
 
         final List<ProjectItem> found = sut.items("is:issue").toList();
-        assertThat(found).isEmpty();
 
         verify(gateway).items(eq(NUMBER), filter.capture());
-        assertThat(filter.getValue().q()).isEqualTo("is:issue");
+        assertSoftly(softly -> {
+            softly.assertThat(found).isEmpty();
+            softly.assertThat(filter.getValue().q()).isEqualTo("is:issue");
+        });
+    }
+
+    @Test
+    void items_shouldThrowNullPointerException_whenQueryIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.items(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("query");
     }
 
     @Test
@@ -138,12 +148,25 @@ class ProjectTest {
 
         final Optional<ProjectItem> found = sut.item(ITEM_ID);
 
-        assertThat(found).isPresent();
-        assertThat(found.orElseThrow().response()).isSameAs(loaded);
+        assertThat(found)
+                .get()
+                .satisfies(item -> assertSoftly(softly -> {
+                    softly.assertThat(item.response()).isSameAs(loaded);
+                    softly.assertThat(item.project()).isSameAs(sut);
+                }));
     }
 
     @Test
-    void addIssue_shouldAddByRepositoryAndReturnTheItem_whenCalled() throws IOException {
+    void item_shouldBeEmpty_whenItDoesNotExist() throws IOException {
+        when(gateway.item(NUMBER, ITEM_ID)).thenReturn(Optional.empty());
+
+        final Optional<ProjectItem> found = sut.item(ITEM_ID);
+
+        assertThat(found).isEmpty();
+    }
+
+    @Test
+    void addIssue_shouldAddByRepositoryAndReturnTheItem() throws IOException {
         final Issue issue = mock(Issue.class);
         when(issue.repository()).thenReturn(repository);
         when(issue.number()).thenReturn(12);
@@ -166,7 +189,7 @@ class ProjectTest {
     }
 
     @Test
-    void addPullRequest_shouldAddByRepositoryAndReturnTheItem_whenCalled() throws IOException {
+    void addPullRequest_shouldAddByRepositoryAndReturnTheItem() throws IOException {
         final PullRequest pullRequest = mock(PullRequest.class);
         when(pullRequest.repository()).thenReturn(repository);
         when(pullRequest.number()).thenReturn(34);
@@ -200,7 +223,7 @@ class ProjectTest {
     }
 
     @Test
-    void addDraft_shouldSendTitleAndBodyAndReturnTheItem_whenCalled() throws IOException {
+    void addDraft_shouldSendTitleAndBodyAndReturnTheItem() throws IOException {
         final GitHubProjectItem loaded = ProjectFixtures.item();
         when(gateway.addDraft(eq(response), any())).thenReturn(added);
         when(gateway.item(NUMBER, ITEM_ID)).thenReturn(Optional.of(loaded));
@@ -225,6 +248,13 @@ class ProjectTest {
     }
 
     @Test
+    void addDraft_shouldThrowNullPointerException_whenTitleIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.addDraft(null, "Details"));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("title");
+    }
+
+    @Test
     void addIssue_shouldThrowNullPointerException_whenIssueIsNull() {
         final Throwable thrown = catchThrowable(() -> sut.addIssue(null));
 
@@ -245,10 +275,12 @@ class ProjectTest {
 
         final List<ProjectField> fields = sut.fields().toList();
 
-        assertThat(fields).singleElement().satisfies(field -> {
-            assertThat(field.response()).isSameAs(listed);
-            assertThat(field.project()).isSameAs(sut);
-        });
+        assertThat(fields)
+                .singleElement()
+                .satisfies(field -> assertSoftly(softly -> {
+                    softly.assertThat(field.response()).isSameAs(listed);
+                    softly.assertThat(field.project()).isSameAs(sut);
+                }));
     }
 
     @Test
@@ -258,30 +290,71 @@ class ProjectTest {
 
         final Optional<ProjectField> found = sut.field(ProjectFixtures.FIELD_ID);
 
-        assertThat(found).isPresent();
-        assertThat(found.orElseThrow().response()).isSameAs(loaded);
+        assertThat(found)
+                .get()
+                .satisfies(field -> assertSoftly(softly -> {
+                    softly.assertThat(field.response()).isSameAs(loaded);
+                    softly.assertThat(field.project()).isSameAs(sut);
+                }));
     }
 
     @Test
-    void addFields_shouldSendTheMatchingDataType_whenTextNumberAndDateFieldsAreAdded() throws IOException {
+    void field_shouldBeEmpty_whenItDoesNotExist() throws IOException {
+        when(gateway.field(NUMBER, ProjectFixtures.FIELD_ID)).thenReturn(Optional.empty());
+
+        final Optional<ProjectField> found = sut.field(ProjectFixtures.FIELD_ID);
+
+        assertThat(found).isEmpty();
+    }
+
+    @Test
+    void addTextField_shouldSendTheMatchingDataType() throws IOException {
         final GitHubProjectField created = ProjectFixtures.field();
         when(gateway.addBasicField(eq(NUMBER), any())).thenReturn(created);
         final ArgumentCaptor<GitHubAddProjectFieldPayload.Basic> payload =
                 ArgumentCaptor.forClass(GitHubAddProjectFieldPayload.Basic.class);
 
-        final ProjectField text = sut.addTextField("Notes");
-        sut.addNumberField("Points");
-        sut.addDateField("Due");
+        final ProjectField result = sut.addTextField("Notes");
 
-        verify(gateway, times(3)).addBasicField(eq(NUMBER), payload.capture());
+        verify(gateway).addBasicField(eq(NUMBER), payload.capture());
         assertSoftly(softly -> {
-            softly.assertThat(text.response()).isSameAs(created);
-            softly.assertThat(payload.getAllValues())
-                    .extracting(GitHubAddProjectFieldPayload.Basic::dataType)
-                    .containsExactly(
-                            GitHubProjectFieldDataType.TEXT,
-                            GitHubProjectFieldDataType.NUMBER,
-                            GitHubProjectFieldDataType.DATE);
+            softly.assertThat(result.response()).isSameAs(created);
+            softly.assertThat(payload.getValue().name()).isEqualTo("Notes");
+            softly.assertThat(payload.getValue().dataType()).isEqualTo(GitHubProjectFieldDataType.TEXT);
+        });
+    }
+
+    @Test
+    void addNumberField_shouldSendTheMatchingDataType() throws IOException {
+        final GitHubProjectField created = ProjectFixtures.field();
+        when(gateway.addBasicField(eq(NUMBER), any())).thenReturn(created);
+        final ArgumentCaptor<GitHubAddProjectFieldPayload.Basic> payload =
+                ArgumentCaptor.forClass(GitHubAddProjectFieldPayload.Basic.class);
+
+        final ProjectField result = sut.addNumberField("Points");
+
+        verify(gateway).addBasicField(eq(NUMBER), payload.capture());
+        assertSoftly(softly -> {
+            softly.assertThat(result.response()).isSameAs(created);
+            softly.assertThat(payload.getValue().name()).isEqualTo("Points");
+            softly.assertThat(payload.getValue().dataType()).isEqualTo(GitHubProjectFieldDataType.NUMBER);
+        });
+    }
+
+    @Test
+    void addDateField_shouldSendTheMatchingDataType() throws IOException {
+        final GitHubProjectField created = ProjectFixtures.field();
+        when(gateway.addBasicField(eq(NUMBER), any())).thenReturn(created);
+        final ArgumentCaptor<GitHubAddProjectFieldPayload.Basic> payload =
+                ArgumentCaptor.forClass(GitHubAddProjectFieldPayload.Basic.class);
+
+        final ProjectField result = sut.addDateField("Due");
+
+        verify(gateway).addBasicField(eq(NUMBER), payload.capture());
+        assertSoftly(softly -> {
+            softly.assertThat(result.response()).isSameAs(created);
+            softly.assertThat(payload.getValue().name()).isEqualTo("Due");
+            softly.assertThat(payload.getValue().dataType()).isEqualTo(GitHubProjectFieldDataType.DATE);
         });
     }
 
@@ -293,7 +366,7 @@ class ProjectTest {
     }
 
     @Test
-    void addSingleSelectField_shouldSendTheOptions_whenCalled() throws IOException {
+    void addSingleSelectField_shouldSendTheOptions() throws IOException {
         final GitHubProjectField created = ProjectFixtures.field();
         when(gateway.addSingleSelectField(eq(NUMBER), any())).thenReturn(created);
         final ArgumentCaptor<GitHubAddProjectFieldPayload.SingleSelect> payload =
@@ -319,7 +392,7 @@ class ProjectTest {
     }
 
     @Test
-    void createView_shouldSendNameAndLayout_whenCalled() throws IOException {
+    void createView_shouldSendNameAndLayout() throws IOException {
         final GitHubProjectView created = ProjectFixtures.view();
         when(gateway.createView(eq(NUMBER), any())).thenReturn(created);
         final ArgumentCaptor<GitHubCreateProjectViewPayload> payload =
@@ -337,6 +410,13 @@ class ProjectTest {
     }
 
     @Test
+    void createView_shouldThrowIllegalArgumentException_whenNameIsBlank() {
+        final Throwable thrown = catchThrowable(() -> sut.createView(" ", GitHubProjectViewLayout.BOARD));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("name");
+    }
+
+    @Test
     void createView_shouldThrowNullPointerException_whenLayoutIsNull() {
         final Throwable thrown = catchThrowable(() -> sut.createView("Board", null));
 
@@ -344,15 +424,19 @@ class ProjectTest {
     }
 
     @Test
-    void addSingleSelectField_shouldThrowIllegalArgumentException_whenOptionsAreEmptyOrBlank() {
-        final Throwable thrown = catchThrowable(() -> sut.addSingleSelectField("Status", List.of()));
+    void addSingleSelectField_shouldThrowIllegalArgumentException_whenOptionsAreEmpty() {
+        final List<String> options = List.of();
+
+        final Throwable thrown = catchThrowable(() -> sut.addSingleSelectField("Status", options));
 
         assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("options");
     }
 
     @Test
     void addSingleSelectField_shouldThrowIllegalArgumentException_whenAnOptionIsBlank() {
-        final Throwable thrown = catchThrowable(() -> sut.addSingleSelectField("Status", List.of("Todo", " ")));
+        final List<String> options = List.of("Todo", " ");
+
+        final Throwable thrown = catchThrowable(() -> sut.addSingleSelectField("Status", options));
 
         assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("options");
     }

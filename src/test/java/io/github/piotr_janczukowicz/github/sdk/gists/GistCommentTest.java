@@ -32,21 +32,61 @@ class GistCommentTest {
     private final GistComment sut = new GistComment(gist, response);
 
     @Test
-    void accessors_shouldExposeTheResponse_whenCommentIsLoaded() {
-        assertSoftly(softly -> {
-            softly.assertThat(sut.gist()).isSameAs(gist);
-            softly.assertThat(sut.id()).isEqualTo(COMMENT_ID);
-            softly.assertThat(sut.body()).isEqualTo("Nice");
-            softly.assertThat(sut.author()).hasValue("octocat");
-            softly.assertThat(sut.response()).isSameAs(response);
-        });
+    void gist_shouldReturnTheOwningGist_whenCommentIsLoaded() {
+        final Gist owner = sut.gist();
+
+        assertThat(owner).isSameAs(gist);
+    }
+
+    @Test
+    void id_shouldReturnTheId_whenCommentIsLoaded() {
+        final long id = sut.id();
+
+        assertThat(id).isEqualTo(COMMENT_ID);
+    }
+
+    @Test
+    void body_shouldReturnTheBody_whenCommentIsLoaded() {
+        final String body = sut.body();
+
+        assertThat(body).isEqualTo("Nice");
+    }
+
+    @Test
+    void author_shouldReturnTheLogin_whenCommentHasAuthor() {
+        final Optional<String> author = sut.author();
+
+        assertThat(author).hasValue("octocat");
     }
 
     @Test
     void author_shouldBeEmpty_whenGitHubReportsNone() {
         final GistComment anonymous = new GistComment(gist, GistFixtures.commentWithoutAuthor());
 
-        assertThat(anonymous.author()).isEmpty();
+        final Optional<String> author = anonymous.author();
+
+        assertThat(author).isEmpty();
+    }
+
+    @Test
+    void response_shouldReturnTheResponse_whenCommentIsLoaded() {
+        final GitHubGistComment result = sut.response();
+
+        assertThat(result).isSameAs(response);
+    }
+
+    @Test
+    void constructor_shouldThrowNullPointerException_whenGistIsNull() {
+        final Throwable thrown = catchThrowable(() -> new GistComment(null, response));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("gist");
+    }
+
+    @Test
+    void constructor_shouldThrowNullPointerException_whenResponseIsNull() {
+        final Throwable thrown = catchThrowable(() -> new GistComment(gist, null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("response");
     }
 
     @Test
@@ -91,6 +131,13 @@ class GistCommentTest {
         final Throwable thrown = catchThrowable(() -> sut.edit(" "));
 
         assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("body");
+    }
+
+    @Test
+    void edit_shouldThrowNullPointerException_whenBodyIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.edit(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("body");
     }
 
     @Test

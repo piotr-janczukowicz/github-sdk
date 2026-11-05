@@ -4,8 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 import io.github.piotr_janczukowicz.github.api.securityadvisories.GitHubGlobalAdvisory;
-import io.github.piotr_janczukowicz.github.client.exception.GitHubApiException;
+import io.github.piotr_janczukowicz.github.client.exception.GitHubForbiddenException;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
+import io.github.piotr_janczukowicz.github.sdk.advisories.Advisory;
 import java.io.IOException;
 import java.util.List;
 import org.junit.jupiter.api.Assumptions;
@@ -47,8 +48,10 @@ class AdvisoriesAndDependenciesSmokeIT {
         final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
 
         try {
-            assertThat(repository.dependencies().requestSbomReport().sbomUrl()).isNotBlank();
-        } catch (final GitHubApiException | UnsupportedOperationException e) {
+            final String sbomUrl = repository.dependencies().requestSbomReport().sbomUrl();
+
+            assertThat(sbomUrl).isNotBlank();
+        } catch (final GitHubForbiddenException | UnsupportedOperationException e) {
             Assumptions.abort("GitHub refuses the SBOM report here (" + e.getMessage() + ")");
         }
     }
@@ -58,8 +61,12 @@ class AdvisoriesAndDependenciesSmokeIT {
         final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
 
         try {
-            assertThat(repository.advisories().all().count()).isNotNegative();
-        } catch (final GitHubApiException e) {
+            final List<Advisory> advisories =
+                    repository.advisories().all().limit(LIMIT).toList();
+
+            assertThat(advisories)
+                    .allSatisfy(advisory -> assertThat(advisory.ghsaId()).isNotBlank());
+        } catch (final GitHubForbiddenException e) {
             Assumptions.abort("GitHub refuses repository advisories here: the token needs the Repository security"
                     + " advisories permission (" + e.getMessage() + ")");
         }

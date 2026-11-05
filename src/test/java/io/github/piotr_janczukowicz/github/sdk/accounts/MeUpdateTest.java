@@ -142,7 +142,7 @@ class MeUpdateTest {
     }
 
     @Test
-    void anyUpdate_shouldNotSendAnything_beforeSendIsCalled() {
+    void name_shouldNotSendAnything_whenSendIsNotCalled() {
         me.update().name("Octo Cat");
 
         verifyNoInteractions(github);

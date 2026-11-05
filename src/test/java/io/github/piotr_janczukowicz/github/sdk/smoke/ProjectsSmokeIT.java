@@ -41,11 +41,11 @@ class ProjectsSmokeIT {
             final Optional<ProjectField> text = fields.stream()
                     .filter(field -> field.dataType() == GitHubProjectFieldDataType.TEXT)
                     .findFirst();
+            Assumptions.assumeTrue(text.isPresent(), "the project has no TEXT field to change");
             final boolean isListed = project.items().anyMatch(item -> item.id() == draft.id());
             final Project refreshed = project.refresh();
             final ProjectItem reloaded = draft.refresh();
-            final ProjectItem changed =
-                    text.isPresent() ? draft.setField(text.get().id(), "smoke") : reloaded;
+            final ProjectItem changed = draft.setField(text.orElseThrow().id(), "smoke");
 
             assertSoftly(softly -> {
                 softly.assertThat(refreshed.number()).isEqualTo(project.number());
@@ -58,7 +58,9 @@ class ProjectsSmokeIT {
             draft.delete();
         }
 
-        assertThat(project.item(draft.id())).isEmpty();
+        final Optional<ProjectItem> afterDelete = project.item(draft.id());
+
+        assertThat(afterDelete).isEmpty();
     }
 
     private static Project project(final long number) throws IOException {

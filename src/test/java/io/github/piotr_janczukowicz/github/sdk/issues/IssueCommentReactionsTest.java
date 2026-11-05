@@ -73,7 +73,7 @@ class IssueCommentReactionsTest {
     }
 
     @Test
-    void reactionDelete_shouldDeleteFromTheComment_whenCalled() throws IOException {
+    void delete_shouldDeleteFromTheComment_whenCalled() throws IOException {
         when(github.reactions().listForIssueComment(OWNER, NAME, ID).stream())
                 .thenReturn(Stream.of(ReactionsFixtures.reaction()));
         final Reaction reaction = sut.reactions().toList().getFirst();

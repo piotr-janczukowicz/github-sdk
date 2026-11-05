@@ -52,7 +52,7 @@ class OrganizationRunnerGatewayTest {
         when(api
                         .listSelfHostedRunnersForOrg(
                                 eq(OWNER),
-                                any(GitHubListSelfHostedRunnersForOrgFilter.class),
+                                eq(new GitHubListSelfHostedRunnersForOrgFilter("build-1")),
                                 any(GitHubPageRequest.class))
                         .stream())
                 .thenReturn(Stream.of(runner));
@@ -93,7 +93,9 @@ class OrganizationRunnerGatewayTest {
     void addLabels_shouldReturnTheLabels_whenCalled() throws IOException {
         final GitHubRunnerLabels labels = mock(GitHubRunnerLabels.class);
         when(api.addCustomLabelsToSelfHostedRunnerForOrg(
-                        eq(OWNER), eq(ID), any(GitHubAddCustomLabelsToSelfHostedRunnerForOrgPayload.class)))
+                        eq(OWNER),
+                        eq(ID),
+                        eq(new GitHubAddCustomLabelsToSelfHostedRunnerForOrgPayload(List.of("gpu")))))
                 .thenReturn(labels);
 
         final GitHubRunnerLabels result = sut.addLabels(ID, List.of("gpu"));
@@ -105,7 +107,9 @@ class OrganizationRunnerGatewayTest {
     void replaceLabels_shouldReturnTheLabels_whenCalled() throws IOException {
         final GitHubRunnerLabels labels = mock(GitHubRunnerLabels.class);
         when(api.replaceCustomLabelsForSelfHostedRunnerForOrg(
-                        eq(OWNER), eq(ID), any(GitHubSetCustomLabelsForSelfHostedRunnerForOrgPayload.class)))
+                        eq(OWNER),
+                        eq(ID),
+                        eq(new GitHubSetCustomLabelsForSelfHostedRunnerForOrgPayload(List.of("gpu")))))
                 .thenReturn(labels);
 
         final GitHubRunnerLabels result = sut.replaceLabels(ID, List.of("gpu"));

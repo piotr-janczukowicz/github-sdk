@@ -122,6 +122,22 @@ class EventsAndAppsEntryPointsTest {
     }
 
     @Test
+    void app_shouldBeEmpty_whenTheSlugDoesNotExist() throws IOException {
+        when(github.apps().app().getBySlug("ghost-app")).thenReturn(Optional.empty());
+
+        final Optional<App> found = sdk.app("ghost-app");
+
+        assertThat(found).isEmpty();
+    }
+
+    @Test
+    void app_shouldThrowNullPointerException_whenSlugIsNull() {
+        final Throwable thrown = catchThrowable(() -> sdk.app(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("slug");
+    }
+
+    @Test
     void app_shouldThrowIllegalArgumentException_whenSlugIsBlank() {
         final Throwable thrown = catchThrowable(() -> sdk.app(" "));
 

@@ -92,7 +92,7 @@ class RepositoryCodeScanningTest {
     }
 
     @Test
-    void deleteAnalysis_shouldReturnTheNextLinks_whenCalled() throws IOException {
+    void deleteAnalysis_shouldReturnTheDeletion_whenCalled() throws IOException {
         final GitHubCodeScanningAnalysisDeletion deletion = mock(GitHubCodeScanningAnalysisDeletion.class);
         when(api.deleteAnalysis(OWNER, NAME, 4L)).thenReturn(deletion);
 
@@ -178,6 +178,56 @@ class RepositoryCodeScanningTest {
         sut.deleteDatabase("java");
 
         verify(api).deleteCodeqlDatabase(OWNER, NAME, "java");
+    }
+
+    @Test
+    void analysis_shouldBeEmpty_whenGitHubAnswersNotFound() throws IOException {
+        when(api.getAnalysis(OWNER, NAME, 4L)).thenReturn(Optional.empty());
+
+        final Optional<GitHubCodeScanningAnalysis> found = sut.analysis(4L);
+
+        assertThat(found).isEmpty();
+    }
+
+    @Test
+    void sarif_shouldBeEmpty_whenGitHubAnswersNotFound() throws IOException {
+        when(api.getAnalysisSarif(OWNER, NAME, 4L)).thenReturn(Optional.empty());
+
+        final Optional<String> found = sut.sarif(4L);
+
+        assertThat(found).isEmpty();
+    }
+
+    @Test
+    void sarifStatus_shouldBeEmpty_whenGitHubAnswersNotFound() throws IOException {
+        when(api.getSarif(OWNER, NAME, "abc")).thenReturn(Optional.empty());
+
+        final Optional<GitHubCodeScanningSarifsStatus> found = sut.sarifStatus("abc");
+
+        assertThat(found).isEmpty();
+    }
+
+    @Test
+    void database_shouldBeEmpty_whenGitHubAnswersNotFound() throws IOException {
+        when(api.getCodeqlDatabase(OWNER, NAME, "java")).thenReturn(Optional.empty());
+
+        final Optional<GitHubCodeScanningCodeqlDatabase> found = sut.database("java");
+
+        assertThat(found).isEmpty();
+    }
+
+    @Test
+    void databaseDownloadLocation_shouldThrowIllegalArgumentException_whenLanguageIsBlank() {
+        final Throwable thrown = catchThrowable(() -> sut.databaseDownloadLocation(" "));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("language");
+    }
+
+    @Test
+    void deleteDatabase_shouldThrowIllegalArgumentException_whenLanguageIsBlank() {
+        final Throwable thrown = catchThrowable(() -> sut.deleteDatabase(" "));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("language");
     }
 
     @Test

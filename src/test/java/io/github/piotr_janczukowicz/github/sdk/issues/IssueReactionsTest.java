@@ -76,7 +76,7 @@ class IssueReactionsTest {
     }
 
     @Test
-    void reactionDelete_shouldDeleteFromTheIssue_whenCalled() throws IOException {
+    void delete_shouldDeleteFromTheIssue_whenCalled() throws IOException {
         when(github.reactions().listForIssue(OWNER, NAME, NUMBER).stream())
                 .thenReturn(Stream.of(ReactionsFixtures.reaction()));
         final Reaction reaction = sut.reactions().toList().getFirst();

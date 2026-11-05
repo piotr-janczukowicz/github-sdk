@@ -1,10 +1,14 @@
 package io.github.piotr_janczukowicz.github.sdk.smoke;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
+import io.github.piotr_janczukowicz.github.api.actions.GitHubOidcCustomSubRepo;
 import io.github.piotr_janczukowicz.github.client.exception.GitHubApiException;
+import io.github.piotr_janczukowicz.github.client.exception.GitHubForbiddenException;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
 import java.io.IOException;
+import java.util.List;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
@@ -25,15 +29,14 @@ class RunnersAndOidcSmokeIT {
         final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
 
         try {
-            final long runners = repository.selfHostedRunners().all().count();
-            final int applications =
-                    repository.selfHostedRunners().applications().size();
+            final List<?> runners = repository.selfHostedRunners().all().toList();
+            final List<?> applications = repository.selfHostedRunners().applications();
 
             assertSoftly(softly -> {
-                softly.assertThat(runners).isNotNegative();
-                softly.assertThat(applications).isNotNegative();
+                softly.assertThat(runners).doesNotContainNull();
+                softly.assertThat(applications).isNotEmpty();
             });
-        } catch (final GitHubApiException e) {
+        } catch (final GitHubForbiddenException e) {
             Assumptions.abort("GitHub refuses self-hosted runners here: the token needs the Administration permission ("
                     + e.getMessage() + ")");
         }
@@ -44,9 +47,9 @@ class RunnersAndOidcSmokeIT {
         final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
 
         try {
-            final boolean isDefaultUsed = repository.oidcSubjectClaim().useDefault();
+            final GitHubOidcCustomSubRepo claim = repository.oidcSubjectClaim();
 
-            assertSoftly(softly -> softly.assertThat(isDefaultUsed).isIn(true, false));
+            assertThat(claim).isNotNull();
         } catch (final GitHubApiException e) {
             Assumptions.abort("GitHub refuses the OIDC settings here (" + e.getMessage() + ")");
         }

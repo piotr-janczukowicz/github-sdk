@@ -1,6 +1,6 @@
 package io.github.piotr_janczukowicz.github.sdk.smoke;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubPullRequestBranchUpdateResult;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubPullRequestMergeMethod;
@@ -42,10 +42,12 @@ class PullRequestWriteSmokeIT {
             final String comment = issue.comment("smoke comment").body().orElseThrow();
             pullRequest = reopened;
 
-            assertThat(updated.title()).isEqualTo(ENV.name("renamed"));
-            assertThat(closed.state()).isEqualTo(PullRequestState.CLOSED);
-            assertThat(reopened.state()).isEqualTo(PullRequestState.OPEN);
-            assertThat(comment).isEqualTo("smoke comment");
+            assertSoftly(softly -> {
+                softly.assertThat(updated.title()).isEqualTo(ENV.name("renamed"));
+                softly.assertThat(closed.state()).isEqualTo(PullRequestState.CLOSED);
+                softly.assertThat(reopened.state()).isEqualTo(PullRequestState.OPEN);
+                softly.assertThat(comment).isEqualTo("smoke comment");
+            });
         } finally {
             if (pullRequest != null) {
                 pullRequest.close();
@@ -70,9 +72,11 @@ class PullRequestWriteSmokeIT {
 
             final PullRequest merged = created.merge(GitHubPullRequestMergeMethod.SQUASH);
 
-            assertThat(created.isMerged()).isFalse();
-            assertThat(merged.isMerged()).isTrue();
-            assertThat(merged.state()).isEqualTo(PullRequestState.CLOSED);
+            assertSoftly(softly -> {
+                softly.assertThat(created.isMerged()).isFalse();
+                softly.assertThat(merged.isMerged()).isTrue();
+                softly.assertThat(merged.state()).isEqualTo(PullRequestState.CLOSED);
+            });
         } finally {
             SandboxBranches.deleteBranch(ENV, head);
             SandboxBranches.deleteBranch(ENV, base);
@@ -80,7 +84,7 @@ class PullRequestWriteSmokeIT {
     }
 
     @Test
-    void pullRequest_shouldGiveDiffPatchAndAnUpdatedBranch_whenTheBaseMovedOn() throws IOException {
+    void pullRequest_shouldGiveDiffPatchAndBranchUpdateMessage_whenTheBaseMovedOn() throws IOException {
         final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
         final String main = repository.fetch().orElseThrow().response().defaultBranch();
         final String base = ENV.name("diff-base");
@@ -99,9 +103,11 @@ class PullRequestWriteSmokeIT {
             final String patch = pullRequest.patch().orElseThrow();
             final GitHubPullRequestBranchUpdateResult update = pullRequest.updateBranch();
 
-            assertThat(diff).contains(file);
-            assertThat(patch).contains(file);
-            assertThat(update.message()).isNotBlank();
+            assertSoftly(softly -> {
+                softly.assertThat(diff).contains(file);
+                softly.assertThat(patch).contains(file);
+                softly.assertThat(update.message()).isNotBlank();
+            });
         } finally {
             if (pullRequest != null) {
                 pullRequest.close();

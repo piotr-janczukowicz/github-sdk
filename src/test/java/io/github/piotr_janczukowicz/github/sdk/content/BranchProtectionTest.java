@@ -18,6 +18,7 @@ import io.github.piotr_janczukowicz.github.sdk.fixtures.RepositoryContentFixture
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.io.IOException;
 import java.util.Optional;
+import java.util.OptionalInt;
 import org.junit.jupiter.api.Test;
 
 @UnitTest
@@ -46,16 +47,52 @@ class BranchProtectionTest {
     }
 
     @Test
-    void accessors_shouldReportNothingEnabled_whenTheRuleHasNoOptions() {
-        final BranchProtection bare = new BranchProtection(branch, ProtectionFixtures.bareProtection());
+    void isEnforcedForAdmins_shouldBeFalse_whenTheRuleHasNoOptions() {
+        final BranchProtection bare = bareRule();
 
-        assertSoftly(softly -> {
-            softly.assertThat(bare.isEnforcedForAdmins()).isFalse();
-            softly.assertThat(bare.requiredApprovals()).isEmpty();
-            softly.assertThat(bare.isLinearHistoryRequired()).isFalse();
-            softly.assertThat(bare.allowsForcePushes()).isFalse();
-            softly.assertThat(bare.allowsDeletions()).isFalse();
-        });
+        final boolean enforced = bare.isEnforcedForAdmins();
+
+        assertThat(enforced).isFalse();
+    }
+
+    @Test
+    void requiredApprovals_shouldBeEmpty_whenTheRuleHasNoOptions() {
+        final BranchProtection bare = bareRule();
+
+        final OptionalInt approvals = bare.requiredApprovals();
+
+        assertThat(approvals).isEmpty();
+    }
+
+    @Test
+    void isLinearHistoryRequired_shouldBeFalse_whenTheRuleHasNoOptions() {
+        final BranchProtection bare = bareRule();
+
+        final boolean required = bare.isLinearHistoryRequired();
+
+        assertThat(required).isFalse();
+    }
+
+    @Test
+    void allowsForcePushes_shouldBeFalse_whenTheRuleHasNoOptions() {
+        final BranchProtection bare = bareRule();
+
+        final boolean allowed = bare.allowsForcePushes();
+
+        assertThat(allowed).isFalse();
+    }
+
+    @Test
+    void allowsDeletions_shouldBeFalse_whenTheRuleHasNoOptions() {
+        final BranchProtection bare = bareRule();
+
+        final boolean allowed = bare.allowsDeletions();
+
+        assertThat(allowed).isFalse();
+    }
+
+    private BranchProtection bareRule() {
+        return new BranchProtection(branch, ProtectionFixtures.bareProtection());
     }
 
     @Test

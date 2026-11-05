@@ -16,11 +16,13 @@ import io.github.piotr_janczukowicz.github.api.collaborators.GitHubRepositoryInv
 import io.github.piotr_janczukowicz.github.api.collaborators.GitHubRepositoryInvitationPermission;
 import io.github.piotr_janczukowicz.github.api.collaborators.GitHubUpdateRepositoryInvitationPayload;
 import io.github.piotr_janczukowicz.github.api.collaborators.GitHubUpdateRepositoryInvitationPermission;
+import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
 import io.github.piotr_janczukowicz.github.sdk.GitHubSdk;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
 import io.github.piotr_janczukowicz.github.sdk.fixtures.CollaboratorsFixtures;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.io.IOException;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -50,19 +52,39 @@ class InvitationTest {
     }
 
     @Test
-    void optionalAccessors_shouldBeEmptyAndExpiredFalse_whenTheResponseHasNoValues() {
+    void invitee_shouldBeEmpty_whenTheResponseHasNoInvitee() {
+        final Invitation invitation = bareInvitation();
+
+        final Optional<GitHubSimpleUser> invitee = invitation.invitee();
+
+        assertThat(invitee).isEmpty();
+    }
+
+    @Test
+    void inviter_shouldBeEmpty_whenTheResponseHasNoInviter() {
+        final Invitation invitation = bareInvitation();
+
+        final Optional<GitHubSimpleUser> inviter = invitation.inviter();
+
+        assertThat(inviter).isEmpty();
+    }
+
+    @Test
+    void isExpired_shouldBeFalse_whenTheResponseHasNoExpiryFlag() {
+        final Invitation invitation = bareInvitation();
+
+        final boolean isExpired = invitation.isExpired();
+
+        assertThat(isExpired).isFalse();
+    }
+
+    private Invitation bareInvitation() {
         final GitHubRepositoryInvitation bare = GitHubRepositoryInvitationBuilder.builder(response)
                 .invitee(null)
                 .inviter(null)
                 .expired(null)
                 .build();
-        final Invitation invitation = new Invitation(repository, bare);
-
-        assertSoftly(softly -> {
-            softly.assertThat(invitation.invitee()).isEmpty();
-            softly.assertThat(invitation.inviter()).isEmpty();
-            softly.assertThat(invitation.isExpired()).isFalse();
-        });
+        return new Invitation(repository, bare);
     }
 
     @Test

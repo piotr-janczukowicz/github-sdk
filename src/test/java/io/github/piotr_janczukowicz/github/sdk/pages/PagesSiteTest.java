@@ -3,7 +3,6 @@ package io.github.piotr_janczukowicz.github.sdk.pages;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.doReturn;
@@ -42,7 +41,7 @@ class PagesSiteTest {
     private final PagesSite sut = new PagesSite(repository, response);
 
     @Test
-    void accessors_shouldExposeTheResponse_whenSiteIsLoaded() {
+    void constructor_shouldExposeTheResponse_whenSiteIsLoaded() {
         assertSoftly(softly -> {
             softly.assertThat(sut.repository()).isSameAs(repository);
             softly.assertThat(sut.htmlUrl()).contains("https://octocat.github.io/hello-world/");
@@ -56,7 +55,7 @@ class PagesSiteTest {
     }
 
     @Test
-    void accessors_shouldBeEmptyOrFalse_whenGitHubReportsNothing() {
+    void constructor_shouldExposeNothing_whenGitHubReportsNothing() {
         final PagesSite bare = new PagesSite(repository, DeploymentFixtures.barePagesSite());
 
         assertSoftly(softly -> {
@@ -87,7 +86,7 @@ class PagesSiteTest {
     }
 
     @Test
-    void update_shouldSendThePayloadAndReturnTheSite_whenCalled() throws IOException {
+    void update_shouldSendThePayloadAndReturnTheSite() throws IOException {
         final GitHubPagesSite reloaded = DeploymentFixtures.barePagesSite();
         final GitHubPagesApi api = github.pages();
         doReturn(Optional.of(reloaded)).when(api).getPages(OWNER, NAME);
@@ -100,6 +99,17 @@ class PagesSiteTest {
     }
 
     @Test
+    void update_shouldThrowIllegalStateException_whenThereIsNoSiteAfterTheUpdate() throws IOException {
+        final GitHubPagesApi api = github.pages();
+        doReturn(Optional.empty()).when(api).getPages(OWNER, NAME);
+        final GitHubUpdatePagesSitePayload payload = mock(GitHubUpdatePagesSitePayload.class);
+
+        final Throwable thrown = catchThrowable(() -> sut.update(payload));
+
+        assertThat(thrown).isInstanceOf(IllegalStateException.class).hasMessageContaining("no Pages site");
+    }
+
+    @Test
     void update_shouldThrowNullPointerException_whenPayloadIsNull() {
         final Throwable thrown = catchThrowable(() -> sut.update(null));
 
@@ -107,7 +117,7 @@ class PagesSiteTest {
     }
 
     @Test
-    void delete_shouldTurnTheSiteOff_whenCalled() throws IOException {
+    void delete_shouldTurnTheSiteOff() throws IOException {
         final GitHubPagesApi api = github.pages();
 
         sut.delete();
@@ -118,7 +128,7 @@ class PagesSiteTest {
     @Test
     void builds_shouldStreamTheBuilds_whenTheyExist() throws IOException {
         final GitHubPageBuild listed = DeploymentFixtures.pageBuild();
-        when(github.pages().listPagesBuilds(eq(OWNER), eq(NAME), any(GitHubPageRequest.class)).stream())
+        when(github.pages().listPagesBuilds(eq(OWNER), eq(NAME), eq(GitHubPageRequest.byPage())).stream())
                 .thenReturn(Stream.of(listed));
 
         final List<GitHubPageBuild> builds = sut.builds().toList();
@@ -127,7 +137,7 @@ class PagesSiteTest {
     }
 
     @Test
-    void latestBuild_shouldReturnTheLatestBuild_whenCalled() throws IOException {
+    void latestBuild_shouldReturnTheLatestBuild() throws IOException {
         final GitHubPageBuild latest = DeploymentFixtures.pageBuild();
         final GitHubPagesApi api = github.pages();
         doReturn(latest).when(api).getLatestPagesBuild(OWNER, NAME);
@@ -138,7 +148,7 @@ class PagesSiteTest {
     }
 
     @Test
-    void requestBuild_shouldReturnTheQueuedBuild_whenCalled() throws IOException {
+    void requestBuild_shouldReturnTheQueuedBuild() throws IOException {
         final GitHubPageBuildStatus queued = new GitHubPageBuildStatus("https://api.github.com/build", "queued");
         final GitHubPagesApi api = github.pages();
         doReturn(queued).when(api).requestPagesBuild(OWNER, NAME);

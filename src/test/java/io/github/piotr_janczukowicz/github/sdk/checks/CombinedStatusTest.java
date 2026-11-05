@@ -1,5 +1,6 @@
 package io.github.piotr_janczukowicz.github.sdk.checks;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.mockito.Mockito.mock;
 
@@ -33,19 +34,60 @@ class CombinedStatusTest {
     }
 
     @Test
-    void stateChecks_shouldMatchTheState_whenCalled() {
-        final CombinedStatus success = new CombinedStatus(commit, ChecksFixtures.combinedStatus("success"));
-        final CombinedStatus failure = new CombinedStatus(commit, ChecksFixtures.combinedStatus("failure"));
-        final CombinedStatus pending = new CombinedStatus(commit, ChecksFixtures.combinedStatus("pending"));
+    void isSuccess_shouldBeTrue_whenTheStateIsSuccess() {
+        final CombinedStatus status = combined("success");
 
-        assertSoftly(softly -> {
-            softly.assertThat(success.isSuccess()).isTrue();
-            softly.assertThat(success.isFailure()).isFalse();
-            softly.assertThat(success.isPending()).isFalse();
-            softly.assertThat(failure.isFailure()).isTrue();
-            softly.assertThat(failure.isSuccess()).isFalse();
-            softly.assertThat(pending.isPending()).isTrue();
-            softly.assertThat(pending.isSuccess()).isFalse();
-        });
+        final boolean success = status.isSuccess();
+
+        assertThat(success).isTrue();
+    }
+
+    @Test
+    void isSuccess_shouldBeFalse_whenTheStateIsFailure() {
+        final CombinedStatus status = combined("failure");
+
+        final boolean success = status.isSuccess();
+
+        assertThat(success).isFalse();
+    }
+
+    @Test
+    void isFailure_shouldBeTrue_whenTheStateIsFailure() {
+        final CombinedStatus status = combined("failure");
+
+        final boolean failure = status.isFailure();
+
+        assertThat(failure).isTrue();
+    }
+
+    @Test
+    void isFailure_shouldBeFalse_whenTheStateIsSuccess() {
+        final CombinedStatus status = combined("success");
+
+        final boolean failure = status.isFailure();
+
+        assertThat(failure).isFalse();
+    }
+
+    @Test
+    void isPending_shouldBeTrue_whenTheStateIsPending() {
+        final CombinedStatus status = combined("pending");
+
+        final boolean pending = status.isPending();
+
+        assertThat(pending).isTrue();
+    }
+
+    @Test
+    void isPending_shouldBeFalse_whenTheStateIsSuccess() {
+        final CombinedStatus status = combined("success");
+
+        final boolean pending = status.isPending();
+
+        assertThat(pending).isFalse();
+    }
+
+    private CombinedStatus combined(final String state) {
+        return new CombinedStatus(commit, ChecksFixtures.combinedStatus(state));
     }
 }

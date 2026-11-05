@@ -106,19 +106,19 @@ class RulesetUpdateTest {
 
     @Test
     void send_shouldReplaceTheRuleOfTheSameType_whenARuleIsAddedAgain() throws IOException {
-        final GitHubRepositoryRule oldDeletion = Rules.restrictDeletion();
-        doReturn(Optional.of(RulesetFixtures.rulesetWith(List.of(held, oldDeletion))))
+        final GitHubRepositoryRule oldPullRequest = Rules.requirePullRequest(1);
+        doReturn(Optional.of(RulesetFixtures.rulesetWith(List.of(held, oldPullRequest))))
                 .when(api)
                 .getRepoRuleset(OWNER, NAME, ID);
         doReturn(RulesetFixtures.ruleset()).when(api).updateRepoRuleset(eq(OWNER), eq(NAME), eq(ID), any());
-        final GitHubRepositoryRule newDeletion = Rules.restrictDeletion();
+        final GitHubRepositoryRule newPullRequest = Rules.requirePullRequest(2);
         final ArgumentCaptor<GitHubUpdateRepoRulesetPayload> payload =
                 ArgumentCaptor.forClass(GitHubUpdateRepoRulesetPayload.class);
 
-        ruleset.edit().addRule(newDeletion).send();
+        ruleset.edit().addRule(newPullRequest).send();
 
         verify(api).updateRepoRuleset(eq(OWNER), eq(NAME), eq(ID), payload.capture());
-        assertThat(payload.getValue().rules()).containsExactly(held, newDeletion);
+        assertThat(payload.getValue().rules()).containsExactly(held, newPullRequest);
     }
 
     @Test
@@ -212,15 +212,20 @@ class RulesetUpdateTest {
 
     @Test
     void refs_shouldThrowIllegalArgumentException_whenAPatternIsBlank() {
-        final Throwable thrown = catchThrowable(() -> ruleset.edit().refs(List.of(" "), List.of()));
+        final RulesetUpdate update = ruleset.edit();
+        final List<String> include = List.of(" ");
+        final List<String> exclude = List.of();
+
+        final Throwable thrown = catchThrowable(() -> update.refs(include, exclude));
 
         assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("include");
     }
 
     @Test
     void send_shouldThrowIllegalStateException_whenARefRulesetGetsNoIncludedRef() {
-        final Throwable thrown =
-                catchThrowable(() -> ruleset.edit().refs(List.of(), List.of()).send());
+        final RulesetUpdate update = ruleset.edit().refs(List.of(), List.of());
+
+        final Throwable thrown = catchThrowable(update::send);
 
         assertThat(thrown).isInstanceOf(IllegalStateException.class).hasMessageContaining("at least one included ref");
     }
@@ -248,9 +253,13 @@ class RulesetUpdateTest {
         final Ruleset pushRuleset = new Ruleset(repository, rulesetWithTarget(GitHubRepositoryRulesetTarget.PUSH));
         doReturn(RulesetFixtures.ruleset()).when(api).updateRepoRuleset(eq(OWNER), eq(NAME), eq(ID), any());
 
-        final Ruleset result = pushRuleset.edit().refs(List.of(), List.of()).send();
+        final ArgumentCaptor<GitHubUpdateRepoRulesetPayload> payload =
+                ArgumentCaptor.forClass(GitHubUpdateRepoRulesetPayload.class);
 
-        assertThat(result).isNotNull();
+        pushRuleset.edit().refs(List.of(), List.of()).send();
+
+        verify(api).updateRepoRuleset(eq(OWNER), eq(NAME), eq(ID), payload.capture());
+        assertThat(payload.getValue().conditions().refName().include()).isEmpty();
     }
 
     @Test

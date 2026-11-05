@@ -40,7 +40,7 @@ class PullRequestReviewCommentReactionsTest {
     private final PullRequestReviewComment sut = new PullRequestReviewComment(pullRequest, ReviewsFixtures.comment());
 
     @Test
-    void react_shouldSendTheContentAndReturnTheReaction_whenCalled() throws IOException {
+    void react_shouldSendTheContentAndReturnTheReaction() throws IOException {
         final GitHubReaction created = ReactionsFixtures.reaction();
         when(github.reactions().createForPullRequestReviewComment(eq(OWNER), eq(NAME), eq(ID), any()))
                 .thenReturn(created);
@@ -77,7 +77,7 @@ class PullRequestReviewCommentReactionsTest {
     }
 
     @Test
-    void reactionDelete_shouldDeleteFromTheComment_whenCalled() throws IOException {
+    void delete_shouldDeleteFromTheComment() throws IOException {
         when(github.reactions().listForPullRequestReviewComment(OWNER, NAME, ID).stream())
                 .thenReturn(Stream.of(ReactionsFixtures.reaction()));
         final Reaction reaction = sut.reactions().toList().getFirst();

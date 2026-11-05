@@ -50,8 +50,7 @@ class RegistryPackagesTest {
         final Optional<RegistryPackage> found =
                 RegistryPackages.forUser(sdk, "octocat").find(TYPE, NAME);
 
-        assertThat(found).isPresent();
-        assertThat(found.orElseThrow().response()).isSameAs(loaded);
+        assertThat(found).get().extracting(RegistryPackage::response).isSameAs(loaded);
     }
 
     @Test
@@ -62,6 +61,58 @@ class RegistryPackagesTest {
                 RegistryPackages.forAuthenticatedUser(sdk).find(TYPE, NAME);
 
         assertThat(found).isEmpty();
+    }
+
+    @Test
+    void find_shouldBeEmpty_whenTheOrganizationHasNoSuchPackage() throws IOException {
+        when(github.packages().getPackageForOrg("acme", TYPE, NAME)).thenReturn(Optional.empty());
+
+        final Optional<RegistryPackage> found =
+                RegistryPackages.forOrganization(sdk, "acme").find(TYPE, NAME);
+
+        assertThat(found).isEmpty();
+    }
+
+    @Test
+    void find_shouldBeEmpty_whenTheUserHasNoSuchPackage() throws IOException {
+        when(github.packages().getPackageForUser("octocat", TYPE, NAME)).thenReturn(Optional.empty());
+
+        final Optional<RegistryPackage> found =
+                RegistryPackages.forUser(sdk, "octocat").find(TYPE, NAME);
+
+        assertThat(found).isEmpty();
+    }
+
+    @Test
+    void find_shouldThrowNullPointerException_whenTypeIsNull() {
+        final RegistryPackages sut = RegistryPackages.forAuthenticatedUser(sdk);
+
+        final Throwable thrown = catchThrowable(() -> sut.find(null, NAME));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("type");
+    }
+
+    @Test
+    void find_shouldThrowNullPointerException_whenNameIsNull() {
+        final RegistryPackages sut = RegistryPackages.forAuthenticatedUser(sdk);
+
+        final Throwable thrown = catchThrowable(() -> sut.find(TYPE, null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("name");
+    }
+
+    @Test
+    void forOrganization_shouldThrowNullPointerException_whenLoginIsNull() {
+        final Throwable thrown = catchThrowable(() -> RegistryPackages.forOrganization(sdk, null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("login");
+    }
+
+    @Test
+    void forUser_shouldThrowNullPointerException_whenLoginIsNull() {
+        final Throwable thrown = catchThrowable(() -> RegistryPackages.forUser(sdk, null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("login");
     }
 
     @Test

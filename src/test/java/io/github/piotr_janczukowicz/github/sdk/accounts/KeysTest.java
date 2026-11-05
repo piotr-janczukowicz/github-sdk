@@ -31,7 +31,7 @@ class KeysTest {
     private final GitHubSdk sdk = GitHubSdk.of(github);
 
     @Test
-    void sshKey_shouldExposeTheResponse_whenKeyIsLoaded() {
+    void constructor_shouldExposeTheResponse_whenSshKeyIsLoaded() {
         final GitHubKey response = AccountsFixtures.sshKey();
         final SshKey sut = new SshKey(sdk, response);
 
@@ -46,18 +46,20 @@ class KeysTest {
     }
 
     @Test
-    void sshKey_shouldReturnTheReloadedKey_whenItExists() throws IOException {
+    void refresh_shouldReturnTheReloadedSshKey_whenItExists() throws IOException {
         final GitHubKey reloaded = AccountsFixtures.sshKey();
         final GitHubUsersKeysApi api = github.users().keys();
         doReturn(Optional.of(reloaded)).when(api).getPublicKey(ID);
 
-        final SshKey result = new SshKey(sdk, AccountsFixtures.sshKey()).refresh();
+        final SshKey sut = new SshKey(sdk, AccountsFixtures.sshKey());
+
+        final SshKey result = sut.refresh();
 
         assertThat(result.response()).isSameAs(reloaded);
     }
 
     @Test
-    void sshKey_shouldThrowIllegalStateException_whenTheKeyIsGone() throws IOException {
+    void refresh_shouldThrowIllegalStateException_whenTheSshKeyIsGone() throws IOException {
         final GitHubUsersKeysApi api = github.users().keys();
         doReturn(Optional.empty()).when(api).getPublicKey(ID);
         final SshKey sut = new SshKey(sdk, AccountsFixtures.sshKey());
@@ -68,16 +70,18 @@ class KeysTest {
     }
 
     @Test
-    void sshKey_shouldDeleteTheKey_whenCalled() throws IOException {
+    void delete_shouldDeleteSshKey_whenCalled() throws IOException {
         final GitHubUsersKeysApi api = github.users().keys();
 
-        new SshKey(sdk, AccountsFixtures.sshKey()).delete();
+        final SshKey sut = new SshKey(sdk, AccountsFixtures.sshKey());
+
+        sut.delete();
 
         verify(api).deletePublicKey(ID);
     }
 
     @Test
-    void gpgKey_shouldExposeTheResponse_whenKeyIsLoaded() {
+    void constructor_shouldExposeTheResponse_whenGpgKeyIsLoaded() {
         final GitHubGpgKey response = AccountsFixtures.gpgKey();
         final GpgKey sut = new GpgKey(sdk, response);
 
@@ -91,25 +95,27 @@ class KeysTest {
     }
 
     @Test
-    void gpgKey_shouldHaveNoName_whenGitHubReportsNone() {
+    void constructor_shouldHaveNoName_whenGitHubReportsNoneForGpgKey() {
         final GpgKey sut = new GpgKey(sdk, AccountsFixtures.gpgKeyWithoutName());
 
         assertThat(sut.name()).isEmpty();
     }
 
     @Test
-    void gpgKey_shouldReturnTheReloadedKey_whenItExists() throws IOException {
+    void refresh_shouldReturnTheReloadedGpgKey_whenItExists() throws IOException {
         final GitHubGpgKey reloaded = AccountsFixtures.gpgKey();
         final GitHubUsersGpgKeysApi api = github.users().gpgKeys();
         doReturn(Optional.of(reloaded)).when(api).getGpgKey(ID);
 
-        final GpgKey result = new GpgKey(sdk, AccountsFixtures.gpgKey()).refresh();
+        final GpgKey sut = new GpgKey(sdk, AccountsFixtures.gpgKey());
+
+        final GpgKey result = sut.refresh();
 
         assertThat(result.response()).isSameAs(reloaded);
     }
 
     @Test
-    void gpgKey_shouldThrowIllegalStateException_whenTheKeyIsGone() throws IOException {
+    void refresh_shouldThrowIllegalStateException_whenTheGpgKeyIsGone() throws IOException {
         final GitHubUsersGpgKeysApi api = github.users().gpgKeys();
         doReturn(Optional.empty()).when(api).getGpgKey(ID);
         final GpgKey sut = new GpgKey(sdk, AccountsFixtures.gpgKey());
@@ -120,16 +126,18 @@ class KeysTest {
     }
 
     @Test
-    void gpgKey_shouldDeleteTheKey_whenCalled() throws IOException {
+    void delete_shouldDeleteGpgKey_whenCalled() throws IOException {
         final GitHubUsersGpgKeysApi api = github.users().gpgKeys();
 
-        new GpgKey(sdk, AccountsFixtures.gpgKey()).delete();
+        final GpgKey sut = new GpgKey(sdk, AccountsFixtures.gpgKey());
+
+        sut.delete();
 
         verify(api).deleteGpgKey(ID);
     }
 
     @Test
-    void signingKey_shouldExposeTheResponse_whenKeyIsLoaded() {
+    void constructor_shouldExposeTheResponse_whenSigningKeyIsLoaded() {
         final GitHubSshSigningKey response = AccountsFixtures.signingKey();
         final SigningKey sut = new SigningKey(sdk, response);
 
@@ -142,18 +150,20 @@ class KeysTest {
     }
 
     @Test
-    void signingKey_shouldReturnTheReloadedKey_whenItExists() throws IOException {
+    void refresh_shouldReturnTheReloadedSigningKey_whenItExists() throws IOException {
         final GitHubSshSigningKey reloaded = AccountsFixtures.signingKey();
         final GitHubUsersSshSigningKeysApi api = github.users().sshSigningKeys();
         doReturn(Optional.of(reloaded)).when(api).getSshSigningKey(ID);
 
-        final SigningKey result = new SigningKey(sdk, AccountsFixtures.signingKey()).refresh();
+        final SigningKey sut = new SigningKey(sdk, AccountsFixtures.signingKey());
+
+        final SigningKey result = sut.refresh();
 
         assertThat(result.response()).isSameAs(reloaded);
     }
 
     @Test
-    void signingKey_shouldThrowIllegalStateException_whenTheKeyIsGone() throws IOException {
+    void refresh_shouldThrowIllegalStateException_whenTheSigningKeyIsGone() throws IOException {
         final GitHubUsersSshSigningKeysApi api = github.users().sshSigningKeys();
         doReturn(Optional.empty()).when(api).getSshSigningKey(ID);
         final SigningKey sut = new SigningKey(sdk, AccountsFixtures.signingKey());
@@ -164,10 +174,12 @@ class KeysTest {
     }
 
     @Test
-    void signingKey_shouldDeleteTheKey_whenCalled() throws IOException {
+    void delete_shouldDeleteSigningKey_whenCalled() throws IOException {
         final GitHubUsersSshSigningKeysApi api = github.users().sshSigningKeys();
 
-        new SigningKey(sdk, AccountsFixtures.signingKey()).delete();
+        final SigningKey sut = new SigningKey(sdk, AccountsFixtures.signingKey());
+
+        sut.delete();
 
         verify(api).deleteSshSigningKey(ID);
     }

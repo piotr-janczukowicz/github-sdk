@@ -49,7 +49,9 @@ class RepositoryInteractionsTest {
     void current_shouldBeEmpty_whenNoLimitIsActive() throws IOException {
         when(api.getRestrictionsForRepo(OWNER, NAME)).thenReturn(Optional.empty());
 
-        assertThat(sut.current()).isEmpty();
+        final Optional<GitHubInteractionLimitResponse> current = sut.current();
+
+        assertThat(current).isEmpty();
     }
 
     @Test

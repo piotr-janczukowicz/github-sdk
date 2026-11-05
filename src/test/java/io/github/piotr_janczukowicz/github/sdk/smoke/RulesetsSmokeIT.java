@@ -1,6 +1,5 @@
 package io.github.piotr_janczukowicz.github.sdk.smoke;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRuleEnforcement;
@@ -11,6 +10,8 @@ import io.github.piotr_janczukowicz.github.sdk.Repository;
 import io.github.piotr_janczukowicz.github.sdk.rulesets.Rules;
 import io.github.piotr_janczukowicz.github.sdk.rulesets.Ruleset;
 import java.io.IOException;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
@@ -55,8 +56,13 @@ class RulesetsSmokeIT {
             created.delete();
         }
 
-        assertThat(repository.ruleset(created.id())).isEmpty();
-        assertThat(repository.ruleSuites().count()).isNotNegative();
+        final Optional<Ruleset> afterDelete = repository.ruleset(created.id());
+        final List<?> suites = repository.ruleSuites().toList();
+
+        assertSoftly(softly -> {
+            softly.assertThat(afterDelete).isEmpty();
+            softly.assertThat(suites).doesNotContainNull();
+        });
     }
 
     private static Ruleset create(final Repository repository, final String name) throws IOException {

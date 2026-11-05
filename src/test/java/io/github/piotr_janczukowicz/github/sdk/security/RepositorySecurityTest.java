@@ -39,6 +39,15 @@ class RepositorySecurityTest {
     }
 
     @Test
+    void isVulnerabilityAlertsEnabled_shouldBeFalse_whenGitHubAnswersNo() throws IOException {
+        doReturn(false).when(api).checkVulnerabilityAlerts(OWNER, NAME);
+
+        final boolean isEnabled = sut.isVulnerabilityAlertsEnabled();
+
+        assertThat(isEnabled).isFalse();
+    }
+
+    @Test
     void enableVulnerabilityAlerts_shouldEnableThem_whenCalled() throws IOException {
         sut.enableVulnerabilityAlerts();
 
@@ -109,6 +118,17 @@ class RepositorySecurityTest {
     }
 
     @Test
+    void isPrivateVulnerabilityReportingEnabled_shouldBeFalse_whenNotEnabled() throws IOException {
+        doReturn(new GitHubPrivateVulnerabilityReportingStatus(false))
+                .when(api)
+                .checkPrivateVulnerabilityReporting(OWNER, NAME);
+
+        final boolean isEnabled = sut.isPrivateVulnerabilityReportingEnabled();
+
+        assertThat(isEnabled).isFalse();
+    }
+
+    @Test
     void enablePrivateVulnerabilityReporting_shouldEnableIt_whenCalled() throws IOException {
         sut.enablePrivateVulnerabilityReporting();
 
@@ -129,6 +149,15 @@ class RepositorySecurityTest {
         final boolean isEnabled = sut.isImmutableReleasesEnabled();
 
         assertThat(isEnabled).isTrue();
+    }
+
+    @Test
+    void isImmutableReleasesEnabled_shouldBeFalse_whenNotEnabled() throws IOException {
+        doReturn(new GitHubImmutableReleasesStatus(false, false)).when(api).checkImmutableReleases(OWNER, NAME);
+
+        final boolean isEnabled = sut.isImmutableReleasesEnabled();
+
+        assertThat(isEnabled).isFalse();
     }
 
     @Test

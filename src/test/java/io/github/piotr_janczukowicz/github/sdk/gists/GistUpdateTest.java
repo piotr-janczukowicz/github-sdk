@@ -6,9 +6,8 @@ import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
-import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import io.github.piotr_janczukowicz.github.api.GitHub;
@@ -19,8 +18,8 @@ import io.github.piotr_janczukowicz.github.sdk.GitHubSdk;
 import io.github.piotr_janczukowicz.github.sdk.fixtures.GistFixtures;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 
 @UnitTest
 class GistUpdateTest {
@@ -34,15 +33,19 @@ class GistUpdateTest {
     void send_shouldSendOnlyTheDescription_whenOnlyTheDescriptionIsSet() throws IOException {
         final GitHubGistSimple updated = GistFixtures.gist();
         final GitHubGistApi api = github.gists().gist();
-        doReturn(updated).when(api).updateGist(eq(ID), any(GitHubUpdatePayload.class));
-        final ArgumentCaptor<GitHubUpdatePayload> payload = ArgumentCaptor.forClass(GitHubUpdatePayload.class);
+        final AtomicReference<GitHubUpdatePayload> payload = new AtomicReference<>();
+        doAnswer(invocation -> {
+                    payload.set(invocation.getArgument(1));
+                    return updated;
+                })
+                .when(api)
+                .updateGist(eq(ID), any(GitHubUpdatePayload.class));
 
         final Gist result = gist.update().description("New").send();
 
-        verify(api).updateGist(eq(ID), payload.capture());
         assertSoftly(softly -> {
-            softly.assertThat(payload.getValue().description()).isEqualTo("New");
-            softly.assertThat(payload.getValue().files()).isNull();
+            softly.assertThat(payload.get().description()).isEqualTo("New");
+            softly.assertThat(payload.get().files()).isNull();
             softly.assertThat(result.response()).isSameAs(updated);
         });
     }
@@ -50,8 +53,13 @@ class GistUpdateTest {
     @Test
     void send_shouldSendWritesRenamesAndDeletions_whenFilesAreChosen() throws IOException {
         final GitHubGistApi api = github.gists().gist();
-        doReturn(GistFixtures.gist()).when(api).updateGist(eq(ID), any(GitHubUpdatePayload.class));
-        final ArgumentCaptor<GitHubUpdatePayload> payload = ArgumentCaptor.forClass(GitHubUpdatePayload.class);
+        final AtomicReference<GitHubUpdatePayload> payload = new AtomicReference<>();
+        doAnswer(invocation -> {
+                    payload.set(invocation.getArgument(1));
+                    return GistFixtures.gist();
+                })
+                .when(api)
+                .updateGist(eq(ID), any(GitHubUpdatePayload.class));
 
         gist.update()
                 .write("a.txt", "new text")
@@ -59,15 +67,13 @@ class GistUpdateTest {
                 .deleteFile("d.txt")
                 .send();
 
-        verify(api).updateGist(eq(ID), payload.capture());
         assertSoftly(softly -> {
-            softly.assertThat(payload.getValue().description()).isNull();
-            softly.assertThat(payload.getValue().files()).containsOnlyKeys("a.txt", "b.txt", "d.txt");
-            softly.assertThat(payload.getValue().files().get("a.txt").content()).isEqualTo("new text");
-            softly.assertThat(payload.getValue().files().get("b.txt").filename())
-                    .isEqualTo("c.txt");
-            softly.assertThat(payload.getValue().files().get("b.txt").content()).isNull();
-            softly.assertThat(payload.getValue().files().get("d.txt")).isNull();
+            softly.assertThat(payload.get().description()).isNull();
+            softly.assertThat(payload.get().files()).containsOnlyKeys("a.txt", "b.txt", "d.txt");
+            softly.assertThat(payload.get().files().get("a.txt").content()).isEqualTo("new text");
+            softly.assertThat(payload.get().files().get("b.txt").filename()).isEqualTo("c.txt");
+            softly.assertThat(payload.get().files().get("b.txt").content()).isNull();
+            softly.assertThat(payload.get().files().get("d.txt")).isNull();
         });
     }
 
@@ -97,6 +103,15 @@ class GistUpdateTest {
         final Throwable thrown = catchThrowable(() -> update.write("a.txt", null));
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("content");
+    }
+
+    @Test
+    void write_shouldThrowNullPointerException_whenNameIsNull() {
+        final GistUpdate update = gist.update();
+
+        final Throwable thrown = catchThrowable(() -> update.write(null, "text"));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("name");
     }
 
     @Test

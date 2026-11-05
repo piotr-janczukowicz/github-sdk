@@ -17,6 +17,7 @@ import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubPullRequestRev
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubPullRequestReviewCommentBuilder;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubPullsCommentsApi;
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubUpdateReviewCommentPayload;
+import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
 import io.github.piotr_janczukowicz.github.sdk.GitHubSdk;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
 import io.github.piotr_janczukowicz.github.sdk.fixtures.PullRequestsFixtures;
@@ -25,6 +26,7 @@ import io.github.piotr_janczukowicz.json.OptionalNull;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.io.IOException;
 import java.util.Optional;
+import java.util.OptionalInt;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -43,7 +45,7 @@ class PullRequestReviewCommentTest {
     private final PullRequestReviewComment sut = new PullRequestReviewComment(pullRequest, response);
 
     @Test
-    void accessors_shouldExposeTheResponse_whenCommentIsLoaded() {
+    void constructor_shouldExposeTheResponse_whenCommentIsLoaded() {
         assertSoftly(softly -> {
             softly.assertThat(sut.pullRequest()).isSameAs(pullRequest);
             softly.assertThat(sut.id()).isEqualTo(ID);
@@ -62,7 +64,9 @@ class PullRequestReviewCommentTest {
                 .build();
         final PullRequestReviewComment comment = new PullRequestReviewComment(pullRequest, withoutUser);
 
-        assertThat(comment.author()).isEmpty();
+        final Optional<GitHubSimpleUser> author = comment.author();
+
+        assertThat(author).isEmpty();
     }
 
     @Test
@@ -72,7 +76,9 @@ class PullRequestReviewCommentTest {
                 .build();
         final PullRequestReviewComment comment = new PullRequestReviewComment(pullRequest, withNullUser);
 
-        assertThat(comment.author()).isEmpty();
+        final Optional<GitHubSimpleUser> author = comment.author();
+
+        assertThat(author).isEmpty();
     }
 
     @Test
@@ -82,11 +88,13 @@ class PullRequestReviewCommentTest {
                 .build();
         final PullRequestReviewComment comment = new PullRequestReviewComment(pullRequest, withoutLine);
 
-        assertThat(comment.line()).isEmpty();
+        final OptionalInt line = comment.line();
+
+        assertThat(line).isEmpty();
     }
 
     @Test
-    void edit_shouldSendTheBodyAndReturnTheUpdatedComment_whenCalled() throws IOException {
+    void edit_shouldSendTheBodyAndReturnTheUpdatedComment() throws IOException {
         final GitHubPullRequestReviewComment updated = GitHubPullRequestReviewCommentBuilder.builder(response)
                 .body("Fixed")
                 .build();
@@ -113,7 +121,7 @@ class PullRequestReviewCommentTest {
     }
 
     @Test
-    void reply_shouldSendTheBodyAndReturnTheReply_whenCalled() throws IOException {
+    void reply_shouldSendTheBodyAndReturnTheReply() throws IOException {
         final GitHubPullRequestReviewComment reply = GitHubPullRequestReviewCommentBuilder.builder(response)
                 .id(92L)
                 .body("Done")
@@ -142,7 +150,7 @@ class PullRequestReviewCommentTest {
     }
 
     @Test
-    void delete_shouldDeleteTheComment_whenCalled() throws IOException {
+    void delete_shouldDeleteTheComment() throws IOException {
         sut.delete();
 
         verify(github.pullRequests().comments()).delete(OWNER, NAME, ID);

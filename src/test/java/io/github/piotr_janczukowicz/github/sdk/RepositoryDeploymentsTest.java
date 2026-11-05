@@ -8,6 +8,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -63,10 +64,12 @@ class RepositoryDeploymentsTest {
 
         final List<Deployment> deployments = sut.deployments().toList();
 
-        assertThat(deployments).singleElement().satisfies(deployment -> {
-            assertThat(deployment.response()).isSameAs(listed);
-            assertThat(deployment.repository()).isSameAs(sut);
-        });
+        assertThat(deployments)
+                .singleElement()
+                .satisfies(deployment -> assertSoftly(softly -> {
+                    softly.assertThat(deployment.response()).isSameAs(listed);
+                    softly.assertThat(deployment.repository()).isSameAs(sut);
+                }));
     }
 
     @Test
@@ -79,11 +82,16 @@ class RepositoryDeploymentsTest {
     @Test
     void deployment_shouldReturnTheDeployment_whenGitHubHasIt() throws IOException {
         final GitHubDeploymentApi api = github.deployments().deployment();
-        doReturn(Optional.of(DeploymentFixtures.deployment())).when(api).getDeployment(OWNER, NAME, 7007L);
+        final GitHubDeployment loaded = DeploymentFixtures.deployment();
+        doReturn(Optional.of(loaded)).when(api).getDeployment(OWNER, NAME, 7007L);
 
         final Optional<Deployment> found = sut.deployment(7007L);
 
-        assertThat(found).isPresent();
+        assertSoftly(softly -> {
+            softly.assertThat(found).isPresent();
+            softly.assertThat(found.orElseThrow().response()).isSameAs(loaded);
+            softly.assertThat(found.orElseThrow().repository()).isSameAs(sut);
+        });
     }
 
     @Test
@@ -165,20 +173,27 @@ class RepositoryDeploymentsTest {
 
         final List<Environment> environments = sut.environments().toList();
 
-        assertThat(environments).singleElement().satisfies(environment -> {
-            assertThat(environment.response()).isSameAs(listed);
-            assertThat(environment.repository()).isSameAs(sut);
-        });
+        assertThat(environments)
+                .singleElement()
+                .satisfies(environment -> assertSoftly(softly -> {
+                    softly.assertThat(environment.response()).isSameAs(listed);
+                    softly.assertThat(environment.repository()).isSameAs(sut);
+                }));
     }
 
     @Test
     void environment_shouldReturnTheEnvironment_whenGitHubHasIt() throws IOException {
         final GitHubDeploymentsEnvironmentsApi api = github.deployments().environments();
-        doReturn(Optional.of(DeploymentFixtures.environment())).when(api).getEnvironment(OWNER, NAME, "staging");
+        final GitHubEnvironment loaded = DeploymentFixtures.environment();
+        doReturn(Optional.of(loaded)).when(api).getEnvironment(OWNER, NAME, "staging");
 
         final Optional<Environment> found = sut.environment("staging");
 
-        assertThat(found).isPresent();
+        assertSoftly(softly -> {
+            softly.assertThat(found).isPresent();
+            softly.assertThat(found.orElseThrow().response()).isSameAs(loaded);
+            softly.assertThat(found.orElseThrow().repository()).isSameAs(sut);
+        });
     }
 
     @Test
@@ -202,6 +217,7 @@ class RepositoryDeploymentsTest {
     void saveEnvironment_shouldSendAnEmptyPayload_whenOnlyTheNameIsGiven() throws IOException {
         final GitHubEnvironment saved = DeploymentFixtures.environment();
         final GitHubDeploymentsEnvironmentsApi api = github.deployments().environments();
+        doReturn(Optional.empty()).when(api).getEnvironment(OWNER, NAME, "staging");
         doReturn(saved)
                 .when(api)
                 .createOrUpdateEnvironment(
@@ -217,6 +233,18 @@ class RepositoryDeploymentsTest {
             softly.assertThat(payload.getValue().reviewers()).isNullOrEmpty();
             softly.assertThat(environment.response()).isSameAs(saved);
         });
+    }
+
+    @Test
+    void saveEnvironment_shouldReturnTheExisting_whenTheEnvironmentExists() throws IOException {
+        final GitHubEnvironment existing = DeploymentFixtures.environment();
+        final GitHubDeploymentsEnvironmentsApi api = github.deployments().environments();
+        doReturn(Optional.of(existing)).when(api).getEnvironment(OWNER, NAME, "staging");
+
+        final Environment environment = sut.saveEnvironment("staging");
+
+        assertThat(environment.response()).isSameAs(existing);
+        verify(api, never()).createOrUpdateEnvironment(any(), any(), any(), any());
     }
 
     @Test

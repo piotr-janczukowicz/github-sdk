@@ -17,6 +17,7 @@ import io.github.piotr_janczukowicz.github.api.deployments.GitHubDeployment;
 import io.github.piotr_janczukowicz.github.api.deployments.GitHubDeploymentApi;
 import io.github.piotr_janczukowicz.github.api.deployments.GitHubDeploymentBuilder;
 import io.github.piotr_janczukowicz.github.api.deployments.GitHubDeploymentStatus;
+import io.github.piotr_janczukowicz.github.api.deployments.GitHubDeploymentStatusBuilder;
 import io.github.piotr_janczukowicz.github.api.deployments.GitHubDeploymentStatusState;
 import io.github.piotr_janczukowicz.github.api.deployments.GitHubDeploymentsStatusesApi;
 import io.github.piotr_janczukowicz.github.pagination.GitHubPageRequest;
@@ -87,12 +88,15 @@ class DeploymentTest {
     @Test
     void latestStatus_shouldReturnTheFirstStatus_whenTheDeploymentHasStatuses() throws IOException {
         final GitHubDeploymentStatus newest = DeploymentFixtures.status();
+        final GitHubDeploymentStatus older = GitHubDeploymentStatusBuilder.builder(newest)
+                .state(GitHubDeploymentStatusState.IN_PROGRESS)
+                .build();
         when(github
                         .deployments()
                         .statuses()
                         .listDeploymentStatuses(eq(OWNER), eq(NAME), eq(ID), any(GitHubPageRequest.class))
                         .stream())
-                .thenReturn(Stream.of(newest));
+                .thenReturn(Stream.of(newest, older));
 
         final Optional<GitHubDeploymentStatus> latest = sut.latestStatus();
 
@@ -152,6 +156,20 @@ class DeploymentTest {
     }
 
     @Test
+    void createStatus_shouldSendThePayloadAsGiven_whenCalledWithAPayload() throws IOException {
+        final GitHubCreateDeploymentStatusPayload given = new GitHubCreateDeploymentStatusPayload(
+                GitHubDeploymentStatusState.SUCCESS, null, null, "Done", null, null, null);
+        final GitHubDeploymentStatus created = DeploymentFixtures.status();
+        final GitHubDeploymentsStatusesApi api = github.deployments().statuses();
+        doReturn(created).when(api).createDeploymentStatus(OWNER, NAME, ID, given);
+
+        final GitHubDeploymentStatus result = sut.createStatus(given);
+
+        verify(api).createDeploymentStatus(OWNER, NAME, ID, given);
+        assertThat(result).isSameAs(created);
+    }
+
+    @Test
     void createStatus_shouldThrowNullPointerException_whenStateIsNull() {
         final Throwable thrown = catchThrowable(() -> sut.createStatus((GitHubDeploymentStatusState) null));
 
@@ -201,5 +219,19 @@ class DeploymentTest {
         sut.delete();
 
         verify(api).deleteDeployment(OWNER, NAME, ID);
+    }
+
+    @Test
+    void constructor_shouldThrowNullPointerException_whenRepositoryIsNull() {
+        final Throwable thrown = catchThrowable(() -> new Deployment(null, response));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("repository");
+    }
+
+    @Test
+    void constructor_shouldThrowNullPointerException_whenResponseIsNull() {
+        final Throwable thrown = catchThrowable(() -> new Deployment(repository, null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("response");
     }
 }

@@ -11,15 +11,19 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.github.piotr_janczukowicz.github.api.GitHub;
+import io.github.piotr_janczukowicz.github.api.actions.GitHubAddCustomLabelsToSelfHostedRunnerForRepoPayload;
 import io.github.piotr_janczukowicz.github.api.actions.GitHubAuthenticationToken;
+import io.github.piotr_janczukowicz.github.api.actions.GitHubListSelfHostedRunnersForRepoFilter;
 import io.github.piotr_janczukowicz.github.api.actions.GitHubRunner;
 import io.github.piotr_janczukowicz.github.api.actions.GitHubRunnerApplication;
 import io.github.piotr_janczukowicz.github.api.actions.GitHubRunnerLabels;
+import io.github.piotr_janczukowicz.github.api.actions.GitHubSetCustomLabelsForSelfHostedRunnerForRepoPayload;
 import io.github.piotr_janczukowicz.github.sdk.GitHubSdk;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
 import io.github.piotr_janczukowicz.github.sdk.fixtures.RunnerFixtures;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -85,7 +89,11 @@ class SelfHostedRunnerTest {
         final GitHubRunnerLabels labels = mock(GitHubRunnerLabels.class);
         when(github.actions()
                         .selfHostedRunners()
-                        .addCustomLabelsToSelfHostedRunnerForRepo(eq(OWNER), eq(NAME), eq(ID), any()))
+                        .addCustomLabelsToSelfHostedRunnerForRepo(
+                                eq(OWNER),
+                                eq(NAME),
+                                eq(ID),
+                                eq(new GitHubAddCustomLabelsToSelfHostedRunnerForRepoPayload(List.of("gpu")))))
                 .thenReturn(labels);
 
         final GitHubRunnerLabels result = sut.addLabels(List.of("gpu"));
@@ -98,10 +106,31 @@ class SelfHostedRunnerTest {
         final GitHubRunnerLabels labels = mock(GitHubRunnerLabels.class);
         when(github.actions()
                         .selfHostedRunners()
-                        .replaceCustomLabelsForSelfHostedRunnerForRepo(eq(OWNER), eq(NAME), eq(ID), any()))
+                        .replaceCustomLabelsForSelfHostedRunnerForRepo(
+                                eq(OWNER),
+                                eq(NAME),
+                                eq(ID),
+                                eq(new GitHubSetCustomLabelsForSelfHostedRunnerForRepoPayload(List.of("gpu")))))
                 .thenReturn(labels);
 
         final GitHubRunnerLabels result = sut.replaceLabels(List.of("gpu"));
+
+        assertThat(result).isSameAs(labels);
+    }
+
+    @Test
+    void replaceLabels_shouldSendAnEmptyList_whenNoLabelIsGiven() throws IOException {
+        final GitHubRunnerLabels labels = mock(GitHubRunnerLabels.class);
+        when(github.actions()
+                        .selfHostedRunners()
+                        .replaceCustomLabelsForSelfHostedRunnerForRepo(
+                                eq(OWNER),
+                                eq(NAME),
+                                eq(ID),
+                                eq(new GitHubSetCustomLabelsForSelfHostedRunnerForRepoPayload(List.of()))))
+                .thenReturn(labels);
+
+        final GitHubRunnerLabels result = sut.replaceLabels(List.of());
 
         assertThat(result).isSameAs(labels);
     }
@@ -129,18 +158,35 @@ class SelfHostedRunnerTest {
     }
 
     @Test
-    void labelMethods_shouldThrowNullPointerException_whenLabelsAreNull() {
-        final Throwable addThrown = catchThrowable(() -> sut.addLabels(null));
-        final Throwable replaceThrown = catchThrowable(() -> sut.replaceLabels(null));
+    void addLabels_shouldThrowNullPointerException_whenLabelsAreNull() {
+        final Throwable thrown = catchThrowable(() -> sut.addLabels(null));
 
-        assertSoftly(softly -> {
-            softly.assertThat(addThrown)
-                    .isInstanceOf(NullPointerException.class)
-                    .hasMessageContaining("labels");
-            softly.assertThat(replaceThrown)
-                    .isInstanceOf(NullPointerException.class)
-                    .hasMessageContaining("labels");
-        });
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("labels");
+    }
+
+    @Test
+    void replaceLabels_shouldThrowNullPointerException_whenLabelsAreNull() {
+        final Throwable thrown = catchThrowable(() -> sut.replaceLabels(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("labels");
+    }
+
+    @Test
+    void addLabels_shouldThrowNullPointerException_whenALabelIsNull() {
+        final List<String> labels = Arrays.asList("gpu", null);
+
+        final Throwable thrown = catchThrowable(() -> sut.addLabels(labels));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("labels");
+    }
+
+    @Test
+    void replaceLabels_shouldThrowNullPointerException_whenALabelIsNull() {
+        final List<String> labels = Arrays.asList("gpu", null);
+
+        final Throwable thrown = catchThrowable(() -> sut.replaceLabels(labels));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("labels");
     }
 
     @Test
@@ -176,7 +222,8 @@ class SelfHostedRunnerTest {
         when(github
                         .actions()
                         .selfHostedRunners()
-                        .listSelfHostedRunnersForRepo(eq(OWNER), eq(NAME), any(), any())
+                        .listSelfHostedRunnersForRepo(
+                                eq(OWNER), eq(NAME), eq(new GitHubListSelfHostedRunnersForRepoFilter("build-1")), any())
                         .stream())
                 .thenReturn(Stream.of(listed));
 
@@ -202,8 +249,17 @@ class SelfHostedRunnerTest {
 
         final Optional<SelfHostedRunner> found = runners.find(ID);
 
-        assertThat(found).isPresent();
-        assertThat(found.orElseThrow().response()).isSameAs(loaded);
+        assertThat(found).get().extracting(SelfHostedRunner::response).isSameAs(loaded);
+    }
+
+    @Test
+    void find_shouldBeEmpty_whenGitHubDoesNotHaveIt() throws IOException {
+        when(github.actions().selfHostedRunners().getSelfHostedRunnerForRepo(OWNER, NAME, ID))
+                .thenReturn(Optional.empty());
+
+        final Optional<SelfHostedRunner> found = runners.find(ID);
+
+        assertThat(found).isEmpty();
     }
 
     @Test
@@ -218,21 +274,25 @@ class SelfHostedRunnerTest {
     }
 
     @Test
-    void tokens_shouldReturnTheTokens_whenCalled() throws IOException {
+    void registrationToken_shouldReturnTheToken_whenCalled() throws IOException {
         final GitHubAuthenticationToken registration = mock(GitHubAuthenticationToken.class);
-        final GitHubAuthenticationToken removal = mock(GitHubAuthenticationToken.class);
         when(github.actions().selfHostedRunners().createRegistrationTokenForRepo(OWNER, NAME))
                 .thenReturn(registration);
+
+        final GitHubAuthenticationToken result = runners.registrationToken();
+
+        assertThat(result).isSameAs(registration);
+    }
+
+    @Test
+    void removeToken_shouldReturnTheToken_whenCalled() throws IOException {
+        final GitHubAuthenticationToken removal = mock(GitHubAuthenticationToken.class);
         when(github.actions().selfHostedRunners().createRemoveTokenForRepo(OWNER, NAME))
                 .thenReturn(removal);
 
-        final GitHubAuthenticationToken registrationResult = runners.registrationToken();
-        final GitHubAuthenticationToken removalResult = runners.removeToken();
+        final GitHubAuthenticationToken result = runners.removeToken();
 
-        assertSoftly(softly -> {
-            softly.assertThat(registrationResult).isSameAs(registration);
-            softly.assertThat(removalResult).isSameAs(removal);
-        });
+        assertThat(result).isSameAs(removal);
     }
 
     @Test
@@ -271,18 +331,19 @@ class SelfHostedRunnerTest {
     }
 
     @Test
-    void addLabels_shouldThrowIllegalArgumentException_whenTheListIsEmptyOrHasABlankLabel() {
-        final Throwable empty = catchThrowable(() -> sut.addLabels(List.of()));
-        final Throwable blank = catchThrowable(() -> sut.addLabels(List.of("gpu", " ")));
+    void addLabels_shouldThrowIllegalArgumentException_whenTheListIsEmpty() {
+        final Throwable thrown = catchThrowable(() -> sut.addLabels(List.of()));
 
-        assertSoftly(softly -> {
-            softly.assertThat(empty)
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("labels");
-            softly.assertThat(blank)
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("labels");
-        });
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("labels");
+    }
+
+    @Test
+    void addLabels_shouldThrowIllegalArgumentException_whenALabelIsBlank() {
+        final List<String> labels = List.of("gpu", " ");
+
+        final Throwable thrown = catchThrowable(() -> sut.addLabels(labels));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("labels");
     }
 
     @Test

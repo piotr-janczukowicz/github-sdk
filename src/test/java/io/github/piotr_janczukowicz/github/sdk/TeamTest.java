@@ -32,7 +32,7 @@ class TeamTest {
     private final Team sut = new Team(organization, response);
 
     @Test
-    void accessors_shouldExposeTheResponse_whenTeamIsLoaded() {
+    void constructor_shouldExposeTheResponse_whenTeamIsLoaded() {
         when(response.slug()).thenReturn(SLUG);
         when(response.name()).thenReturn("Core team");
 

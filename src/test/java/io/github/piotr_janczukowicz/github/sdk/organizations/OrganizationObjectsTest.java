@@ -3,7 +3,7 @@ package io.github.piotr_janczukowicz.github.sdk.organizations;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -40,7 +40,7 @@ class OrganizationObjectsTest {
     private final GitHubSdk sdk = GitHubSdk.of(github);
 
     @Test
-    void invitation_shouldExposeTheResponse_whenInvitationIsForAUser() {
+    void accessors_shouldExposeTheResponse_whenInvitationIsForAUser() {
         final GitHubOrganizationInvitation response = OrganizationFixtures.invitation();
         final OrganizationInvitation sut = new OrganizationInvitation(sdk, ORG, response);
 
@@ -56,7 +56,7 @@ class OrganizationObjectsTest {
     }
 
     @Test
-    void invitation_shouldExposeTheEmailAndFailure_whenInvitationIsForAnEmailThatBounced() {
+    void accessors_shouldExposeTheEmailAndFailure_whenInvitationIsForAnEmailThatBounced() {
         final OrganizationInvitation sut = new OrganizationInvitation(sdk, ORG, OrganizationFixtures.emailInvitation());
 
         assertSoftly(softly -> {
@@ -67,16 +67,17 @@ class OrganizationObjectsTest {
     }
 
     @Test
-    void invitation_shouldCancelTheInvitation_whenCalled() throws IOException {
+    void cancel_shouldCancelTheInvitation_whenCalled() throws IOException {
         final GitHubOrganizationsMembersApi api = github.organizations().members();
+        final OrganizationInvitation sut = new OrganizationInvitation(sdk, ORG, OrganizationFixtures.invitation());
 
-        new OrganizationInvitation(sdk, ORG, OrganizationFixtures.invitation()).cancel();
+        sut.cancel();
 
         verify(api).cancelInvitation(ORG, OrganizationFixtures.INVITATION_ID);
     }
 
     @Test
-    void invitation_shouldThrowIllegalArgumentException_whenOrganizationIsBlank() {
+    void constructor_shouldThrowIllegalArgumentException_whenOrganizationIsBlank() {
         final GitHubOrganizationInvitation response = OrganizationFixtures.invitation();
 
         final Throwable thrown = catchThrowable(() -> new OrganizationInvitation(sdk, " ", response));
@@ -85,7 +86,7 @@ class OrganizationObjectsTest {
     }
 
     @Test
-    void webhook_shouldExposeTheResponse_whenWebhookIsLoaded() {
+    void accessors_shouldExposeTheResponse_whenWebhookIsLoaded() {
         final GitHubOrgHook response = OrganizationFixtures.hook();
         final OrganizationWebhook sut = new OrganizationWebhook(sdk, ORG, response);
 
@@ -99,18 +100,20 @@ class OrganizationObjectsTest {
     }
 
     @Test
-    void webhook_shouldReturnTheReloadedWebhook_whenItExists() throws IOException {
+    void refresh_shouldReturnTheReloadedWebhook_whenItExists() throws IOException {
         final GitHubOrgHook reloaded = OrganizationFixtures.hook();
         final GitHubOrganizationsWebhooksApi api = github.organizations().webhooks();
         doReturn(Optional.of(reloaded)).when(api).getWebhook(ORG, OrganizationFixtures.HOOK_ID);
 
-        final OrganizationWebhook result = new OrganizationWebhook(sdk, ORG, OrganizationFixtures.hook()).refresh();
+        final OrganizationWebhook sut = new OrganizationWebhook(sdk, ORG, OrganizationFixtures.hook());
+
+        final OrganizationWebhook result = sut.refresh();
 
         assertThat(result.response()).isSameAs(reloaded);
     }
 
     @Test
-    void webhook_shouldThrowIllegalStateException_whenTheWebhookIsGone() throws IOException {
+    void refresh_shouldThrowIllegalStateException_whenTheWebhookIsGone() throws IOException {
         final GitHubOrganizationsWebhooksApi api = github.organizations().webhooks();
         doReturn(Optional.empty()).when(api).getWebhook(ORG, OrganizationFixtures.HOOK_ID);
         final OrganizationWebhook sut = new OrganizationWebhook(sdk, ORG, OrganizationFixtures.hook());
@@ -121,20 +124,21 @@ class OrganizationObjectsTest {
     }
 
     @Test
-    void webhook_shouldSendThePayloadAndReturnTheWebhook_whenUpdated() throws IOException {
+    void update_shouldSendThePayloadAndReturnTheWebhook_whenUpdated() throws IOException {
         final GitHubOrgHook updated = OrganizationFixtures.hook();
         final GitHubUpdateOrgWebhookPayload payload = mock(GitHubUpdateOrgWebhookPayload.class);
         final GitHubOrganizationsWebhooksApi api = github.organizations().webhooks();
         doReturn(updated).when(api).updateWebhook(ORG, OrganizationFixtures.HOOK_ID, payload);
 
-        final OrganizationWebhook result =
-                new OrganizationWebhook(sdk, ORG, OrganizationFixtures.hook()).update(payload);
+        final OrganizationWebhook sut = new OrganizationWebhook(sdk, ORG, OrganizationFixtures.hook());
+
+        final OrganizationWebhook result = sut.update(payload);
 
         assertThat(result.response()).isSameAs(updated);
     }
 
     @Test
-    void webhook_shouldThrowNullPointerException_whenUpdatePayloadIsNull() {
+    void update_shouldThrowNullPointerException_whenUpdatePayloadIsNull() {
         final OrganizationWebhook sut = new OrganizationWebhook(sdk, ORG, OrganizationFixtures.hook());
 
         final Throwable thrown = catchThrowable(() -> sut.update(null));
@@ -143,38 +147,42 @@ class OrganizationObjectsTest {
     }
 
     @Test
-    void webhook_shouldPingTheWebhook_whenCalled() throws IOException {
+    void ping_shouldPingTheWebhook_whenCalled() throws IOException {
         final GitHubOrganizationsWebhooksApi api = github.organizations().webhooks();
 
-        new OrganizationWebhook(sdk, ORG, OrganizationFixtures.hook()).ping();
+        final OrganizationWebhook sut = new OrganizationWebhook(sdk, ORG, OrganizationFixtures.hook());
+
+        sut.ping();
 
         verify(api).pingWebhook(ORG, OrganizationFixtures.HOOK_ID);
     }
 
     @Test
-    void webhook_shouldStreamTheDeliveries_whenTheyExist() throws IOException {
+    void deliveries_shouldStreamTheDeliveries_whenTheyExist() throws IOException {
         final GitHubHookDeliveryItem delivery = mock(GitHubHookDeliveryItem.class);
         when(github.organizations().webhooks().listWebhookDeliveries(ORG, OrganizationFixtures.HOOK_ID).stream())
                 .thenReturn(Stream.of(delivery));
 
-        final List<GitHubHookDeliveryItem> deliveries = new OrganizationWebhook(sdk, ORG, OrganizationFixtures.hook())
-                .deliveries()
-                .toList();
+        final OrganizationWebhook sut = new OrganizationWebhook(sdk, ORG, OrganizationFixtures.hook());
+
+        final List<GitHubHookDeliveryItem> deliveries = sut.deliveries().toList();
 
         assertThat(deliveries).containsExactly(delivery);
     }
 
     @Test
-    void webhook_shouldDeleteTheWebhook_whenCalled() throws IOException {
+    void delete_shouldDeleteTheWebhook_whenCalled() throws IOException {
         final GitHubOrganizationsWebhooksApi api = github.organizations().webhooks();
 
-        new OrganizationWebhook(sdk, ORG, OrganizationFixtures.hook()).delete();
+        final OrganizationWebhook sut = new OrganizationWebhook(sdk, ORG, OrganizationFixtures.hook());
+
+        sut.delete();
 
         verify(api).deleteWebhook(ORG, OrganizationFixtures.HOOK_ID);
     }
 
     @Test
-    void variable_shouldExposeTheResponse_whenVariableIsLoaded() {
+    void accessors_shouldExposeTheResponse_whenVariableIsLoaded() {
         final GitHubOrganizationActionsVariable response = OrganizationFixtures.variable();
         final OrganizationVariable sut = new OrganizationVariable(sdk, ORG, response);
 
@@ -188,19 +196,20 @@ class OrganizationObjectsTest {
     }
 
     @Test
-    void variable_shouldReturnTheReloadedVariable_whenItExists() throws IOException {
+    void refresh_shouldReturnTheReloadedVariable_whenItExists() throws IOException {
         final GitHubOrganizationActionsVariable reloaded = OrganizationFixtures.variable();
         final GitHubActionsVariablesApi api = github.actions().variables();
         doReturn(Optional.of(reloaded)).when(api).getOrgVariable(ORG, "DEPLOY_ENV");
 
-        final OrganizationVariable result =
-                new OrganizationVariable(sdk, ORG, OrganizationFixtures.variable()).refresh();
+        final OrganizationVariable sut = new OrganizationVariable(sdk, ORG, OrganizationFixtures.variable());
+
+        final OrganizationVariable result = sut.refresh();
 
         assertThat(result.response()).isSameAs(reloaded);
     }
 
     @Test
-    void variable_shouldThrowIllegalStateException_whenTheVariableIsGone() throws IOException {
+    void refresh_shouldThrowIllegalStateException_whenTheVariableIsGone() throws IOException {
         final GitHubActionsVariablesApi api = github.actions().variables();
         doReturn(Optional.empty()).when(api).getOrgVariable(ORG, "DEPLOY_ENV");
         final OrganizationVariable sut = new OrganizationVariable(sdk, ORG, OrganizationFixtures.variable());
@@ -211,16 +220,17 @@ class OrganizationObjectsTest {
     }
 
     @Test
-    void variable_shouldSendTheValueAndReturnTheVariable_whenUpdated() throws IOException {
+    void update_shouldSendTheValueAndReturnTheVariable_whenUpdated() throws IOException {
         final GitHubActionsVariablesApi api = github.actions().variables();
         doReturn(Optional.of(OrganizationFixtures.variable())).when(api).getOrgVariable(ORG, "DEPLOY_ENV");
         final ArgumentCaptor<GitHubUpdateOrgVariablePayload> payload =
                 ArgumentCaptor.forClass(GitHubUpdateOrgVariablePayload.class);
 
-        final OrganizationVariable result =
-                new OrganizationVariable(sdk, ORG, OrganizationFixtures.variable()).update("production");
+        final OrganizationVariable sut = new OrganizationVariable(sdk, ORG, OrganizationFixtures.variable());
 
-        verify(api).updateOrgVariable(any(), any(), payload.capture());
+        final OrganizationVariable result = sut.update("production");
+
+        verify(api).updateOrgVariable(eq(ORG), eq("DEPLOY_ENV"), payload.capture());
         assertSoftly(softly -> {
             softly.assertThat(payload.getValue().value()).isEqualTo("production");
             softly.assertThat(payload.getValue().name()).isNull();
@@ -229,7 +239,18 @@ class OrganizationObjectsTest {
     }
 
     @Test
-    void variable_shouldThrowNullPointerException_whenUpdateValueIsNull() {
+    void update_shouldThrowIllegalStateException_whenTheVariableIsGone() throws IOException {
+        final GitHubActionsVariablesApi api = github.actions().variables();
+        doReturn(Optional.empty()).when(api).getOrgVariable(ORG, "DEPLOY_ENV");
+        final OrganizationVariable sut = new OrganizationVariable(sdk, ORG, OrganizationFixtures.variable());
+
+        final Throwable thrown = catchThrowable(() -> sut.update("production"));
+
+        assertThat(thrown).isInstanceOf(IllegalStateException.class).hasMessageContaining("is gone");
+    }
+
+    @Test
+    void update_shouldThrowNullPointerException_whenUpdateValueIsNull() {
         final OrganizationVariable sut = new OrganizationVariable(sdk, ORG, OrganizationFixtures.variable());
 
         final Throwable thrown = catchThrowable(() -> sut.update(null));
@@ -238,10 +259,12 @@ class OrganizationObjectsTest {
     }
 
     @Test
-    void variable_shouldDeleteTheVariable_whenCalled() throws IOException {
+    void delete_shouldDeleteTheVariable_whenCalled() throws IOException {
         final GitHubActionsVariablesApi api = github.actions().variables();
 
-        new OrganizationVariable(sdk, ORG, OrganizationFixtures.variable()).delete();
+        final OrganizationVariable sut = new OrganizationVariable(sdk, ORG, OrganizationFixtures.variable());
+
+        sut.delete();
 
         verify(api).deleteOrgVariable(ORG, "DEPLOY_ENV");
     }

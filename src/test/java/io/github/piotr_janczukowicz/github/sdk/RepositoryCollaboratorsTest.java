@@ -45,10 +45,12 @@ class RepositoryCollaboratorsTest {
 
         final List<Collaborator> collaborators = sut.collaborators().toList();
 
-        assertThat(collaborators).singleElement().satisfies(collaborator -> {
-            assertThat(collaborator.response()).isSameAs(listed);
-            assertThat(collaborator.repository()).isSameAs(sut);
-        });
+        assertThat(collaborators)
+                .singleElement()
+                .satisfies(collaborator -> assertSoftly(softly -> {
+                    softly.assertThat(collaborator.response()).isSameAs(listed);
+                    softly.assertThat(collaborator.repository()).isSameAs(sut);
+                }));
     }
 
     @Test
@@ -121,10 +123,11 @@ class RepositoryCollaboratorsTest {
 
         final Optional<Invitation> invitation = sut.addCollaborator("hubot");
 
-        assertThat(invitation).hasValueSatisfying(result -> {
-            assertThat(result.response()).isSameAs(invited);
-            assertThat(result.repository()).isSameAs(sut);
-        });
+        assertThat(invitation)
+                .hasValueSatisfying(result -> assertSoftly(softly -> {
+                    softly.assertThat(result.response()).isSameAs(invited);
+                    softly.assertThat(result.repository()).isSameAs(sut);
+                }));
     }
 
     @Test
@@ -173,9 +176,11 @@ class RepositoryCollaboratorsTest {
 
         final List<Invitation> invitations = sut.invitations().toList();
 
-        assertThat(invitations).singleElement().satisfies(invitation -> {
-            assertThat(invitation.response()).isSameAs(listed);
-            assertThat(invitation.repository()).isSameAs(sut);
-        });
+        assertThat(invitations)
+                .singleElement()
+                .satisfies(invitation -> assertSoftly(softly -> {
+                    softly.assertThat(invitation.response()).isSameAs(listed);
+                    softly.assertThat(invitation.repository()).isSameAs(sut);
+                }));
     }
 }

@@ -6,6 +6,7 @@ import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.github.piotr_janczukowicz.github.api.GitHub;
@@ -48,10 +49,12 @@ class RepositoryRulesetsTest {
 
         final List<Ruleset> rulesets = sut.rulesets().toList();
 
-        assertThat(rulesets).singleElement().satisfies(ruleset -> {
-            assertThat(ruleset.response()).isSameAs(loaded);
-            assertThat(ruleset.repository()).isSameAs(sut);
-        });
+        assertThat(rulesets)
+                .singleElement()
+                .satisfies(ruleset -> assertSoftly(softly -> {
+                    softly.assertThat(ruleset.response()).isSameAs(loaded);
+                    softly.assertThat(ruleset.repository()).isSameAs(sut);
+                }));
     }
 
     @Test
@@ -79,7 +82,7 @@ class RepositoryRulesetsTest {
 
         final Throwable thrown = catchThrowable(stream::toList);
 
-        assertThat(thrown).isInstanceOf(UncheckedIOException.class);
+        assertThat(thrown).isInstanceOf(UncheckedIOException.class).hasCauseInstanceOf(IOException.class);
     }
 
     @Test
@@ -107,11 +110,22 @@ class RepositoryRulesetsTest {
     }
 
     @Test
-    void newRuleset_shouldStartADraft_whenCalled() {
+    void newRuleset_shouldStartADraftAndSendNothing_whenCalled() {
         final RulesetDraft draft = sut.newRuleset(
                 "protect-main", GitHubRepositoryRulesetPayloadTarget.BRANCH, GitHubRepositoryRuleEnforcement.ACTIVE);
 
-        assertThat(draft).isNotNull();
+        assertSoftly(softly -> {
+            softly.assertThat(draft).isNotNull();
+            verifyNoInteractions(github);
+        });
+    }
+
+    @Test
+    void newRuleset_shouldThrowIllegalArgumentException_whenNameIsBlank() {
+        final Throwable thrown = catchThrowable(() -> sut.newRuleset(
+                " ", GitHubRepositoryRulesetPayloadTarget.BRANCH, GitHubRepositoryRuleEnforcement.ACTIVE));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("name");
     }
 
     @Test
@@ -133,6 +147,16 @@ class RepositoryRulesetsTest {
 
         final Optional<GitHubRuleSuite> found = sut.ruleSuite(5L);
 
-        assertSoftly(softly -> softly.assertThat(found).containsSame(suite));
+        assertThat(found).containsSame(suite);
+    }
+
+    @Test
+    void ruleSuite_shouldBeEmpty_whenGitHubHasNone() throws IOException {
+        final GitHubRepositoriesRuleSuitesApi api = github.repositories().ruleSuites();
+        doReturn(Optional.empty()).when(api).getRepoRuleSuite(OWNER, NAME, 5L);
+
+        final Optional<GitHubRuleSuite> found = sut.ruleSuite(5L);
+
+        assertThat(found).isEmpty();
     }
 }

@@ -17,6 +17,7 @@ import io.github.piotr_janczukowicz.github.sdk.fixtures.RepositoryContentFixture
 import io.github.piotr_janczukowicz.github.sdk.webhooks.Webhook;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -102,6 +103,24 @@ class RepositoryWebhooksTest {
         final Throwable thrown = catchThrowable(() -> sut.createWebhook(" ", events));
 
         assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("payloadUrl");
+    }
+
+    @Test
+    void createWebhook_shouldThrowIllegalArgumentException_whenAnEventIsBlank() {
+        final List<String> events = List.of("push", " ");
+
+        final Throwable thrown = catchThrowable(() -> sut.createWebhook("https://example.com/hook", events));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("events");
+    }
+
+    @Test
+    void createWebhook_shouldThrowNullPointerException_whenAnEventIsNull() {
+        final List<String> events = Collections.singletonList(null);
+
+        final Throwable thrown = catchThrowable(() -> sut.createWebhook("https://example.com/hook", events));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("events");
     }
 
     @Test

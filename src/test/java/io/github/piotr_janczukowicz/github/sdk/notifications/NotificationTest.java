@@ -98,6 +98,16 @@ class NotificationTest {
     }
 
     @Test
+    void subscription_shouldBeEmpty_whenTheUserHasNone() throws IOException {
+        final GitHubActivityNotificationsApi api = github.activity().notifications();
+        doReturn(Optional.empty()).when(api).getThreadSubscriptionForAuthenticatedUser(ID);
+
+        final Optional<GitHubThreadSubscription> subscription = sut.subscription();
+
+        assertThat(subscription).isEmpty();
+    }
+
+    @Test
     void subscribe_shouldSetAnUnignoredSubscription_whenCalled() throws IOException {
         final GitHubThreadSubscription held = NotificationFixtures.subscription();
         final GitHubActivityNotificationsApi api = github.activity().notifications();

@@ -19,6 +19,8 @@ import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 @UnitTest
 class RepositoryDependenciesTest {
@@ -36,7 +38,9 @@ class RepositoryDependenciesTest {
                 new GitHubGenerateSbomReportResponse("https://api.github.com/x");
         when(github.dependencyGraph().sboms().generateSbomReport(OWNER, NAME)).thenReturn(response);
 
-        assertThat(sut.requestSbomReport()).isSameAs(response);
+        final GitHubGenerateSbomReportResponse result = sut.requestSbomReport();
+
+        assertThat(result).isSameAs(response);
     }
 
     @Test
@@ -45,7 +49,19 @@ class RepositoryDependenciesTest {
         when(github.dependencyGraph().sboms().fetchSbomReport(OWNER, NAME, "uuid-1"))
                 .thenReturn(Optional.of(location));
 
-        assertThat(sut.sbomReport("uuid-1")).contains(location);
+        final Optional<URI> report = sut.sbomReport("uuid-1");
+
+        assertThat(report).contains(location);
+    }
+
+    @Test
+    void sbomReport_shouldBeEmpty_whenTheReportIsStillBeingGenerated() throws IOException {
+        when(github.dependencyGraph().sboms().fetchSbomReport(OWNER, NAME, "uuid-1"))
+                .thenReturn(Optional.empty());
+
+        final Optional<URI> report = sut.sbomReport("uuid-1");
+
+        assertThat(report).isEmpty();
     }
 
     @Test
@@ -66,18 +82,13 @@ class RepositoryDependenciesTest {
         assertThat(diff).containsExactly(entry);
     }
 
-    @Test
-    void diff_shouldThrowIllegalArgumentException_whenBaseIsBlank() {
-        final Throwable thrown = catchThrowable(() -> sut.diff(" ", "feature"));
+    @ParameterizedTest
+    @CsvSource({"' ',feature,base", "main,' ',head"})
+    void diff_shouldThrowIllegalArgumentException_whenARefIsBlank(
+            final String base, final String head, final String argument) {
+        final Throwable thrown = catchThrowable(() -> sut.diff(base, head));
 
-        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("base");
-    }
-
-    @Test
-    void diff_shouldThrowIllegalArgumentException_whenHeadIsBlank() {
-        final Throwable thrown = catchThrowable(() -> sut.diff("main", " "));
-
-        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("head");
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining(argument);
     }
 
     @Test

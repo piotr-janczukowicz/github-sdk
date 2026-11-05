@@ -94,8 +94,9 @@ class AppTest {
 
         final Optional<Installation> found = sut.installation(AppFixtures.INSTALLATION_ID);
 
-        assertThat(found).isPresent();
-        assertThat(found.orElseThrow().response()).isSameAs(loaded);
+        assertThat(found)
+                .hasValueSatisfying(
+                        installation -> assertThat(installation.response()).isSameAs(loaded));
     }
 
     @Test
@@ -105,8 +106,28 @@ class AppTest {
 
         final Optional<Installation> found = sut.organizationInstallation("acme");
 
-        assertThat(found).isPresent();
-        assertThat(found.orElseThrow().response()).isSameAs(loaded);
+        assertThat(found)
+                .hasValueSatisfying(
+                        installation -> assertThat(installation.response()).isSameAs(loaded));
+    }
+
+    @Test
+    void installation_shouldBeEmpty_whenGitHubHasNoSuchInstallation() throws IOException {
+        when(api.getInstallation(AppFixtures.INSTALLATION_ID)).thenReturn(Optional.empty());
+
+        final Optional<Installation> found = sut.installation(AppFixtures.INSTALLATION_ID);
+
+        assertThat(found).isEmpty();
+    }
+
+    @Test
+    void organizationInstallation_shouldRethrow_whenTheFailureIsNotNotFound() throws IOException {
+        final IOException failure = new IOException("boom");
+        doThrow(failure).when(api).getOrgInstallation("acme");
+
+        final Throwable thrown = catchThrowable(() -> sut.organizationInstallation("acme"));
+
+        assertThat(thrown).isSameAs(failure);
     }
 
     @Test
@@ -133,8 +154,9 @@ class AppTest {
 
         final Optional<Installation> found = sut.repositoryInstallation(repository);
 
-        assertThat(found).isPresent();
-        assertThat(found.orElseThrow().response()).isSameAs(loaded);
+        assertThat(found)
+                .hasValueSatisfying(
+                        installation -> assertThat(installation.response()).isSameAs(loaded));
     }
 
     @Test
@@ -151,8 +173,18 @@ class AppTest {
 
         final Optional<Installation> found = sut.userInstallation("octocat");
 
-        assertThat(found).isPresent();
-        assertThat(found.orElseThrow().response()).isSameAs(loaded);
+        assertThat(found)
+                .hasValueSatisfying(
+                        installation -> assertThat(installation.response()).isSameAs(loaded));
+    }
+
+    @Test
+    void userInstallation_shouldBeEmpty_whenTheAppIsNotInstalled() throws IOException {
+        when(api.getUserInstallation("octocat")).thenReturn(Optional.empty());
+
+        final Optional<Installation> found = sut.userInstallation("octocat");
+
+        assertThat(found).isEmpty();
     }
 
     @Test
@@ -194,6 +226,24 @@ class AppTest {
         final Optional<GitHubHookDelivery> found = sut.webhookDelivery(9L);
 
         assertThat(found).containsSame(delivery);
+    }
+
+    @Test
+    void webhookDelivery_shouldBeEmpty_whenGitHubHasNoSuchDelivery() throws IOException {
+        when(webhooks.getWebhookDelivery(9L)).thenReturn(Optional.empty());
+
+        final Optional<GitHubHookDelivery> found = sut.webhookDelivery(9L);
+
+        assertThat(found).isEmpty();
+    }
+
+    @Test
+    void constructor_shouldThrowNullPointerException_whenTheSlugIsNull() {
+        final GitHubIntegration withoutSlug = mock(GitHubIntegration.class);
+
+        final Throwable thrown = catchThrowable(() -> new App(sdk, withoutSlug));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("slug");
     }
 
     @Test

@@ -127,16 +127,23 @@ class IssueUpdateTest {
     }
 
     @Test
-    void labelsAndAssignees_shouldThrowIllegalArgumentException_whenAValueIsBlank() {
+    void labels_shouldThrowIllegalArgumentException_whenAValueIsBlank() {
         final IssueUpdate update = issue.update();
+        final List<String> names = List.of(" ");
 
-        final Throwable labels = catchThrowable(() -> update.labels(List.of(" ")));
-        final Throwable assignees = catchThrowable(() -> update.assignees(List.of(" ")));
+        final Throwable thrown = catchThrowable(() -> update.labels(names));
 
-        assertSoftly(softly -> {
-            softly.assertThat(labels).isInstanceOf(IllegalArgumentException.class);
-            softly.assertThat(assignees).isInstanceOf(IllegalArgumentException.class);
-        });
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void assignees_shouldThrowIllegalArgumentException_whenAValueIsBlank() {
+        final IssueUpdate update = issue.update();
+        final List<String> logins = List.of(" ");
+
+        final Throwable thrown = catchThrowable(() -> update.assignees(logins));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test

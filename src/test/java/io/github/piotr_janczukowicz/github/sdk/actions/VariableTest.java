@@ -44,6 +44,20 @@ class VariableTest {
     }
 
     @Test
+    void constructor_shouldThrowNullPointerException_whenRepositoryIsNull() {
+        final Throwable thrown = catchThrowable(() -> new Variable(null, response));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("repository");
+    }
+
+    @Test
+    void constructor_shouldThrowNullPointerException_whenResponseIsNull() {
+        final Throwable thrown = catchThrowable(() -> new Variable(repository, null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("response");
+    }
+
+    @Test
     void refresh_shouldReturnTheReloadedVariable_whenItExists() throws IOException {
         final GitHubActionsVariable reloaded = GitHubActionsVariableBuilder.builder(response)
                 .value("production")

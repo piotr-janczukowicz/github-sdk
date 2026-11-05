@@ -123,7 +123,9 @@ class PullRequestUpdateTest {
 
     @Test
     void title_shouldThrowIllegalArgumentException_whenTitleIsBlank() {
-        final Throwable thrown = catchThrowable(() -> pullRequest.update().title(" "));
+        final PullRequestUpdate update = pullRequest.update();
+
+        final Throwable thrown = catchThrowable(() -> update.title(" "));
 
         assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("title");
     }

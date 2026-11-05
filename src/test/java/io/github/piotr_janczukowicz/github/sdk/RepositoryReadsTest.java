@@ -140,7 +140,7 @@ class RepositoryReadsTest {
     }
 
     @Test
-    void createTag_shouldSendACommitTag_whenCalled() throws IOException {
+    void createTag_shouldSendACommitTag() throws IOException {
         final GitHubGitTag created = mock(GitHubGitTag.class);
         when(github.gitDatabase().tags().createTag(eq(OWNER), eq(NAME), any())).thenReturn(created);
         final ArgumentCaptor<GitHubCreateTagPayload> payload = ArgumentCaptor.forClass(GitHubCreateTagPayload.class);
@@ -165,18 +165,24 @@ class RepositoryReadsTest {
     }
 
     @Test
-    void createAnnotatedTag_shouldCreateTheObjectAndTheReference_whenCalled() throws IOException {
+    void createAnnotatedTag_shouldCreateTheObjectAndTheReference() throws IOException {
         final GitHubGitTag created = mock(GitHubGitTag.class);
         when(created.sha()).thenReturn(TAG_SHA);
         when(github.gitDatabase().tags().createTag(eq(OWNER), eq(NAME), any())).thenReturn(created);
         when(github.gitDatabase().refs().createRef(eq(OWNER), eq(NAME), any()))
                 .thenReturn(GitFixtures.refWith("refs/tags/v1", TAG_SHA));
         final ArgumentCaptor<GitHubCreateRefPayload> payload = ArgumentCaptor.forClass(GitHubCreateRefPayload.class);
+        final ArgumentCaptor<GitHubCreateTagPayload> tagPayload = ArgumentCaptor.forClass(GitHubCreateTagPayload.class);
 
         final Ref ref = sut.createAnnotatedTag("v1", "First", "abc123");
 
+        verify(github.gitDatabase().tags()).createTag(eq(OWNER), eq(NAME), tagPayload.capture());
         verify(github.gitDatabase().refs()).createRef(eq(OWNER), eq(NAME), payload.capture());
         assertSoftly(softly -> {
+            softly.assertThat(tagPayload.getValue().tag()).isEqualTo("v1");
+            softly.assertThat(tagPayload.getValue().message()).isEqualTo("First");
+            softly.assertThat(tagPayload.getValue().object()).isEqualTo("abc123");
+            softly.assertThat(tagPayload.getValue().type()).isEqualTo(GitHubCreateTagType.COMMIT);
             softly.assertThat(payload.getValue().ref()).isEqualTo("refs/tags/v1");
             softly.assertThat(payload.getValue().sha()).isEqualTo(TAG_SHA);
             softly.assertThat(ref.repository()).isSameAs(sut);

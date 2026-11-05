@@ -63,6 +63,17 @@ class AdvisoryTest {
     }
 
     @Test
+    void severity_shouldBeEmpty_whenTheResponseHasNoSeverity() {
+        final GitHubRepositoryAdvisory bare = AdvisoryFixtures.advisory();
+        when(bare.severity()).thenReturn(null);
+        final Advisory advisory = new Advisory(repository, bare);
+
+        final Optional<GitHubRepositoryAdvisorySeverity> severity = advisory.severity();
+
+        assertThat(severity).isEmpty();
+    }
+
+    @Test
     void refresh_shouldReturnTheReloadedAdvisory_whenItExists() throws IOException {
         final GitHubRepositoryAdvisory reloaded = AdvisoryFixtures.advisory();
         when(api.getRepositoryAdvisory(OWNER, NAME, GHSA)).thenReturn(Optional.of(reloaded));
@@ -124,6 +135,13 @@ class AdvisoryTest {
             softly.assertThat(result).isSameAs(created);
             softly.assertThat(payload.getValue().body()).isEqualTo("Looking into it");
         });
+    }
+
+    @Test
+    void addComment_shouldThrowNullPointerException_whenBodyIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.addComment(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("body");
     }
 
     @Test

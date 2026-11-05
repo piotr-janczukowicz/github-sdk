@@ -19,6 +19,7 @@ import io.github.piotr_janczukowicz.github.sdk.GitHubSdk;
 import io.github.piotr_janczukowicz.github.sdk.fixtures.RepositoryContentFixtures;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -52,7 +53,8 @@ class WebhookUpdateTest {
         assertSoftly(softly -> {
             softly.assertThat(payload.getValue().events()).containsExactly("push", "issues");
             softly.assertThat(payload.getValue().active()).isFalse();
-            softly.assertThat(payload.getValue().addEvents()).isNullOrEmpty();
+            softly.assertThat(payload.getValue().addEvents()).isNull();
+            softly.assertThat(payload.getValue().removeEvents()).isNull();
             softly.assertThat(payload.getValue().config()).isNull();
             softly.assertThat(result.response()).isSameAs(updated);
             softly.assertThat(webhook.isActive()).isTrue();
@@ -119,9 +121,42 @@ class WebhookUpdateTest {
 
     @Test
     void events_shouldThrowIllegalArgumentException_whenAnEventNameIsBlank() {
-        final Throwable thrown = catchThrowable(() -> webhook.update().events(List.of("push", " ")));
+        final WebhookUpdate update = webhook.update();
+        final List<String> events = List.of("push", " ");
+
+        final Throwable thrown = catchThrowable(() -> update.events(events));
 
         assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("events");
+    }
+
+    @Test
+    void events_shouldThrowNullPointerException_whenAnEventNameIsNull() {
+        final WebhookUpdate update = webhook.update();
+        final List<String> events = Arrays.asList("push", null);
+
+        final Throwable thrown = catchThrowable(() -> update.events(events));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("events");
+    }
+
+    @Test
+    void addEvents_shouldThrowNullPointerException_whenAnEventNameIsNull() {
+        final WebhookUpdate update = webhook.update();
+        final List<String> events = Arrays.asList("push", null);
+
+        final Throwable thrown = catchThrowable(() -> update.addEvents(events));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("events");
+    }
+
+    @Test
+    void removeEvents_shouldThrowNullPointerException_whenAnEventNameIsNull() {
+        final WebhookUpdate update = webhook.update();
+        final List<String> events = Arrays.asList("push", null);
+
+        final Throwable thrown = catchThrowable(() -> update.removeEvents(events));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("events");
     }
 
     @Test

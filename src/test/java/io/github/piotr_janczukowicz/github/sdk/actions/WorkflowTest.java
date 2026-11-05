@@ -61,6 +61,20 @@ class WorkflowTest {
     }
 
     @Test
+    void constructor_shouldThrowNullPointerException_whenRepositoryIsNull() {
+        final Throwable thrown = catchThrowable(() -> new Workflow(null, response));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("repository");
+    }
+
+    @Test
+    void constructor_shouldThrowNullPointerException_whenResponseIsNull() {
+        final Throwable thrown = catchThrowable(() -> new Workflow(repository, null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("response");
+    }
+
+    @Test
     void isActive_shouldBeFalse_whenTheWorkflowIsDisabled() {
         final Workflow disabled =
                 new Workflow(repository, ActionsFixtures.workflowWith(GitHubWorkflowState.DISABLED_MANUALLY));
@@ -182,6 +196,13 @@ class WorkflowTest {
     }
 
     @Test
+    void dispatch_shouldThrowNullPointerException_whenRefIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.dispatch(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("ref");
+    }
+
+    @Test
     void dispatch_shouldThrowNullPointerException_whenInputsAreNull() {
         final Throwable thrown = catchThrowable(() -> sut.dispatch("main", null));
 
@@ -191,26 +212,35 @@ class WorkflowTest {
     @Test
     void runs_shouldStreamTheRuns_whenTheyExist() throws IOException {
         final GitHubWorkflowRun listed = ActionsFixtures.workflowRun();
-        when(github.actions().workflowRuns().listWorkflowRuns(eq(OWNER), eq(NAME), eq(KEY), any(), any()).stream())
+        when(github
+                        .actions()
+                        .workflowRuns()
+                        .listWorkflowRuns(eq(OWNER), eq(NAME), eq(KEY), eq(GitHubListWorkflowRunsFilter.empty()), any())
+                        .stream())
                 .thenReturn(Stream.of(listed));
 
         final List<WorkflowRun> runs = sut.runs().toList();
 
-        assertThat(runs).singleElement().satisfies(run -> {
-            assertThat(run.response()).isSameAs(listed);
-            assertThat(run.repository()).isSameAs(repository);
-        });
+        assertThat(runs)
+                .singleElement()
+                .satisfies(run -> assertSoftly(softly -> {
+                    softly.assertThat(run.response()).isSameAs(listed);
+                    softly.assertThat(run.repository()).isSameAs(repository);
+                }));
     }
 
     @Test
     void runs_shouldPassTheFilterOn_whenOneIsGiven() throws IOException {
         final GitHubListWorkflowRunsFilter filter = mock(GitHubListWorkflowRunsFilter.class);
+        final GitHubWorkflowRun listed = ActionsFixtures.workflowRun();
         when(github.actions().workflowRuns().listWorkflowRuns(eq(OWNER), eq(NAME), eq(KEY), eq(filter), any()).stream())
-                .thenReturn(Stream.empty());
+                .thenReturn(Stream.of(listed));
 
         final List<WorkflowRun> runs = sut.runs(filter).toList();
 
-        assertThat(runs).isEmpty();
+        assertThat(runs)
+                .singleElement()
+                .satisfies(run -> assertThat(run.response()).isSameAs(listed));
     }
 
     @Test

@@ -17,6 +17,7 @@ import io.github.piotr_janczukowicz.github.api.actions.GitHubActionsSecretsApi;
 import io.github.piotr_janczukowicz.github.api.actions.GitHubActionsVariablesApi;
 import io.github.piotr_janczukowicz.github.api.actions.GitHubActionsWorkflowRunsApi;
 import io.github.piotr_janczukowicz.github.api.actions.GitHubActionsWorkflowsApi;
+import io.github.piotr_janczukowicz.github.api.actions.GitHubArtifact;
 import io.github.piotr_janczukowicz.github.api.actions.GitHubCreateRepoVariablePayload;
 import io.github.piotr_janczukowicz.github.api.actions.GitHubListWorkflowRunsForRepoFilter;
 import io.github.piotr_janczukowicz.github.api.actions.GitHubWorkflow;
@@ -53,10 +54,12 @@ class RepositoryActionsTest {
 
         final List<Workflow> workflows = sut.workflows().toList();
 
-        assertThat(workflows).singleElement().satisfies(workflow -> {
-            assertThat(workflow.response()).isSameAs(listed);
-            assertThat(workflow.repository()).isSameAs(sut);
-        });
+        assertThat(workflows)
+                .singleElement()
+                .satisfies(workflow -> assertSoftly(softly -> {
+                    softly.assertThat(workflow.response()).isSameAs(listed);
+                    softly.assertThat(workflow.repository()).isSameAs(sut);
+                }));
     }
 
     @Test
@@ -98,21 +101,24 @@ class RepositoryActionsTest {
 
         final List<WorkflowRun> runs = sut.workflowRuns().toList();
 
-        assertThat(runs).singleElement().satisfies(run -> {
-            assertThat(run.response()).isSameAs(listed);
-            assertThat(run.repository()).isSameAs(sut);
-        });
+        assertThat(runs)
+                .singleElement()
+                .satisfies(run -> assertSoftly(softly -> {
+                    softly.assertThat(run.response()).isSameAs(listed);
+                    softly.assertThat(run.repository()).isSameAs(sut);
+                }));
     }
 
     @Test
     void workflowRuns_shouldPassTheFilterOn_whenOneIsGiven() throws IOException {
         final GitHubListWorkflowRunsForRepoFilter filter = mock(GitHubListWorkflowRunsForRepoFilter.class);
+        final GitHubWorkflowRun listed = ActionsFixtures.workflowRun();
         when(github.actions().workflowRuns().listWorkflowRunsForRepo(eq(OWNER), eq(NAME), eq(filter), any()).stream())
-                .thenReturn(Stream.empty());
+                .thenReturn(Stream.of(listed));
 
         final List<WorkflowRun> runs = sut.workflowRuns(filter).toList();
 
-        assertThat(runs).isEmpty();
+        assertThat(runs).singleElement().extracting(WorkflowRun::response).isSameAs(listed);
     }
 
     @Test
@@ -153,22 +159,27 @@ class RepositoryActionsTest {
 
         final List<Artifact> artifacts = sut.artifacts().toList();
 
-        assertThat(artifacts).singleElement().satisfies(artifact -> {
-            assertThat(artifact.id()).isEqualTo(ActionsFixtures.ARTIFACT_ID);
-            assertThat(artifact.repository()).isSameAs(sut);
-        });
+        assertThat(artifacts)
+                .singleElement()
+                .satisfies(artifact -> assertSoftly(softly -> {
+                    softly.assertThat(artifact.id()).isEqualTo(ActionsFixtures.ARTIFACT_ID);
+                    softly.assertThat(artifact.repository()).isSameAs(sut);
+                }));
     }
 
     @Test
     void artifact_shouldReturnTheArtifact_whenGitHubHasIt() throws IOException {
         final GitHubActionsArtifactsApi artifacts = github.actions().artifacts();
-        doReturn(Optional.of(ActionsFixtures.artifact()))
-                .when(artifacts)
-                .getArtifact(OWNER, NAME, ActionsFixtures.ARTIFACT_ID);
+        final GitHubArtifact loaded = ActionsFixtures.artifact();
+        doReturn(Optional.of(loaded)).when(artifacts).getArtifact(OWNER, NAME, ActionsFixtures.ARTIFACT_ID);
 
         final Optional<Artifact> found = sut.artifact(ActionsFixtures.ARTIFACT_ID);
 
-        assertThat(found).isPresent();
+        assertSoftly(softly -> {
+            softly.assertThat(found).isPresent();
+            softly.assertThat(found.orElseThrow().response()).isSameAs(loaded);
+            softly.assertThat(found.orElseThrow().repository()).isSameAs(sut);
+        });
     }
 
     @Test
@@ -188,20 +199,27 @@ class RepositoryActionsTest {
 
         final List<Variable> variables = sut.variables().toList();
 
-        assertThat(variables).singleElement().satisfies(variable -> {
-            assertThat(variable.name()).isEqualTo(VARIABLE);
-            assertThat(variable.repository()).isSameAs(sut);
-        });
+        assertThat(variables)
+                .singleElement()
+                .satisfies(variable -> assertSoftly(softly -> {
+                    softly.assertThat(variable.name()).isEqualTo(VARIABLE);
+                    softly.assertThat(variable.repository()).isSameAs(sut);
+                }));
     }
 
     @Test
     void variable_shouldReturnTheVariable_whenGitHubHasIt() throws IOException {
         final GitHubActionsVariablesApi variables = github.actions().variables();
-        doReturn(Optional.of(ActionsFixtures.variable())).when(variables).getRepoVariable(OWNER, NAME, VARIABLE);
+        final GitHubActionsVariable loaded = ActionsFixtures.variable();
+        doReturn(Optional.of(loaded)).when(variables).getRepoVariable(OWNER, NAME, VARIABLE);
 
         final Optional<Variable> found = sut.variable(VARIABLE);
 
-        assertThat(found).isPresent();
+        assertSoftly(softly -> {
+            softly.assertThat(found).isPresent();
+            softly.assertThat(found.orElseThrow().response()).isSameAs(loaded);
+            softly.assertThat(found.orElseThrow().repository()).isSameAs(sut);
+        });
     }
 
     @Test
@@ -219,6 +237,13 @@ class RepositoryActionsTest {
         final Throwable thrown = catchThrowable(() -> sut.variable(" "));
 
         assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("variableName");
+    }
+
+    @Test
+    void variable_shouldThrowNullPointerException_whenNameIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.variable(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("variableName");
     }
 
     @Test
@@ -244,6 +269,13 @@ class RepositoryActionsTest {
         final Throwable thrown = catchThrowable(() -> sut.createVariable(VARIABLE, "staging"));
 
         assertThat(thrown).isInstanceOf(IllegalStateException.class).hasMessageContaining("is gone");
+    }
+
+    @Test
+    void createVariable_shouldThrowIllegalArgumentException_whenNameIsBlank() {
+        final Throwable thrown = catchThrowable(() -> sut.createVariable(" ", "staging"));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("variableName");
     }
 
     @Test

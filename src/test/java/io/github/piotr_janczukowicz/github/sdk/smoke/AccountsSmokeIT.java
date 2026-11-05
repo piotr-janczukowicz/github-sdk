@@ -1,6 +1,7 @@
 package io.github.piotr_janczukowicz.github.sdk.smoke;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 import io.github.piotr_janczukowicz.github.sdk.Repository;
 import io.github.piotr_janczukowicz.github.sdk.User;
@@ -28,8 +29,10 @@ class AccountsSmokeIT {
 
         final Optional<User> found = ENV.sdk().user(current.login());
 
-        assertThat(current.login()).isNotBlank();
-        assertThat(found).map(User::login).contains(current.login());
+        assertSoftly(softly -> {
+            softly.assertThat(current.login()).isNotBlank();
+            softly.assertThat(found).map(User::login).contains(current.login());
+        });
     }
 
     @Test
@@ -49,13 +52,12 @@ class AccountsSmokeIT {
     }
 
     @Test
-    void repositories_shouldBeHandlesOfTheUser_whenTheyAreListed() throws IOException {
+    void repositories_shouldBeOwnedByTheUser_whenTheyAreListed() throws IOException {
         final User current = ENV.sdk().currentUser();
 
         final List<Repository> repositories = current.repositories().limit(3).toList();
 
         Assumptions.assumeFalse(repositories.isEmpty(), current.login() + " has no public repositories");
-        assertThat(repositories).hasSizeLessThanOrEqualTo(3);
         assertThat(repositories)
                 .allSatisfy(repository -> assertThat(repository.owner()).isEqualToIgnoringCase(current.login()));
     }

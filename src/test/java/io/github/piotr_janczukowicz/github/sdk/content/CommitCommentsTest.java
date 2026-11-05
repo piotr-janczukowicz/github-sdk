@@ -53,10 +53,12 @@ class CommitCommentsTest {
 
         final List<CommitComment> comments = sut.comments().toList();
 
-        assertThat(comments).singleElement().satisfies(comment -> {
-            assertThat(comment.response()).isSameAs(listed);
-            assertThat(comment.repository()).isSameAs(repository);
-        });
+        assertThat(comments)
+                .singleElement()
+                .satisfies(comment -> assertSoftly(softly -> {
+                    softly.assertThat(comment.response()).isSameAs(listed);
+                    softly.assertThat(comment.repository()).isSameAs(repository);
+                }));
     }
 
     @Test
@@ -106,6 +108,13 @@ class CommitCommentsTest {
     }
 
     @Test
+    void comment_shouldThrowNullPointerException_whenBodyIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.comment(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("body");
+    }
+
+    @Test
     void comment_shouldThrowIllegalArgumentException_whenPathIsBlank() {
         final Throwable thrown = catchThrowable(() -> sut.comment("Look here", " ", 1));
 
@@ -120,9 +129,11 @@ class CommitCommentsTest {
 
         final List<CheckSuite> suites = sut.checkSuites().toList();
 
-        assertThat(suites).singleElement().satisfies(suite -> {
-            assertThat(suite.response()).isSameAs(listed);
-            assertThat(suite.repository()).isSameAs(repository);
-        });
+        assertThat(suites)
+                .singleElement()
+                .satisfies(suite -> assertSoftly(softly -> {
+                    softly.assertThat(suite.response()).isSameAs(listed);
+                    softly.assertThat(suite.repository()).isSameAs(repository);
+                }));
     }
 }

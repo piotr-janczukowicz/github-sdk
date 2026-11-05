@@ -28,7 +28,7 @@ class ProjectFieldAndViewTest {
     private final Project project = new Project(gateway, ProjectFixtures.project());
 
     @Test
-    void field_shouldExposeTheResponse_whenFieldIsLoaded() {
+    void constructor_shouldExposeTheFieldResponse_whenFieldIsLoaded() {
         final GitHubProjectField response = ProjectFixtures.field();
 
         final ProjectField sut = new ProjectField(project, response);
@@ -44,7 +44,7 @@ class ProjectFieldAndViewTest {
     }
 
     @Test
-    void field_shouldReturnTheReloadedField_whenItExists() throws IOException {
+    void refresh_shouldReturnTheReloadedField_whenItExists() throws IOException {
         final GitHubProjectField reloaded = ProjectFixtures.field();
         when(gateway.field(NUMBER, ProjectFixtures.FIELD_ID)).thenReturn(Optional.of(reloaded));
         final ProjectField sut = new ProjectField(project, ProjectFixtures.field());
@@ -55,7 +55,7 @@ class ProjectFieldAndViewTest {
     }
 
     @Test
-    void field_shouldThrowIllegalStateException_whenTheFieldIsGone() throws IOException {
+    void refresh_shouldThrowIllegalStateException_whenTheFieldIsGone() throws IOException {
         when(gateway.field(NUMBER, ProjectFixtures.FIELD_ID)).thenReturn(Optional.empty());
         final ProjectField sut = new ProjectField(project, ProjectFixtures.field());
 
@@ -65,14 +65,23 @@ class ProjectFieldAndViewTest {
     }
 
     @Test
-    void field_shouldThrowNullPointerException_whenResponseIsNull() {
+    void constructor_shouldThrowNullPointerException_whenFieldResponseIsNull() {
         final Throwable thrown = catchThrowable(() -> new ProjectField(project, null));
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("response");
     }
 
     @Test
-    void view_shouldExposeTheResponse_whenViewIsLoaded() {
+    void constructor_shouldThrowNullPointerException_whenFieldProjectIsNull() {
+        final GitHubProjectField response = ProjectFixtures.field();
+
+        final Throwable thrown = catchThrowable(() -> new ProjectField(null, response));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("project");
+    }
+
+    @Test
+    void constructor_shouldExposeTheViewResponse_whenViewIsLoaded() {
         final GitHubProjectView response = ProjectFixtures.view();
 
         final ProjectView sut = new ProjectView(project, response);
@@ -88,23 +97,34 @@ class ProjectFieldAndViewTest {
     }
 
     @Test
-    void view_shouldStreamTheItems_whenTheyExist() throws IOException {
+    void items_shouldStreamTheItems_whenTheyExist() throws IOException {
         final GitHubProjectItem listed = ProjectFixtures.item();
         when(gateway.viewItems(NUMBER, ProjectFixtures.VIEW_NUMBER)).thenReturn(Stream.of(listed));
         final ProjectView sut = new ProjectView(project, ProjectFixtures.view());
 
         final List<ProjectItem> items = sut.items().toList();
 
-        assertThat(items).singleElement().satisfies(item -> {
-            assertThat(item.response()).isSameAs(listed);
-            assertThat(item.project()).isSameAs(project);
-        });
+        assertThat(items)
+                .singleElement()
+                .satisfies(item -> assertSoftly(softly -> {
+                    softly.assertThat(item.response()).isSameAs(listed);
+                    softly.assertThat(item.project()).isSameAs(project);
+                }));
     }
 
     @Test
-    void view_shouldThrowNullPointerException_whenProjectIsNull() {
-        final Throwable thrown = catchThrowable(() -> new ProjectView(null, ProjectFixtures.view()));
+    void constructor_shouldThrowNullPointerException_whenViewProjectIsNull() {
+        final GitHubProjectView response = ProjectFixtures.view();
+
+        final Throwable thrown = catchThrowable(() -> new ProjectView(null, response));
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("project");
+    }
+
+    @Test
+    void constructor_shouldThrowNullPointerException_whenViewResponseIsNull() {
+        final Throwable thrown = catchThrowable(() -> new ProjectView(project, null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("response");
     }
 }

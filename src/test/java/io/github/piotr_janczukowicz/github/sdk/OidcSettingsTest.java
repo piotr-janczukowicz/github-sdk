@@ -64,6 +64,17 @@ class OidcSettingsTest {
     }
 
     @Test
+    void setOidcSubjectClaim_shouldSendTheImmutableSubjectFlag_whenItIsTrue() throws IOException {
+        final ArgumentCaptor<GitHubSetCustomOidcSubClaimForRepoPayload> payload =
+                ArgumentCaptor.forClass(GitHubSetCustomOidcSubClaimForRepoPayload.class);
+
+        repository.setOidcSubjectClaim(true, List.of("repo"), true);
+
+        verify(api).setCustomOidcSubClaimForRepo(eq("octocat"), eq("hello-world"), payload.capture());
+        assertThat(payload.getValue().useImmutableSubject()).isTrue();
+    }
+
+    @Test
     void setOidcSubjectClaim_shouldThrowNullPointerException_whenClaimKeysAreNull() {
         final Throwable thrown = catchThrowable(() -> repository.setOidcSubjectClaim(true, null, null));
 
@@ -89,6 +100,17 @@ class OidcSettingsTest {
 
         verify(api).updateOidcCustomSubTemplateForOrg(eq("acme"), payload.capture());
         assertThat(payload.getValue().includeClaimKeys()).containsExactly("repo");
+    }
+
+    @Test
+    void updateOidcSubjectTemplate_shouldSendTheImmutableSubjectFlag_whenItIsTrue() throws IOException {
+        final ArgumentCaptor<GitHubUpdateOidcCustomSubTemplateForOrgPayload> payload =
+                ArgumentCaptor.forClass(GitHubUpdateOidcCustomSubTemplateForOrgPayload.class);
+
+        organization().updateOidcSubjectTemplate(List.of("repo"), true);
+
+        verify(api).updateOidcCustomSubTemplateForOrg(eq("acme"), payload.capture());
+        assertThat(payload.getValue().useImmutableSubject()).isTrue();
     }
 
     @Test
@@ -167,16 +189,21 @@ class OidcSettingsTest {
     }
 
     @Test
-    void oidcClaimKeys_shouldThrowIllegalArgumentException_whenAKeyIsBlank() {
+    void updateOidcSubjectTemplate_shouldThrowIllegalArgumentException_whenAKeyIsBlank() {
         final Organization organization = organization();
+        final List<String> claimKeys = List.of("repo", " ");
 
-        final Throwable template =
-                catchThrowable(() -> organization.updateOidcSubjectTemplate(List.of("repo", " "), null));
-        final Throwable claim = catchThrowable(() -> repository.setOidcSubjectClaim(false, List.of(" "), null));
+        final Throwable thrown = catchThrowable(() -> organization.updateOidcSubjectTemplate(claimKeys, null));
 
-        assertSoftly(softly -> {
-            softly.assertThat(template).isInstanceOf(IllegalArgumentException.class);
-            softly.assertThat(claim).isInstanceOf(IllegalArgumentException.class);
-        });
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void setOidcSubjectClaim_shouldThrowIllegalArgumentException_whenAKeyIsBlank() {
+        final List<String> claimKeys = List.of(" ");
+
+        final Throwable thrown = catchThrowable(() -> repository.setOidcSubjectClaim(false, claimKeys, null));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class);
     }
 }

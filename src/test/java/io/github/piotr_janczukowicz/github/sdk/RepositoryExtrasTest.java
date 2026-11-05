@@ -9,6 +9,7 @@ import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.github.piotr_janczukowicz.github.api.GitHub;
@@ -52,6 +53,7 @@ class RepositoryExtrasTest {
         final RepositoryTraffic traffic = sut.traffic();
 
         assertThat(traffic).isNotNull();
+        verifyNoInteractions(github);
     }
 
     @Test
@@ -59,6 +61,7 @@ class RepositoryExtrasTest {
         final RepositoryStatistics statistics = sut.statistics();
 
         assertThat(statistics).isNotNull();
+        verifyNoInteractions(github);
     }
 
     @Test
@@ -84,22 +87,27 @@ class RepositoryExtrasTest {
 
         final List<CommitComment> comments = sut.commitComments().toList();
 
-        assertThat(comments).singleElement().satisfies(comment -> {
-            assertThat(comment.response()).isSameAs(listed);
-            assertThat(comment.repository()).isSameAs(sut);
-        });
+        assertThat(comments)
+                .singleElement()
+                .satisfies(comment -> assertSoftly(softly -> {
+                    softly.assertThat(comment.response()).isSameAs(listed);
+                    softly.assertThat(comment.repository()).isSameAs(sut);
+                }));
     }
 
     @Test
     void commitComment_shouldReturnTheComment_whenGitHubHasIt() throws IOException {
         final GitHubCommitsCommentsApi api = github.commits().comments();
-        doReturn(Optional.of(ExtrasFixtures.commitComment()))
-                .when(api)
-                .getCommitComment(OWNER, NAME, ExtrasFixtures.COMMENT_ID);
+        final GitHubCommitComment loaded = ExtrasFixtures.commitComment();
+        doReturn(Optional.of(loaded)).when(api).getCommitComment(OWNER, NAME, ExtrasFixtures.COMMENT_ID);
 
         final Optional<CommitComment> found = sut.commitComment(ExtrasFixtures.COMMENT_ID);
 
-        assertThat(found).isPresent();
+        assertSoftly(softly -> {
+            softly.assertThat(found).isPresent();
+            softly.assertThat(found.orElseThrow().response()).isSameAs(loaded);
+            softly.assertThat(found.orElseThrow().repository()).isSameAs(sut);
+        });
     }
 
     @Test
@@ -120,20 +128,27 @@ class RepositoryExtrasTest {
 
         final List<Autolink> autolinks = sut.autolinks().toList();
 
-        assertThat(autolinks).singleElement().satisfies(autolink -> {
-            assertThat(autolink.response()).isSameAs(listed);
-            assertThat(autolink.repository()).isSameAs(sut);
-        });
+        assertThat(autolinks)
+                .singleElement()
+                .satisfies(autolink -> assertSoftly(softly -> {
+                    softly.assertThat(autolink.response()).isSameAs(listed);
+                    softly.assertThat(autolink.repository()).isSameAs(sut);
+                }));
     }
 
     @Test
     void autolink_shouldReturnTheAutolink_whenGitHubHasIt() throws IOException {
         final GitHubRepositoriesAutolinksApi api = github.repositories().autolinks();
-        doReturn(Optional.of(ExtrasFixtures.autolink())).when(api).getAutolink(OWNER, NAME, ExtrasFixtures.AUTOLINK_ID);
+        final GitHubAutolink loaded = ExtrasFixtures.autolink();
+        doReturn(Optional.of(loaded)).when(api).getAutolink(OWNER, NAME, ExtrasFixtures.AUTOLINK_ID);
 
         final Optional<Autolink> found = sut.autolink(ExtrasFixtures.AUTOLINK_ID);
 
-        assertThat(found).isPresent();
+        assertSoftly(softly -> {
+            softly.assertThat(found).isPresent();
+            softly.assertThat(found.orElseThrow().response()).isSameAs(loaded);
+            softly.assertThat(found.orElseThrow().repository()).isSameAs(sut);
+        });
     }
 
     @Test
@@ -211,5 +226,15 @@ class RepositoryExtrasTest {
         final Optional<GitHubLicenseContent> found = sut.license();
 
         assertThat(found).containsSame(license);
+    }
+
+    @Test
+    void license_shouldBeEmpty_whenTheRepositoryHasNone() throws IOException {
+        final GitHubLicensesApi api = github.licenses();
+        doReturn(Optional.empty()).when(api).getForRepo(OWNER, NAME);
+
+        final Optional<GitHubLicenseContent> found = sut.license();
+
+        assertThat(found).isEmpty();
     }
 }

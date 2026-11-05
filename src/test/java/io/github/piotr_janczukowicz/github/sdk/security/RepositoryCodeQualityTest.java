@@ -2,6 +2,7 @@ package io.github.piotr_janczukowicz.github.sdk.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
@@ -52,17 +53,20 @@ class RepositoryCodeQualityTest {
 
     @Test
     void findings_shouldSendTheState_whenOneIsGiven() throws IOException {
+        final GitHubCodeQualityFinding finding = mock(GitHubCodeQualityFinding.class);
         when(api.listFindingsForRepo(eq(OWNER), eq(NAME), any(), any(GitHubPageRequest.class)).stream())
-                .thenReturn(Stream.empty());
+                .thenReturn(Stream.of(finding));
         final ArgumentCaptor<GitHubListFindingsForRepoFilter> filter =
                 ArgumentCaptor.forClass(GitHubListFindingsForRepoFilter.class);
 
         final List<GitHubCodeQualityFinding> found =
                 sut.findings(GitHubListFindingsForRepoState.DISMISSED).toList();
-        assertThat(found).isEmpty();
 
         verify(api).listFindingsForRepo(eq(OWNER), eq(NAME), filter.capture(), any(GitHubPageRequest.class));
-        assertThat(filter.getValue().state()).isEqualTo(GitHubListFindingsForRepoState.DISMISSED);
+        assertSoftly(softly -> {
+            softly.assertThat(filter.getValue().state()).isEqualTo(GitHubListFindingsForRepoState.DISMISSED);
+            softly.assertThat(found).containsExactly(finding);
+        });
     }
 
     @Test
@@ -80,6 +84,24 @@ class RepositoryCodeQualityTest {
         final Optional<GitHubCodeQualityFinding> found = sut.finding(4);
 
         assertThat(found).containsSame(finding);
+    }
+
+    @Test
+    void finding_shouldBeEmpty_whenGitHubAnswersNotFound() throws IOException {
+        when(api.getFinding(OWNER, NAME, 4)).thenReturn(Optional.empty());
+
+        final Optional<GitHubCodeQualityFinding> found = sut.finding(4);
+
+        assertThat(found).isEmpty();
+    }
+
+    @Test
+    void setup_shouldPropagateTheException_whenGitHubFailsOtherwise() throws IOException {
+        doThrow(new IOException("boom")).when(api).getSetup(OWNER, NAME);
+
+        final Throwable thrown = catchThrowable(sut::setup);
+
+        assertThat(thrown).isInstanceOf(IOException.class).hasMessageContaining("boom");
     }
 
     @Test

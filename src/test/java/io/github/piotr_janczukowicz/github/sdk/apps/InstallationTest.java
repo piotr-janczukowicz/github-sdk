@@ -91,8 +91,8 @@ class InstallationTest {
 
         final Installation result = sut.suspend();
 
-        verify(api).suspendInstallation(ID);
         assertThat(result.isSuspended()).isTrue();
+        verify(api).suspendInstallation(ID);
     }
 
     @Test
@@ -102,8 +102,8 @@ class InstallationTest {
 
         final Installation result = sut.unsuspend();
 
-        verify(api).unsuspendInstallation(ID);
         assertThat(result.isSuspended()).isFalse();
+        verify(api).unsuspendInstallation(ID);
     }
 
     @Test

@@ -43,9 +43,26 @@ class RepositoryAssigneesTest {
         when(github.issues().assignees().checkUserCanBeAssigned(OWNER, NAME, "hubot"))
                 .thenReturn(true);
 
-        final boolean canBeAssigned = sut.canBeAssigned("hubot");
+        final boolean isAssignable = sut.canBeAssigned("hubot");
 
-        assertThat(canBeAssigned).isTrue();
+        assertThat(isAssignable).isTrue();
+    }
+
+    @Test
+    void canBeAssigned_shouldReturnFalse_whenGitHubAnswersNo() throws IOException {
+        when(github.issues().assignees().checkUserCanBeAssigned(OWNER, NAME, "ghost"))
+                .thenReturn(false);
+
+        final boolean isAssignable = sut.canBeAssigned("ghost");
+
+        assertThat(isAssignable).isFalse();
+    }
+
+    @Test
+    void canBeAssigned_shouldThrowNullPointerException_whenTheLoginIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.canBeAssigned(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("login");
     }
 
     @Test

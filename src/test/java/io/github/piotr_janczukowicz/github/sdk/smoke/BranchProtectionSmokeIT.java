@@ -9,6 +9,7 @@ import io.github.piotr_janczukowicz.github.sdk.content.Branch;
 import io.github.piotr_janczukowicz.github.sdk.content.BranchProtection;
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
@@ -50,9 +51,19 @@ class BranchProtectionSmokeIT {
             });
 
             reloaded.remove();
-            assertThat(branch.protection()).isEmpty();
+            final Optional<BranchProtection> afterRemoval = branch.protection();
+            assertThat(afterRemoval).isEmpty();
         } finally {
+            removeProtection(repository, name);
             SandboxBranches.deleteBranch(ENV, name);
+        }
+    }
+
+    private static void removeProtection(final Repository repository, final String name) throws IOException {
+        final Optional<BranchProtection> leftover =
+                repository.branch(name).orElseThrow().protection();
+        if (leftover.isPresent()) {
+            leftover.get().remove();
         }
     }
 

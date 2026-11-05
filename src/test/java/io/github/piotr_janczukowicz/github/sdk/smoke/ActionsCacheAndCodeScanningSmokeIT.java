@@ -1,12 +1,13 @@
 package io.github.piotr_janczukowicz.github.sdk.smoke;
 
-import static org.assertj.core.api.SoftAssertions.assertSoftly;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import io.github.piotr_janczukowicz.github.client.exception.GitHubApiException;
+import io.github.piotr_janczukowicz.github.client.exception.GitHubForbiddenException;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
 import io.github.piotr_janczukowicz.github.sdk.actions.RepositoryActionsCache;
 import io.github.piotr_janczukowicz.github.sdk.security.RepositoryCodeScanning;
 import java.io.IOException;
+import java.util.Objects;
 import java.util.OptionalInt;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
@@ -29,18 +30,16 @@ class ActionsCacheAndCodeScanningSmokeIT {
         final RepositoryActionsCache caches = repository.actionsCache();
 
         try {
-            final long count = caches.caches().count();
-            final int activeCount = caches.usage().activeCachesCount();
+            caches.caches().forEach(Objects::requireNonNull);
+            caches.usage();
             final OptionalInt retention = caches.retentionDays();
             if (retention.isPresent()) {
                 caches.setRetentionDays(retention.getAsInt());
             }
+            final OptionalInt retentionAfter = caches.retentionDays();
 
-            assertSoftly(softly -> {
-                softly.assertThat(count).isNotNegative();
-                softly.assertThat(activeCount).isNotNegative();
-            });
-        } catch (final GitHubApiException e) {
+            assertThat(retentionAfter).isEqualTo(retention);
+        } catch (final GitHubForbiddenException e) {
             Assumptions.abort("GitHub refuses the Actions cache here (" + e.getMessage() + ")");
         }
     }
@@ -51,16 +50,12 @@ class ActionsCacheAndCodeScanningSmokeIT {
         final RepositoryCodeScanning scanning = repository.codeScanning();
 
         try {
-            final long analyses = scanning.analyses().count();
-            final int databases = scanning.databases().size();
+            scanning.analyses().forEach(Objects::requireNonNull);
+            scanning.databases();
             final boolean hasSetup = scanning.defaultSetup().state() != null;
 
-            assertSoftly(softly -> {
-                softly.assertThat(analyses).isNotNegative();
-                softly.assertThat(databases).isNotNegative();
-                softly.assertThat(hasSetup).isTrue();
-            });
-        } catch (final GitHubApiException e) {
+            assertThat(hasSetup).isTrue();
+        } catch (final GitHubForbiddenException e) {
             Assumptions.abort("GitHub refuses code scanning here: no Code scanning alerts permission or the feature"
                     + " is not available (" + e.getMessage() + ")");
         }

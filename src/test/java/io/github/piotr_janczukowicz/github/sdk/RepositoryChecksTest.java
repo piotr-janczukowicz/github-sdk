@@ -78,7 +78,7 @@ class RepositoryChecksTest {
     }
 
     @Test
-    void createCheckRun_shouldSendThePayload_whenCalledWithOne() throws IOException {
+    void createCheckRun_shouldSendThePayload_whenGivenAPayload() throws IOException {
         final GitHubCreateCheckRunPayload payload =
                 new GitHubCreateCheckRunPayload("build", "abc123", null, null, null, null, null, null, null, null);
         final GitHubCheckRun created = ChecksFixtures.checkRun();
@@ -94,6 +94,13 @@ class RepositoryChecksTest {
         final Throwable thrown = catchThrowable(() -> sut.createCheckRun(" ", "abc123"));
 
         assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("name");
+    }
+
+    @Test
+    void createCheckRun_shouldThrowNullPointerException_whenNameIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.createCheckRun(null, "abc123"));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("name");
     }
 
     @Test
@@ -123,7 +130,14 @@ class RepositoryChecksTest {
     void createCheckSuite_shouldThrowIllegalArgumentException_whenShaIsBlank() {
         final Throwable thrown = catchThrowable(() -> sut.createCheckSuite(" "));
 
-        assertThat(thrown).isInstanceOf(IllegalArgumentException.class);
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("sha");
+    }
+
+    @Test
+    void createCheckSuite_shouldThrowNullPointerException_whenShaIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.createCheckSuite(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("sha");
     }
 
     @Test

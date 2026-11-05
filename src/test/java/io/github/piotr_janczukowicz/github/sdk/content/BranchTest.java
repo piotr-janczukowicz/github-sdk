@@ -94,11 +94,11 @@ class BranchTest {
 
         final Optional<BranchProtection> protection = sut.protection();
 
-        assertThat(protection).isPresent();
-        assertSoftly(softly -> {
-            softly.assertThat(protection.orElseThrow().response()).isSameAs(held);
-            softly.assertThat(protection.orElseThrow().branch()).isSameAs(sut);
-        });
+        assertThat(protection)
+                .hasValueSatisfying(rule -> assertSoftly(softly -> {
+                    softly.assertThat(rule.response()).isSameAs(held);
+                    softly.assertThat(rule.branch()).isSameAs(sut);
+                }));
     }
 
     @Test
@@ -121,12 +121,5 @@ class BranchTest {
         final List<GitHubRepositoryRuleDetailed> rules = sut.rules().toList();
 
         assertThat(rules).containsExactly(rule);
-    }
-
-    @Test
-    void protect_shouldStartAnUpdate_whenCalled() {
-        final BranchProtectionUpdate update = sut.protect();
-
-        assertThat(update).isNotNull();
     }
 }

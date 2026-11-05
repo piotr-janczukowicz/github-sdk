@@ -104,11 +104,32 @@ class CommitCommentTest {
     }
 
     @Test
+    void edit_shouldThrowNullPointerException_whenBodyIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.edit(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("body");
+    }
+
+    @Test
     void delete_shouldDeleteTheComment_whenCalled() throws IOException {
         final GitHubCommitsCommentsApi api = github.commits().comments();
 
         sut.delete();
 
         verify(api).deleteCommitComment(OWNER, NAME, ID);
+    }
+
+    @Test
+    void constructor_shouldThrowNullPointerException_whenRepositoryIsNull() {
+        final Throwable thrown = catchThrowable(() -> new CommitComment(null, response));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("repository");
+    }
+
+    @Test
+    void constructor_shouldThrowNullPointerException_whenResponseIsNull() {
+        final Throwable thrown = catchThrowable(() -> new CommitComment(repository, null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("response");
     }
 }

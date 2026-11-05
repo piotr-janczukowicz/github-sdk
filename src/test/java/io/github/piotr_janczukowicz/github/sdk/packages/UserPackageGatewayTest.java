@@ -56,14 +56,14 @@ class UserPackageGatewayTest {
     }
 
     @Test
-    void deletePackage_shouldDeleteThePackage_whenCalled() throws IOException {
+    void deletePackage_shouldDeleteThePackage() throws IOException {
         sut.deletePackage(TYPE, NAME);
 
         verify(github.packages()).deletePackageForUser(LOGIN, TYPE, NAME);
     }
 
     @Test
-    void restorePackage_shouldRestoreThePackage_whenCalled() throws IOException {
+    void restorePackage_shouldRestoreThePackage() throws IOException {
         sut.restorePackage(TYPE, NAME);
 
         verify(github.packages()).restorePackageForUser(LOGIN, TYPE, NAME);
@@ -90,14 +90,14 @@ class UserPackageGatewayTest {
     }
 
     @Test
-    void deleteVersion_shouldDeleteTheVersion_whenCalled() throws IOException {
+    void deleteVersion_shouldDeleteTheVersion() throws IOException {
         sut.deleteVersion(TYPE, NAME, ID);
 
         verify(github.packages()).deletePackageVersionForUser(LOGIN, TYPE, NAME, ID);
     }
 
     @Test
-    void restoreVersion_shouldRestoreTheVersion_whenCalled() throws IOException {
+    void restoreVersion_shouldRestoreTheVersion() throws IOException {
         sut.restoreVersion(TYPE, NAME, ID);
 
         verify(github.packages()).restorePackageVersionForUser(LOGIN, TYPE, NAME, ID);

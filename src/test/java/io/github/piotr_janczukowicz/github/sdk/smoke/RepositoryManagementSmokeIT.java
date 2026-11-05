@@ -7,6 +7,7 @@ import io.github.piotr_janczukowicz.github.client.exception.GitHubForbiddenExcep
 import io.github.piotr_janczukowicz.github.sdk.Repository;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
@@ -41,6 +42,15 @@ class RepositoryManagementSmokeIT {
         } finally {
             repository.update().description(description).homepage(homepage).send();
         }
+
+        final Repository restored = repository.fetch().orElseThrow();
+
+        assertSoftly(softly -> {
+            softly.assertThat(Objects.requireNonNullElse(restored.response().description(), ""))
+                    .isEqualTo(description);
+            softly.assertThat(Objects.requireNonNullElse(restored.response().homepage(), ""))
+                    .isEqualTo(homepage);
+        });
     }
 
     private static Repository update(final Repository repository, final String description, final String homepage)
@@ -86,13 +96,15 @@ class RepositoryManagementSmokeIT {
     }
 
     @Test
-    void languagesAndContributors_shouldBeListed_whenTheRepositoryHasContent() {
+    void languagesAndContributors_shouldBeListed_whenTheRepositoryHasContent() throws IOException {
         final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
 
+        final Map<String, Integer> languages = repository.languages();
+        final List<?> contributors = repository.contributors().limit(5).toList();
+
         assertSoftly(softly -> {
-            softly.assertThatCode(repository::languages).doesNotThrowAnyException();
-            softly.assertThatCode(() -> repository.contributors().limit(5).toList())
-                    .doesNotThrowAnyException();
+            softly.assertThat(languages).doesNotContainValue(0);
+            softly.assertThat(contributors).doesNotContainNull();
         });
     }
 }

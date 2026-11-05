@@ -101,6 +101,15 @@ class RepositoryStatisticsTest {
     }
 
     @Test
+    void punchCard_shouldBeEmpty_whenGitHubIsStillComputing() throws IOException {
+        doReturn(Optional.empty()).when(api).getPunchCardStats(OWNER, NAME);
+
+        final Optional<GitHubPunchCardStats> result = sut.punchCard();
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
     void constructor_shouldThrowNullPointerException_whenRepositoryIsNull() {
         final Throwable thrown = catchThrowable(() -> new RepositoryStatistics(null));
 

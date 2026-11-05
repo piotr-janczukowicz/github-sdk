@@ -57,11 +57,40 @@ class CodeScanningAlertTest {
     }
 
     @Test
+    void state_shouldBeEmpty_whenTheResponseHasNoState() {
+        when(response.state()).thenReturn(null);
+
+        final Optional<GitHubCodeScanningAlertState> state = sut.state();
+
+        assertThat(state).isEmpty();
+    }
+
+    @Test
+    void ruleId_shouldBeEmpty_whenTheRuleHasNoId() {
+        when(response.rule().id()).thenReturn(null);
+
+        final Optional<String> ruleId = sut.ruleId();
+
+        assertThat(ruleId).isEmpty();
+    }
+
+    @Test
+    void ruleName_shouldBeEmpty_whenTheRuleHasNoName() {
+        when(response.rule().name()).thenReturn(null);
+
+        final Optional<String> ruleName = sut.ruleName();
+
+        assertThat(ruleName).isEmpty();
+    }
+
+    @Test
     void isOpen_shouldBeFalse_whenTheAlertIsDismissed() {
         final CodeScanningAlert dismissed = new CodeScanningAlert(
                 repository, SecurityFixtures.codeAlertWith(GitHubCodeScanningAlertState.DISMISSED));
 
-        assertThat(dismissed.isOpen()).isFalse();
+        final boolean isOpen = dismissed.isOpen();
+
+        assertThat(isOpen).isFalse();
     }
 
     @Test

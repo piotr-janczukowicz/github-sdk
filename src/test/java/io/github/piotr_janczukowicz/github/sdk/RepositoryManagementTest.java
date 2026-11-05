@@ -47,7 +47,7 @@ class RepositoryManagementTest {
     private final Repository sut = GitHubSdk.of(github).repository(OWNER, NAME);
 
     @Test
-    void archive_shouldSendArchivedAndReturnTheRepository_whenCalled() throws IOException {
+    void archive_shouldSendArchivedAndReturnTheRepository() throws IOException {
         final GitHubFullRepository archived = mock(GitHubFullRepository.class);
         when(archived.name()).thenReturn(NAME);
         final GitHubRepositoryApi api = github.repositories().repository();
@@ -65,7 +65,7 @@ class RepositoryManagementTest {
     }
 
     @Test
-    void delete_shouldDeleteTheRepository_whenCalled() throws IOException {
+    void delete_shouldDeleteTheRepository() throws IOException {
         final GitHubRepositoryApi api = github.repositories().repository();
 
         sut.delete();
@@ -106,6 +106,13 @@ class RepositoryManagementTest {
     }
 
     @Test
+    void transfer_shouldThrowNullPointerException_whenOwnerIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.transfer(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("newOwner");
+    }
+
+    @Test
     void transfer_shouldThrowIllegalArgumentException_whenOwnerIsBlank() {
         final Throwable thrown = catchThrowable(() -> sut.transfer(" "));
 
@@ -120,7 +127,7 @@ class RepositoryManagementTest {
     }
 
     @Test
-    void topics_shouldReturnTheTopicNames_whenCalled() throws IOException {
+    void topics_shouldReturnTheTopicNames() throws IOException {
         final GitHubRepositoryApi api = github.repositories().repository();
         doReturn(new GitHubRepositoryTopics(List.of("java", "sdk"))).when(api).getAllTopics(OWNER, NAME);
 
@@ -130,7 +137,7 @@ class RepositoryManagementTest {
     }
 
     @Test
-    void replaceTopics_shouldSendTheTopicsAndReturnWhatGitHubHolds_whenCalled() throws IOException {
+    void replaceTopics_shouldSendTheTopicsAndReturnWhatGitHubHolds() throws IOException {
         final GitHubRepositoryApi api = github.repositories().repository();
         doReturn(new GitHubRepositoryTopics(List.of("java")))
                 .when(api)
@@ -155,7 +162,32 @@ class RepositoryManagementTest {
     }
 
     @Test
-    void languages_shouldReturnTheBytesPerLanguage_whenCalled() throws IOException {
+    void replaceTopics_shouldThrowIllegalArgumentException_whenATopicIsBlank() {
+        final Throwable thrown = catchThrowable(() -> sut.replaceTopics(List.of(" ")));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("topics");
+    }
+
+    @Test
+    void replaceTopics_shouldSendAnEmptyList_whenNoTopicsAreGiven() throws IOException {
+        final GitHubRepositoryApi api = github.repositories().repository();
+        doReturn(new GitHubRepositoryTopics(List.of()))
+                .when(api)
+                .replaceAllTopics(eq(OWNER), eq(NAME), any(GitHubReplaceAllTopicsPayload.class));
+        final ArgumentCaptor<GitHubReplaceAllTopicsPayload> payload =
+                ArgumentCaptor.forClass(GitHubReplaceAllTopicsPayload.class);
+
+        final List<String> topics = sut.replaceTopics(List.of());
+
+        verify(api).replaceAllTopics(eq(OWNER), eq(NAME), payload.capture());
+        assertSoftly(softly -> {
+            softly.assertThat(payload.getValue().names()).isEmpty();
+            softly.assertThat(topics).isEmpty();
+        });
+    }
+
+    @Test
+    void languages_shouldReturnTheBytesPerLanguage() throws IOException {
         final GitHubRepositoryApi api = github.repositories().repository();
         doReturn(new GitHubRepositoryLanguages(Map.of("Java", 1200))).when(api).listLanguages(OWNER, NAME);
 
@@ -186,7 +218,7 @@ class RepositoryManagementTest {
         verify(api).createDispatchEvent(eq(OWNER), eq(NAME), payload.capture());
         assertSoftly(softly -> {
             softly.assertThat(payload.getValue().eventType()).isEqualTo("deploy");
-            softly.assertThat(payload.getValue().clientPayload()).isNullOrEmpty();
+            softly.assertThat(payload.getValue().clientPayload()).isNull();
         });
     }
 
@@ -214,6 +246,27 @@ class RepositoryManagementTest {
         final Throwable thrown = catchThrowable(() -> sut.dispatchEvent("deploy", null));
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("clientPayload");
+    }
+
+    @Test
+    void dispatchEvent_shouldAcceptNullValues_whenThePayloadHasThem() throws IOException {
+        final Map<String, Object> payload = new HashMap<>();
+        payload.put("ref", null);
+        final GitHubRepositoryApi api = github.repositories().repository();
+        final ArgumentCaptor<GitHubCreateDispatchEventPayload> captor =
+                ArgumentCaptor.forClass(GitHubCreateDispatchEventPayload.class);
+
+        sut.dispatchEvent("deploy", payload);
+
+        verify(api).createDispatchEvent(eq(OWNER), eq(NAME), captor.capture());
+        assertThat(captor.getValue().clientPayload()).containsEntry("ref", null);
+    }
+
+    @Test
+    void dispatchEvent_shouldThrowNullPointerException_whenTypeIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.dispatchEvent(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("eventType");
     }
 
     @Test
@@ -263,40 +316,12 @@ class RepositoryManagementTest {
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("payload");
     }
 
-    private void stubTransfer(final GitHubRepositoryApi api, final String newOwner, final String newName)
-            throws IOException {
-        final GitHubSimpleUser owner = mock(GitHubSimpleUser.class);
-        when(owner.login()).thenReturn(newOwner);
-        final GitHubMinimalRepository moved = mock(GitHubMinimalRepository.class);
-        when(moved.owner()).thenReturn(owner);
-        when(moved.name()).thenReturn(newName);
-        doReturn(moved).when(api).transfer(eq(OWNER), eq(NAME), any(GitHubTransferPayload.class));
-    }
-
     @Test
     void createWebhook_shouldThrowIllegalArgumentException_whenAnEventNameIsBlank() {
         final Throwable thrown =
                 catchThrowable(() -> sut.createWebhook("https://example.com/hook", List.of("push", " ")));
 
         assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("events");
-    }
-
-    @Test
-    void replaceTopics_shouldThrowIllegalArgumentException_whenATopicIsBlank() {
-        final Throwable thrown = catchThrowable(() -> sut.replaceTopics(List.of(" ")));
-
-        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("topics");
-    }
-
-    @Test
-    void dispatchEvent_shouldAcceptNullValues_whenThePayloadHasThem() throws IOException {
-        final Map<String, Object> payload = new HashMap<>();
-        payload.put("ref", null);
-
-        sut.dispatchEvent("deploy", payload);
-
-        verify(github.repositories().repository())
-                .createDispatchEvent(eq(OWNER), eq(NAME), any(GitHubCreateDispatchEventPayload.class));
     }
 
     @Test
@@ -309,5 +334,15 @@ class RepositoryManagementTest {
 
         assertThat(result.response()).isSameAs(existing);
         verify(github.deployments().environments(), never()).createOrUpdateEnvironment(any(), any(), any(), any());
+    }
+
+    private void stubTransfer(final GitHubRepositoryApi api, final String newOwner, final String newName)
+            throws IOException {
+        final GitHubSimpleUser owner = mock(GitHubSimpleUser.class);
+        when(owner.login()).thenReturn(newOwner);
+        final GitHubMinimalRepository moved = mock(GitHubMinimalRepository.class);
+        when(moved.owner()).thenReturn(owner);
+        when(moved.name()).thenReturn(newName);
+        doReturn(moved).when(api).transfer(eq(OWNER), eq(NAME), any(GitHubTransferPayload.class));
     }
 }

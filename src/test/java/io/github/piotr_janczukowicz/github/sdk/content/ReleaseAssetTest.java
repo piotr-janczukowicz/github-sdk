@@ -148,17 +148,26 @@ class ReleaseAssetTest {
         final Path result = sut.download(target);
 
         assertThat(result).isEqualTo(target);
+        verify(github.releases().assets()).downloadReleaseAsset(OWNER, NAME, ID, target);
     }
 
     @Test
     void download_shouldWriteTheBytes_whenCalledWithAStream() throws IOException {
         final ByteArrayOutputStream out = new ByteArrayOutputStream();
+        final byte[] content = {1, 2, 3};
         when(github.releases().assets().downloadReleaseAsset(OWNER, NAME, ID, out))
-                .thenReturn(1024L);
+                .thenAnswer(invocation -> {
+                    out.write(content);
+                    return 3L;
+                });
 
         final long written = sut.download(out);
 
-        assertThat(written).isEqualTo(1024L);
+        verify(github.releases().assets()).downloadReleaseAsset(OWNER, NAME, ID, out);
+        assertSoftly(softly -> {
+            softly.assertThat(written).isEqualTo(3L);
+            softly.assertThat(out.toByteArray()).containsExactly(content);
+        });
     }
 
     @Test

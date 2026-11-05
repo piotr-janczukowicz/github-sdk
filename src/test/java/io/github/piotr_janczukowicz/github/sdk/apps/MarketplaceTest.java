@@ -65,6 +65,15 @@ class MarketplaceTest {
     }
 
     @Test
+    void purchase_shouldBeEmpty_whenTheAccountHasNone() throws IOException {
+        when(github.apps().marketplace().getSubscriptionPlanForAccount(5L)).thenReturn(Optional.empty());
+
+        final Optional<GitHubMarketplacePurchase> found = sut.purchase(5L);
+
+        assertThat(found).isEmpty();
+    }
+
+    @Test
     void constructor_shouldThrowNullPointerException_whenSdkIsNull() {
         final Throwable thrown = catchThrowable(() -> new Marketplace(null));
 

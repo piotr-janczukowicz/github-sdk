@@ -163,30 +163,60 @@ class BranchProtectionUpdateTest {
     }
 
     @Test
+    void restrictPushesTo_shouldThrowNullPointerException_whenUsersAreNull() {
+        final BranchProtectionUpdate update = branch.protect();
+        final List<String> none = List.of();
+
+        final Throwable thrown = catchThrowable(() -> update.restrictPushesTo(null, none, none));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("users");
+    }
+
+    @Test
+    void restrictPushesTo_shouldThrowNullPointerException_whenAppsAreNull() {
+        final BranchProtectionUpdate update = branch.protect();
+        final List<String> none = List.of();
+
+        final Throwable thrown = catchThrowable(() -> update.restrictPushesTo(none, none, null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("apps");
+    }
+
+    @Test
     void requirePullRequestReviews_shouldThrowIllegalArgumentException_whenApprovalsAreOutOfRange() {
-        final Throwable thrown = catchThrowable(() -> branch.protect().requirePullRequestReviews(7));
+        final BranchProtectionUpdate update = branch.protect();
+
+        final Throwable thrown = catchThrowable(() -> update.requirePullRequestReviews(7));
 
         assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("approvals");
     }
 
     @Test
     void requirePullRequestReviews_shouldThrowIllegalArgumentException_whenApprovalsAreNegative() {
-        final Throwable thrown = catchThrowable(() -> branch.protect().requirePullRequestReviews(-1));
+        final BranchProtectionUpdate update = branch.protect();
+
+        final Throwable thrown = catchThrowable(() -> update.requirePullRequestReviews(-1));
 
         assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("approvals");
     }
 
     @Test
     void requireStatusChecks_shouldThrowIllegalArgumentException_whenAContextIsBlank() {
-        final Throwable thrown = catchThrowable(() -> branch.protect().requireStatusChecks(false, List.of(" ")));
+        final BranchProtectionUpdate update = branch.protect();
+        final List<String> contexts = List.of(" ");
+
+        final Throwable thrown = catchThrowable(() -> update.requireStatusChecks(false, contexts));
 
         assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("contexts");
     }
 
     @Test
     void restrictPushesTo_shouldThrowIllegalArgumentException_whenALoginIsBlank() {
-        final Throwable thrown =
-                catchThrowable(() -> branch.protect().restrictPushesTo(List.of(" "), List.of(), List.of()));
+        final BranchProtectionUpdate update = branch.protect();
+        final List<String> users = List.of(" ");
+        final List<String> none = List.of();
+
+        final Throwable thrown = catchThrowable(() -> update.restrictPushesTo(users, none, none));
 
         assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("users");
     }

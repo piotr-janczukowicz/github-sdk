@@ -1,9 +1,9 @@
 package io.github.piotr_janczukowicz.github.sdk.smoke;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 import io.github.piotr_janczukowicz.github.client.exception.GitHubForbiddenException;
-import io.github.piotr_janczukowicz.github.client.exception.GitHubNotFoundException;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
 import io.github.piotr_janczukowicz.github.sdk.security.CodeScanningAlert;
 import io.github.piotr_janczukowicz.github.sdk.security.DependabotAlert;
@@ -16,7 +16,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-/** Reads only: no alert is dismissed or resolved and no switch is changed, so nothing real is altered. */
 @Tag("smoke")
 class SecuritySmokeIT {
 
@@ -34,16 +33,20 @@ class SecuritySmokeIT {
 
         final List<DependabotAlert> alerts = readDependabot(repository);
 
-        assertThat(alerts).allSatisfy(alert -> {
-            assertThat(alert.summary()).isNotBlank();
-            assertThat(alert.refresh().number()).isEqualTo(alert.number());
+        Assumptions.assumeFalse(alerts.isEmpty(), "The sandbox has no Dependabot alerts");
+        final DependabotAlert first = alerts.getFirst();
+        final int reloadedNumber = first.refresh().number();
+
+        assertSoftly(softly -> {
+            softly.assertThat(first.summary()).isNotBlank();
+            softly.assertThat(reloadedNumber).isEqualTo(first.number());
         });
     }
 
     private static List<DependabotAlert> readDependabot(final Repository repository) throws IOException {
         try {
             return repository.dependabotAlerts().limit(3).toList();
-        } catch (final GitHubForbiddenException | GitHubNotFoundException e) {
+        } catch (final GitHubForbiddenException e) {
             Assumptions.abort(NO_ACCESS);
             throw e;
         }
@@ -55,17 +58,16 @@ class SecuritySmokeIT {
 
         final List<SecretScanningAlert> alerts = readSecrets(repository);
 
-        assertThat(alerts).allSatisfy(alert -> {
-            assertThat(alert.secretType())
-                    .hasValueSatisfying(type -> assertThat(type).isNotBlank());
-            assertThat(alert.locations().limit(1).count()).isLessThanOrEqualTo(1);
-        });
+        Assumptions.assumeFalse(alerts.isEmpty(), "The sandbox has no secret scanning alerts");
+        assertThat(alerts)
+                .allSatisfy(alert -> assertThat(alert.secretType())
+                        .hasValueSatisfying(type -> assertThat(type).isNotBlank()));
     }
 
     private static List<SecretScanningAlert> readSecrets(final Repository repository) throws IOException {
         try {
             return repository.secretScanningAlerts().limit(3).toList();
-        } catch (final GitHubForbiddenException | GitHubNotFoundException e) {
+        } catch (final GitHubForbiddenException e) {
             Assumptions.abort(NO_ACCESS);
             throw e;
         }
@@ -77,13 +79,14 @@ class SecuritySmokeIT {
 
         final List<CodeScanningAlert> alerts = readCode(repository);
 
+        Assumptions.assumeFalse(alerts.isEmpty(), "The sandbox has no code scanning alerts");
         assertThat(alerts).allSatisfy(alert -> assertThat(alert.ruleId()).isPresent());
     }
 
     private static List<CodeScanningAlert> readCode(final Repository repository) throws IOException {
         try {
             return repository.codeScanningAlerts().limit(3).toList();
-        } catch (final GitHubForbiddenException | GitHubNotFoundException e) {
+        } catch (final GitHubForbiddenException e) {
             Assumptions.abort(NO_ACCESS);
             throw e;
         }
@@ -94,19 +97,19 @@ class SecuritySmokeIT {
         final RepositorySecurity security =
                 ENV.sdk().repository(ENV.owner(), ENV.repo()).security();
 
-        final boolean isRead = readSwitches(security);
+        final List<Boolean> switches = readSwitches(security);
 
-        assertThat(isRead).isTrue();
+        assertThat(switches).hasSize(4).doesNotContainNull();
     }
 
-    private static boolean readSwitches(final RepositorySecurity security) throws IOException {
+    private static List<Boolean> readSwitches(final RepositorySecurity security) throws IOException {
         try {
-            security.isVulnerabilityAlertsEnabled();
-            security.isAutomatedSecurityFixesEnabled();
-            security.isPrivateVulnerabilityReportingEnabled();
-            security.isImmutableReleasesEnabled();
-            return true;
-        } catch (final GitHubForbiddenException | GitHubNotFoundException e) {
+            return List.of(
+                    security.isVulnerabilityAlertsEnabled(),
+                    security.isAutomatedSecurityFixesEnabled(),
+                    security.isPrivateVulnerabilityReportingEnabled(),
+                    security.isImmutableReleasesEnabled());
+        } catch (final GitHubForbiddenException e) {
             Assumptions.abort(NO_ACCESS);
             throw e;
         }

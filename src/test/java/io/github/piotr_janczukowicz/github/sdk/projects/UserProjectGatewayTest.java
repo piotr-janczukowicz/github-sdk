@@ -85,7 +85,7 @@ class UserProjectGatewayTest {
     }
 
     @Test
-    void addItem_shouldReturnTheAddedItem_whenCalled() throws IOException {
+    void addItem_shouldReturnTheAddedItem() throws IOException {
         final GitHubAddProjectItemPayload payload = mock(GitHubAddProjectItemPayload.class);
         final GitHubProjectItemSimple added = ProjectFixtures.itemSimple();
         when(github.projects().items().addForUser(LOGIN, NUMBER, payload)).thenReturn(added);
@@ -96,7 +96,7 @@ class UserProjectGatewayTest {
     }
 
     @Test
-    void updateItem_shouldReturnTheUpdatedItem_whenCalled() throws IOException {
+    void updateItem_shouldReturnTheUpdatedItem() throws IOException {
         final GitHubUpdateProjectItemPayload payload = mock(GitHubUpdateProjectItemPayload.class);
         final GitHubProjectItem updated = ProjectFixtures.item();
         when(github.projects().items().updateForUser(LOGIN, NUMBER, ID, payload))
@@ -108,7 +108,7 @@ class UserProjectGatewayTest {
     }
 
     @Test
-    void deleteItem_shouldDeleteTheItem_whenCalled() throws IOException {
+    void deleteItem_shouldDeleteTheItem() throws IOException {
         sut.deleteItem(NUMBER, ID);
 
         verify(github.projects().items()).deleteForUser(LOGIN, NUMBER, ID);
@@ -126,7 +126,7 @@ class UserProjectGatewayTest {
     }
 
     @Test
-    void addDraft_shouldReturnTheDraftItem_whenCalled() throws IOException {
+    void addDraft_shouldReturnTheDraftItem() throws IOException {
         final GitHubCreateDraftItemPayload payload = new GitHubCreateDraftItemPayload("Idea", null);
         final GitHubProjectItemSimple added = ProjectFixtures.itemSimple();
         final GitHubProject project = ProjectFixtures.project();
@@ -153,15 +153,16 @@ class UserProjectGatewayTest {
     @Test
     void field_shouldReturnTheField_whenItExists() throws IOException {
         final GitHubProjectField field = ProjectFixtures.field();
-        when(github.projects().fields().getForUser(LOGIN, NUMBER, ID)).thenReturn(Optional.of(field));
+        when(github.projects().fields().getForUser(LOGIN, NUMBER, ProjectFixtures.FIELD_ID))
+                .thenReturn(Optional.of(field));
 
-        final Optional<GitHubProjectField> found = sut.field(NUMBER, ID);
+        final Optional<GitHubProjectField> found = sut.field(NUMBER, ProjectFixtures.FIELD_ID);
 
         assertThat(found).containsSame(field);
     }
 
     @Test
-    void addBasicField_shouldReturnTheField_whenCalled() throws IOException {
+    void addBasicField_shouldReturnTheField() throws IOException {
         final GitHubAddProjectFieldPayload.Basic payload = mock(GitHubAddProjectFieldPayload.Basic.class);
         final GitHubProjectField field = ProjectFixtures.field();
         when(github.projects().fields().addForUser(LOGIN, NUMBER, payload)).thenReturn(field);
@@ -172,7 +173,7 @@ class UserProjectGatewayTest {
     }
 
     @Test
-    void addSingleSelectField_shouldReturnTheField_whenCalled() throws IOException {
+    void addSingleSelectField_shouldReturnTheField() throws IOException {
         final GitHubAddProjectFieldPayload.SingleSelect payload = mock(GitHubAddProjectFieldPayload.SingleSelect.class);
         final GitHubProjectField field = ProjectFixtures.field();
         when(github.projects().fields().addForUser(LOGIN, NUMBER, payload)).thenReturn(field);
@@ -183,7 +184,7 @@ class UserProjectGatewayTest {
     }
 
     @Test
-    void createView_shouldReturnTheView_whenCalled() throws IOException {
+    void createView_shouldReturnTheView() throws IOException {
         final GitHubCreateProjectViewPayload payload = mock(GitHubCreateProjectViewPayload.class);
         final GitHubProjectView view = ProjectFixtures.view();
         when(github.projects().views().createForUser(LOGIN, NUMBER, payload)).thenReturn(view);

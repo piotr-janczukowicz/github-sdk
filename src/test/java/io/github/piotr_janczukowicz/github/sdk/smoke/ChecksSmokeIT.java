@@ -15,6 +15,7 @@ import io.github.piotr_janczukowicz.github.sdk.checks.CommitStatus;
 import io.github.piotr_janczukowicz.github.sdk.content.Commit;
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
@@ -69,14 +70,27 @@ class ChecksSmokeIT {
         final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
         final String base = repository.fetch().orElseThrow().response().defaultBranch();
         final Commit head = repository.branch(base).orElseThrow().commit();
-
         final List<CheckRun> checkRuns = listCheckRuns(head);
+        Assumptions.assumeFalse(checkRuns.isEmpty(), "The head commit has no check runs");
 
-        assertThat(checkRuns).allSatisfy(checkRun -> {
-            assertThat(checkRun.headSha()).isEqualTo(head.sha());
-            assertThat(checkRun.name()).isNotBlank();
-            assertThat(repository.checkRun(checkRun.id())).isPresent();
+        assertSoftly(softly -> {
+            softly.assertThat(checkRuns).extracting(CheckRun::headSha).containsOnly(head.sha());
+            softly.assertThat(checkRuns).extracting(CheckRun::name).noneMatch(String::isBlank);
         });
+    }
+
+    @Test
+    void checkRun_shouldBeFound_whenItIsListedForTheHeadCommit() throws IOException {
+        final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
+        final String base = repository.fetch().orElseThrow().response().defaultBranch();
+        final Commit head = repository.branch(base).orElseThrow().commit();
+        final List<CheckRun> checkRuns = listCheckRuns(head);
+        Assumptions.assumeFalse(checkRuns.isEmpty(), "The head commit has no check runs");
+        final CheckRun listed = checkRuns.getFirst();
+
+        final Optional<CheckRun> found = repository.checkRun(listed.id());
+
+        assertThat(found).map(CheckRun::id).contains(listed.id());
     }
 
     private static List<CheckRun> listCheckRuns(final Commit commit) throws IOException {
@@ -92,7 +106,9 @@ class ChecksSmokeIT {
     void checkRun_shouldBeEmpty_whenTheIdDoesNotExist() throws IOException {
         final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
 
-        assertThat(repository.checkRun(Long.MAX_VALUE)).isEmpty();
+        final Optional<CheckRun> checkRun = repository.checkRun(Long.MAX_VALUE);
+
+        assertThat(checkRun).isEmpty();
     }
 
     @Test

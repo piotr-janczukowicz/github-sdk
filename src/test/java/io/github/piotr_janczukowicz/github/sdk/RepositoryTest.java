@@ -125,17 +125,18 @@ class RepositoryTest {
 
     @Test
     void issues_shouldListWithAnEmptyFilter_whenCalledWithoutOne() throws IOException {
+        final GitHubIssue response = IssuesFixtures.issue();
         when(github
                         .issues()
                         .issue()
                         .listForRepo(
-                                eq(OWNER), eq(NAME), any(GitHubListForRepoFilter.class), any(GitHubPageRequest.class))
+                                eq(OWNER), eq(NAME), eq(GitHubListForRepoFilter.empty()), any(GitHubPageRequest.class))
                         .stream())
-                .thenReturn(Stream.empty());
+                .thenReturn(Stream.of(response));
 
         final List<Issue> issues = sut.issues().toList();
 
-        assertThat(issues).isEmpty();
+        assertThat(issues).extracting(Issue::response).containsExactly(response);
     }
 
     @Test
@@ -238,20 +239,24 @@ class RepositoryTest {
 
     @Test
     void pullRequests_shouldListWithAnEmptyFilter_whenCalledWithoutOne() throws IOException {
+        final GitHubPullRequestSimple listed = mock(GitHubPullRequestSimple.class);
+        when(listed.number()).thenReturn(7);
+        final GitHubPullRequest response = PullRequestsFixtures.pullRequest();
         when(github
                         .pullRequests()
                         .pullRequest()
                         .list(
                                 eq(OWNER),
                                 eq(NAME),
-                                any(GitHubListPullRequestsFilter.class),
+                                eq(GitHubListPullRequestsFilter.empty()),
                                 any(GitHubPageRequest.class))
                         .stream())
-                .thenReturn(Stream.empty());
+                .thenReturn(Stream.of(listed));
+        when(github.pullRequests().pullRequest().get(OWNER, NAME, 7)).thenReturn(Optional.of(response));
 
         final List<PullRequest> pullRequests = sut.pullRequests().toList();
 
-        assertThat(pullRequests).isEmpty();
+        assertThat(pullRequests).extracting(PullRequest::response).containsExactly(response);
     }
 
     @Test
@@ -299,7 +304,7 @@ class RepositoryTest {
     }
 
     @Test
-    void createPullRequest_shouldSendThePayloadAndReturnThePullRequest_whenCalled() throws IOException {
+    void createPullRequest_shouldSendThePayloadAndReturnThePullRequest() throws IOException {
         final GitHubPullRequest response = PullRequestsFixtures.pullRequest();
         final GitHubCreatePullRequestPayload payload = GitHubCreatePullRequestPayloadBuilder.builder()
                 .head("feature")

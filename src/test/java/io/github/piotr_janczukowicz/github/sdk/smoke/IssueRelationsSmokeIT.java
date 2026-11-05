@@ -101,8 +101,10 @@ class IssueRelationsSmokeIT {
         final boolean canBeAssigned = repository.canBeAssigned(ENV.owner());
         final long assignees = repository.assignees().limit(5).count();
 
-        assertThat(canBeAssigned).isTrue();
-        assertThat(assignees).isPositive();
+        assertSoftly(softly -> {
+            softly.assertThat(canBeAssigned).isTrue();
+            softly.assertThat(assignees).isPositive();
+        });
     }
 
     private static void addSubIssue(final Issue parent, final Issue child) throws IOException {

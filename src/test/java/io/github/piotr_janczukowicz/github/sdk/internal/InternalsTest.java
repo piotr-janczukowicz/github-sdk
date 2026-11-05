@@ -2,7 +2,6 @@ package io.github.piotr_janczukowicz.github.sdk.internal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
-import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.mockito.Mockito.mock;
 
 import io.github.piotr_janczukowicz.github.api.GitHub;
@@ -46,18 +45,26 @@ class InternalsTest {
     }
 
     @Test
-    void register_shouldKeepTheFirstAccess_whenAnotherOneIsRegisteredLater() {
+    void registerRepositoryAccess_shouldKeepTheFirstAccess_whenAnotherOneIsRegisteredLater() {
+        final GitHub github = mock(GitHub.class);
+        final GitHub other = mock(GitHub.class);
+        final Repository repository = GitHubSdk.of(github).repository("octocat", "hello-world");
+
+        Internals.registerRepositoryAccess(ignored -> other);
+
+        final GitHub result = Internals.github(repository);
+        assertThat(result).isSameAs(github);
+    }
+
+    @Test
+    void registerSdkAccess_shouldKeepTheFirstAccess_whenAnotherOneIsRegisteredLater() {
         final GitHub github = mock(GitHub.class);
         final GitHub other = mock(GitHub.class);
         final GitHubSdk sdk = GitHubSdk.of(github);
-        final Repository repository = sdk.repository("octocat", "hello-world");
 
-        Internals.registerRepositoryAccess(ignored -> other);
         Internals.registerSdkAccess(ignored -> other);
 
-        assertSoftly(softly -> {
-            softly.assertThat(Internals.github(repository)).isSameAs(github);
-            softly.assertThat(Internals.github(sdk)).isSameAs(github);
-        });
+        final GitHub result = Internals.github(sdk);
+        assertThat(result).isSameAs(github);
     }
 }

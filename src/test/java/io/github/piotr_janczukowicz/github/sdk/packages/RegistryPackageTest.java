@@ -74,10 +74,12 @@ class RegistryPackageTest {
 
         final List<RegistryPackageVersion> versions = sut.versions().toList();
 
-        assertThat(versions).singleElement().satisfies(version -> {
-            assertThat(version.response()).isSameAs(listed);
-            assertThat(version.registryPackage()).isSameAs(sut);
-        });
+        assertThat(versions)
+                .singleElement()
+                .satisfies(version -> assertSoftly(softly -> {
+                    softly.assertThat(version.response()).isSameAs(listed);
+                    softly.assertThat(version.registryPackage()).isSameAs(sut);
+                }));
     }
 
     @Test
@@ -87,8 +89,16 @@ class RegistryPackageTest {
 
         final Optional<RegistryPackageVersion> found = sut.version(ID);
 
-        assertThat(found).isPresent();
-        assertThat(found.orElseThrow().response()).isSameAs(loaded);
+        assertThat(found).get().extracting(RegistryPackageVersion::response).isSameAs(loaded);
+    }
+
+    @Test
+    void version_shouldBeEmpty_whenTheVersionIsMissing() throws IOException {
+        when(gateway.version(TYPE, NAME, ID)).thenReturn(Optional.empty());
+
+        final Optional<RegistryPackageVersion> found = sut.version(ID);
+
+        assertThat(found).isEmpty();
     }
 
     @Test

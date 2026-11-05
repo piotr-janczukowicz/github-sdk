@@ -15,6 +15,8 @@ import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.actions.GitHubActionsWorkflowRunsApi;
 import io.github.piotr_janczukowicz.github.api.actions.GitHubArtifact;
 import io.github.piotr_janczukowicz.github.api.actions.GitHubJob;
+import io.github.piotr_janczukowicz.github.api.actions.GitHubJobFilterMode;
+import io.github.piotr_janczukowicz.github.api.actions.GitHubListJobsForWorkflowRunFilter;
 import io.github.piotr_janczukowicz.github.api.actions.GitHubReRunWorkflowFailedJobsPayload;
 import io.github.piotr_janczukowicz.github.api.actions.GitHubReRunWorkflowPayload;
 import io.github.piotr_janczukowicz.github.api.actions.GitHubWorkflowRun;
@@ -27,6 +29,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
@@ -62,38 +65,113 @@ class WorkflowRunTest {
     }
 
     @Test
-    void optionalAccessors_shouldBeEmpty_whenGitHubReportsNothing() {
-        final GitHubWorkflowRun bare = GitHubWorkflowRunBuilder.builder(response)
-                .name(null)
-                .headBranch(null)
-                .status(null)
-                .conclusion(null)
-                .runAttempt(null)
-                .build();
-        final WorkflowRun run = new WorkflowRun(repository, bare);
+    void constructor_shouldThrowNullPointerException_whenRepositoryIsNull() {
+        final Throwable thrown = catchThrowable(() -> new WorkflowRun(null, response));
 
-        assertSoftly(softly -> {
-            softly.assertThat(run.name()).isEmpty();
-            softly.assertThat(run.headBranch()).isEmpty();
-            softly.assertThat(run.status()).isEmpty();
-            softly.assertThat(run.conclusion()).isEmpty();
-            softly.assertThat(run.runAttempt()).isEmpty();
-        });
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("repository");
     }
 
     @Test
-    void outcomeChecks_shouldMatchStatusAndConclusion_whenCalled() {
-        final WorkflowRun failed = run("completed", "failure");
+    void constructor_shouldThrowNullPointerException_whenResponseIsNull() {
+        final Throwable thrown = catchThrowable(() -> new WorkflowRun(repository, null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("response");
+    }
+
+    @Test
+    void name_shouldBeEmpty_whenGitHubReportsNone() {
+        final GitHubWorkflowRun bare =
+                GitHubWorkflowRunBuilder.builder(response).name(null).build();
+        final WorkflowRun run = new WorkflowRun(repository, bare);
+
+        final Optional<String> result = run.name();
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void headBranch_shouldBeEmpty_whenGitHubReportsNone() {
+        final GitHubWorkflowRun bare =
+                GitHubWorkflowRunBuilder.builder(response).headBranch(null).build();
+        final WorkflowRun run = new WorkflowRun(repository, bare);
+
+        final Optional<String> result = run.headBranch();
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void status_shouldBeEmpty_whenGitHubReportsNone() {
+        final GitHubWorkflowRun bare =
+                GitHubWorkflowRunBuilder.builder(response).status(null).build();
+        final WorkflowRun run = new WorkflowRun(repository, bare);
+
+        final Optional<String> result = run.status();
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void conclusion_shouldBeEmpty_whenGitHubReportsNone() {
+        final GitHubWorkflowRun bare =
+                GitHubWorkflowRunBuilder.builder(response).conclusion(null).build();
+        final WorkflowRun run = new WorkflowRun(repository, bare);
+
+        final Optional<String> result = run.conclusion();
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void runAttempt_shouldBeEmpty_whenGitHubReportsNone() {
+        final GitHubWorkflowRun bare =
+                GitHubWorkflowRunBuilder.builder(response).runAttempt(null).build();
+        final WorkflowRun run = new WorkflowRun(repository, bare);
+
+        final OptionalInt result = run.runAttempt();
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void isCompleted_shouldBeTrue_whenTheStatusIsCompleted() {
+        final boolean result = sut.isCompleted();
+
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    void isCompleted_shouldBeFalse_whenTheRunIsInProgress() {
         final WorkflowRun running = run("in_progress", null);
 
-        assertSoftly(softly -> {
-            softly.assertThat(sut.isCompleted()).isTrue();
-            softly.assertThat(sut.isSuccessful()).isTrue();
-            softly.assertThat(failed.isCompleted()).isTrue();
-            softly.assertThat(failed.isSuccessful()).isFalse();
-            softly.assertThat(running.isCompleted()).isFalse();
-            softly.assertThat(running.isSuccessful()).isFalse();
-        });
+        final boolean result = running.isCompleted();
+
+        assertThat(result).isFalse();
+    }
+
+    @Test
+    void isSuccessful_shouldBeTrue_whenTheConclusionIsSuccess() {
+        final boolean result = sut.isSuccessful();
+
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    void isSuccessful_shouldBeFalse_whenTheConclusionIsFailure() {
+        final WorkflowRun failed = run("completed", "failure");
+
+        final boolean result = failed.isSuccessful();
+
+        assertThat(result).isFalse();
+    }
+
+    @Test
+    void isSuccessful_shouldBeFalse_whenTheRunIsInProgress() {
+        final WorkflowRun running = run("in_progress", null);
+
+        final boolean result = running.isSuccessful();
+
+        assertThat(result).isFalse();
     }
 
     @Test
@@ -128,8 +206,7 @@ class WorkflowRunTest {
 
         final Optional<WorkflowRun> found = sut.attempt(1L);
 
-        assertThat(found).isPresent();
-        assertThat(found.orElseThrow().response()).isSameAs(earlier);
+        assertThat(found).get().extracting(WorkflowRun::response).isSameAs(earlier);
     }
 
     @Test
@@ -214,15 +291,26 @@ class WorkflowRunTest {
     @Test
     void jobs_shouldStreamTheJobsOfTheLatestAttempt_whenTheyExist() throws IOException {
         final GitHubJob listed = ActionsFixtures.job();
-        when(github.actions().workflowJobs().listJobsForWorkflowRun(eq(OWNER), eq(NAME), eq(ID), any(), any()).stream())
+        when(github
+                        .actions()
+                        .workflowJobs()
+                        .listJobsForWorkflowRun(
+                                eq(OWNER),
+                                eq(NAME),
+                                eq(ID),
+                                eq(new GitHubListJobsForWorkflowRunFilter(GitHubJobFilterMode.LATEST)),
+                                any())
+                        .stream())
                 .thenReturn(Stream.of(listed));
 
         final List<WorkflowJob> jobs = sut.jobs().toList();
 
-        assertThat(jobs).singleElement().satisfies(job -> {
-            assertThat(job.response()).isSameAs(listed);
-            assertThat(job.repository()).isSameAs(repository);
-        });
+        assertThat(jobs)
+                .singleElement()
+                .satisfies(job -> assertSoftly(softly -> {
+                    softly.assertThat(job.response()).isSameAs(listed);
+                    softly.assertThat(job.repository()).isSameAs(repository);
+                }));
     }
 
     @Test
@@ -250,10 +338,12 @@ class WorkflowRunTest {
 
         final List<Artifact> artifacts = sut.artifacts().toList();
 
-        assertThat(artifacts).singleElement().satisfies(artifact -> {
-            assertThat(artifact.response()).isSameAs(listed);
-            assertThat(artifact.repository()).isSameAs(repository);
-        });
+        assertThat(artifacts)
+                .singleElement()
+                .satisfies(artifact -> assertSoftly(softly -> {
+                    softly.assertThat(artifact.response()).isSameAs(listed);
+                    softly.assertThat(artifact.repository()).isSameAs(repository);
+                }));
     }
 
     @Test
@@ -276,6 +366,20 @@ class WorkflowRunTest {
         verify(runs).deleteWorkflowRunLogs(OWNER, NAME, ID);
     }
 
+    @Test
+    void attempt_shouldThrowIllegalArgumentException_whenTheAttemptIsBelowOne() {
+        final Throwable thrown = catchThrowable(() -> sut.attempt(0));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("attempt");
+    }
+
+    @Test
+    void jobs_shouldThrowIllegalArgumentException_whenTheAttemptIsBelowOne() {
+        final Throwable thrown = catchThrowable(() -> sut.jobs(-1));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("attempt");
+    }
+
     private WorkflowRun run(final String status, final String conclusion) {
         return new WorkflowRun(repository, ActionsFixtures.workflowRunWith(status, conclusion));
     }
@@ -284,18 +388,5 @@ class WorkflowRunTest {
         final GitHubActionsWorkflowRunsApi runs = github.actions().workflowRuns();
         doReturn(Optional.of(reloaded)).when(runs).getWorkflowRun(OWNER, NAME, ID);
         return runs;
-    }
-
-    @Test
-    void attemptNumbers_shouldThrowIllegalArgumentException_whenTheAttemptIsBelowOne() {
-        final Throwable attempt = catchThrowable(() -> sut.attempt(0));
-        final Throwable jobs = catchThrowable(() -> sut.jobs(-1));
-
-        assertSoftly(softly -> {
-            softly.assertThat(attempt)
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("attempt");
-            softly.assertThat(jobs).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("attempt");
-        });
     }
 }

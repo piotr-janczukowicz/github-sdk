@@ -55,7 +55,7 @@ class PullRequestDiffAndMergeTest {
     }
 
     @Test
-    void updateBranch_shouldSendNoPayload_whenCalledWithoutArguments() throws IOException {
+    void updateBranch_shouldSendNoPayload_whenCalledWithoutASha() throws IOException {
         final GitHubPullRequestBranchUpdateResult result = new GitHubPullRequestBranchUpdateResult("Updating", null);
         when(github.pullRequests().pullRequest().updateBranch(OWNER, NAME, NUMBER, null))
                 .thenReturn(result);
@@ -85,6 +85,13 @@ class PullRequestDiffAndMergeTest {
     @Test
     void updateBranch_shouldThrowIllegalArgumentException_whenTheShaIsBlank() {
         final Throwable thrown = catchThrowable(() -> sut.updateBranch(" "));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("expectedHeadSha");
+    }
+
+    @Test
+    void updateBranch_shouldThrowIllegalArgumentException_whenTheShaHasAControlCharacter() {
+        final Throwable thrown = catchThrowable(() -> sut.updateBranch("abc" + (char) 10 + "123"));
 
         assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("expectedHeadSha");
     }

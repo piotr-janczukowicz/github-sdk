@@ -197,16 +197,25 @@ class PullRequestTest {
     }
 
     @Test
+    void merge_shouldThrowNullPointerException_whenCommitMessageIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.merge(GitHubPullRequestMergeMethod.MERGE, null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("commitMessage");
+    }
+
+    @Test
     void reviews_shouldStreamTheReviews_whenTheyExist() throws IOException {
         final GitHubPullRequestReview listed = ReviewsFixtures.review();
         when(github.pullRequests().reviews().list(OWNER, NAME, NUMBER).stream()).thenReturn(Stream.of(listed));
 
         final List<PullRequestReview> reviews = sut.reviews().toList();
 
-        assertThat(reviews).singleElement().satisfies(review -> {
-            assertThat(review.response()).isSameAs(listed);
-            assertThat(review.pullRequest()).isSameAs(sut);
-        });
+        assertThat(reviews)
+                .singleElement()
+                .satisfies(review -> assertSoftly(softly -> {
+                    softly.assertThat(review.response()).isSameAs(listed);
+                    softly.assertThat(review.pullRequest()).isSameAs(sut);
+                }));
     }
 
     @Test
@@ -297,10 +306,12 @@ class PullRequestTest {
 
         final List<PullRequestReviewComment> comments = sut.reviewComments().toList();
 
-        assertThat(comments).singleElement().satisfies(comment -> {
-            assertThat(comment.response()).isSameAs(listed);
-            assertThat(comment.pullRequest()).isSameAs(sut);
-        });
+        assertThat(comments)
+                .singleElement()
+                .satisfies(comment -> assertSoftly(softly -> {
+                    softly.assertThat(comment.response()).isSameAs(listed);
+                    softly.assertThat(comment.pullRequest()).isSameAs(sut);
+                }));
     }
 
     @Test
@@ -325,18 +336,24 @@ class PullRequestTest {
     }
 
     @Test
-    void commentOnLine_shouldThrowNullPointerException_whenAnArgumentIsNull() {
-        final Throwable nullBody = catchThrowable(() -> sut.commentOnLine("abc123", "a.txt", 1, null));
-        final Throwable nullCommit = catchThrowable(() -> sut.commentOnLine(null, "a.txt", 1, "text"));
-        final Throwable nullPath = catchThrowable(() -> sut.commentOnLine("abc123", null, 1, "text"));
+    void commentOnLine_shouldThrowNullPointerException_whenBodyIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.commentOnLine("abc123", "a.txt", 1, null));
 
-        assertSoftly(softly -> {
-            softly.assertThat(nullBody).isInstanceOf(NullPointerException.class).hasMessageContaining("body");
-            softly.assertThat(nullCommit)
-                    .isInstanceOf(NullPointerException.class)
-                    .hasMessageContaining("commitId");
-            softly.assertThat(nullPath).isInstanceOf(NullPointerException.class).hasMessageContaining("path");
-        });
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("body");
+    }
+
+    @Test
+    void commentOnLine_shouldThrowNullPointerException_whenCommitIdIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.commentOnLine(null, "a.txt", 1, "text"));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("commitId");
+    }
+
+    @Test
+    void commentOnLine_shouldThrowNullPointerException_whenPathIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.commentOnLine("abc123", null, 1, "text"));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("path");
     }
 
     @Test
@@ -441,22 +458,24 @@ class PullRequestTest {
     }
 
     @Test
-    void commentOnLine_shouldThrowIllegalArgumentException_whenAnArgumentIsBlank() {
-        final Throwable blankBody = catchThrowable(() -> sut.commentOnLine("abc123", "a.txt", 1, " "));
-        final Throwable blankCommit = catchThrowable(() -> sut.commentOnLine(" ", "a.txt", 1, "text"));
-        final Throwable blankPath = catchThrowable(() -> sut.commentOnLine("abc123", " ", 1, "text"));
+    void commentOnLine_shouldThrowIllegalArgumentException_whenBodyIsBlank() {
+        final Throwable thrown = catchThrowable(() -> sut.commentOnLine("abc123", "a.txt", 1, " "));
 
-        assertSoftly(softly -> {
-            softly.assertThat(blankBody)
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("body");
-            softly.assertThat(blankCommit)
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("commitId");
-            softly.assertThat(blankPath)
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("path");
-        });
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("body");
+    }
+
+    @Test
+    void commentOnLine_shouldThrowIllegalArgumentException_whenCommitIdIsBlank() {
+        final Throwable thrown = catchThrowable(() -> sut.commentOnLine(" ", "a.txt", 1, "text"));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("commitId");
+    }
+
+    @Test
+    void commentOnLine_shouldThrowIllegalArgumentException_whenPathIsBlank() {
+        final Throwable thrown = catchThrowable(() -> sut.commentOnLine("abc123", " ", 1, "text"));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("path");
     }
 
     @Test
@@ -478,5 +497,19 @@ class PullRequestTest {
         final Throwable thrown = catchThrowable(() -> sut.removeReviewers(" "));
 
         assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("logins");
+    }
+
+    @Test
+    void requestReviewers_shouldThrowNullPointerException_whenALoginIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.requestReviewers("hubot", null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("logins");
+    }
+
+    @Test
+    void removeReviewers_shouldThrowNullPointerException_whenALoginIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.removeReviewers("hubot", null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("logins");
     }
 }

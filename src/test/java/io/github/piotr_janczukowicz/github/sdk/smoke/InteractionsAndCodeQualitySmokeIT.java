@@ -10,6 +10,7 @@ import io.github.piotr_janczukowicz.github.client.exception.GitHubForbiddenExcep
 import io.github.piotr_janczukowicz.github.sdk.Repository;
 import io.github.piotr_janczukowicz.github.sdk.interactions.RepositoryInteractions;
 import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
@@ -44,7 +45,9 @@ class InteractionsAndCodeQualitySmokeIT {
             interactions.remove();
         }
 
-        assertThat(interactions.current()).isEmpty();
+        final Optional<GitHubInteractionLimitResponse> afterRemoval = interactions.current();
+
+        assertThat(afterRemoval).isEmpty();
     }
 
     @Test
@@ -52,12 +55,12 @@ class InteractionsAndCodeQualitySmokeIT {
         final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
 
         try {
-            final long findings = repository.codeQuality().findings().count();
-            final boolean hasSetup = repository.codeQuality().setup().isPresent();
+            final List<?> findings = repository.codeQuality().findings().toList();
+            final Optional<?> setup = repository.codeQuality().setup();
 
             assertSoftly(softly -> {
-                softly.assertThat(findings).isNotNegative();
-                softly.assertThat(hasSetup).isIn(true, false);
+                softly.assertThat(findings).doesNotContainNull();
+                softly.assertThat(setup).isNotNull();
             });
         } catch (final GitHubForbiddenException e) {
             Assumptions.abort("GitHub refuses code quality here: no permission or the feature is not available");

@@ -11,15 +11,18 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.github.piotr_janczukowicz.github.api.GitHub;
+import io.github.piotr_janczukowicz.github.api.packages.GitHubPackageType;
 import io.github.piotr_janczukowicz.github.api.users.GitHubCreateGpgKeyPayload;
 import io.github.piotr_janczukowicz.github.api.users.GitHubCreatePublicSshKeyPayload;
 import io.github.piotr_janczukowicz.github.api.users.GitHubCreateSshSigningKeyPayload;
 import io.github.piotr_janczukowicz.github.api.users.GitHubEmail;
 import io.github.piotr_janczukowicz.github.api.users.GitHubEmailVisibility;
 import io.github.piotr_janczukowicz.github.api.users.GitHubGpgKey;
+import io.github.piotr_janczukowicz.github.api.users.GitHubKey;
 import io.github.piotr_janczukowicz.github.api.users.GitHubSetPrimaryEmailVisibilityPayload;
 import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
 import io.github.piotr_janczukowicz.github.api.users.GitHubSocialAccount;
+import io.github.piotr_janczukowicz.github.api.users.GitHubSshSigningKey;
 import io.github.piotr_janczukowicz.github.api.users.GitHubUpdateEmailsPayload;
 import io.github.piotr_janczukowicz.github.api.users.GitHubUpdateSocialAccountsPayload;
 import io.github.piotr_janczukowicz.github.api.users.GitHubUser;
@@ -36,6 +39,7 @@ import io.github.piotr_janczukowicz.github.pagination.GitHubPageRequest;
 import io.github.piotr_janczukowicz.github.sdk.GitHubSdk;
 import io.github.piotr_janczukowicz.github.sdk.User;
 import io.github.piotr_janczukowicz.github.sdk.fixtures.AccountsFixtures;
+import io.github.piotr_janczukowicz.github.sdk.packages.RegistryPackage;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.io.IOException;
 import java.util.List;
@@ -78,7 +82,8 @@ class MeTest {
     @Test
     void addEmail_shouldSendTheAddress_whenCalled() throws IOException {
         final GitHubUsersEmailsApi api = github.users().emails();
-        doReturn(List.of(AccountsFixtures.email())).when(api).addEmails(any(GitHubUpdateEmailsPayload.class));
+        final GitHubEmail returned = AccountsFixtures.email();
+        doReturn(List.of(returned)).when(api).addEmails(any(GitHubUpdateEmailsPayload.class));
         final ArgumentCaptor<GitHubUpdateEmailsPayload> payload =
                 ArgumentCaptor.forClass(GitHubUpdateEmailsPayload.class);
 
@@ -87,7 +92,7 @@ class MeTest {
         verify(api).addEmails(payload.capture());
         assertSoftly(softly -> {
             softly.assertThat(payload.getValue().emails()).containsExactly("new@example.com");
-            softly.assertThat(emails).hasSize(1);
+            softly.assertThat(emails).containsExactly(returned);
         });
     }
 
@@ -152,11 +157,12 @@ class MeTest {
     @Test
     void sshKey_shouldReturnTheKey_whenGitHubHasIt() throws IOException {
         final GitHubUsersKeysApi api = github.users().keys();
-        doReturn(Optional.of(AccountsFixtures.sshKey())).when(api).getPublicKey(ID);
+        final GitHubKey loaded = AccountsFixtures.sshKey();
+        doReturn(Optional.of(loaded)).when(api).getPublicKey(ID);
 
         final Optional<SshKey> found = sut.sshKey(ID);
 
-        assertThat(found).isPresent();
+        assertThat(found).map(SshKey::response).containsSame(loaded);
     }
 
     @Test
@@ -209,11 +215,12 @@ class MeTest {
     @Test
     void gpgKey_shouldReturnTheKey_whenGitHubHasIt() throws IOException {
         final GitHubUsersGpgKeysApi api = github.users().gpgKeys();
-        doReturn(Optional.of(AccountsFixtures.gpgKey())).when(api).getGpgKey(ID);
+        final GitHubGpgKey loaded = AccountsFixtures.gpgKey();
+        doReturn(Optional.of(loaded)).when(api).getGpgKey(ID);
 
         final Optional<GpgKey> found = sut.gpgKey(ID);
 
-        assertThat(found).isPresent();
+        assertThat(found).map(GpgKey::response).containsSame(loaded);
     }
 
     @Test
@@ -282,11 +289,12 @@ class MeTest {
     @Test
     void signingKey_shouldReturnTheKey_whenGitHubHasIt() throws IOException {
         final GitHubUsersSshSigningKeysApi api = github.users().sshSigningKeys();
-        doReturn(Optional.of(AccountsFixtures.signingKey())).when(api).getSshSigningKey(ID);
+        final GitHubSshSigningKey loaded = AccountsFixtures.signingKey();
+        doReturn(Optional.of(loaded)).when(api).getSshSigningKey(ID);
 
         final Optional<SigningKey> found = sut.signingKey(ID);
 
-        assertThat(found).isPresent();
+        assertThat(found).map(SigningKey::response).containsSame(loaded);
     }
 
     @Test
@@ -428,13 +436,14 @@ class MeTest {
     @Test
     void addSocialAccounts_shouldSendTheUrls_whenCalled() throws IOException {
         final GitHubUsersSocialAccountsApi api = github.users().socialAccounts();
-        doReturn(List.of(AccountsFixtures.socialAccount()))
+        final GitHubSocialAccount account = AccountsFixtures.socialAccount();
+        doReturn(List.of(account))
                 .when(api)
                 .addSocialAccounts(new GitHubUpdateSocialAccountsPayload(List.of("https://example.social/@octocat")));
 
         final List<GitHubSocialAccount> accounts = sut.addSocialAccounts(List.of("https://example.social/@octocat"));
 
-        assertThat(accounts).hasSize(1);
+        assertThat(accounts).containsExactly(account);
     }
 
     @Test
@@ -470,16 +479,67 @@ class MeTest {
     }
 
     @Test
-    void addSocialAccounts_shouldThrowIllegalArgumentException_whenTheListIsEmptyOrBlank() {
-        final Throwable thrown = catchThrowable(() -> sut.addSocialAccounts(List.of()));
+    void addSocialAccounts_shouldThrowIllegalArgumentException_whenTheListIsEmpty() {
+        final List<String> urls = List.of();
+
+        final Throwable thrown = catchThrowable(() -> sut.addSocialAccounts(urls));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("urls");
+    }
+
+    @Test
+    void addSocialAccounts_shouldThrowIllegalArgumentException_whenAUrlIsBlank() {
+        final List<String> urls = List.of(" ");
+
+        final Throwable thrown = catchThrowable(() -> sut.addSocialAccounts(urls));
 
         assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("urls");
     }
 
     @Test
     void removeSocialAccounts_shouldThrowIllegalArgumentException_whenAUrlIsBlank() {
-        final Throwable thrown = catchThrowable(() -> sut.removeSocialAccounts(List.of(" ")));
+        final List<String> urls = List.of(" ");
+
+        final Throwable thrown = catchThrowable(() -> sut.removeSocialAccounts(urls));
 
         assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("urls");
+    }
+
+    @Test
+    void addSigningKey_shouldThrowIllegalArgumentException_whenKeyIsBlank() {
+        final Throwable thrown = catchThrowable(() -> sut.addSigningKey("signing", " "));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("key");
+    }
+
+    @Test
+    void addSshKey_shouldThrowNullPointerException_whenTitleIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.addSshKey(null, "ssh-ed25519 AAAA"));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("title");
+    }
+
+    @Test
+    void registryPackage_shouldBeEmpty_whenGitHubDoesNotHaveIt() throws IOException {
+        when(github.packages().getPackageForAuthenticatedUser(GitHubPackageType.CONTAINER, "hello-image"))
+                .thenReturn(Optional.empty());
+
+        final Optional<RegistryPackage> found = sut.registryPackage(GitHubPackageType.CONTAINER, "hello-image");
+
+        assertThat(found).isEmpty();
+    }
+
+    @Test
+    void registryPackage_shouldThrowIllegalArgumentException_whenNameIsBlank() {
+        final Throwable thrown = catchThrowable(() -> sut.registryPackage(GitHubPackageType.CONTAINER, " "));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("name");
+    }
+
+    @Test
+    void registryPackages_shouldThrowNullPointerException_whenTypeIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.registryPackages(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("type");
     }
 }

@@ -10,7 +10,6 @@ import java.security.KeyPairGenerator;
 import java.util.Arrays;
 import java.util.Base64;
 
-/** Creates throwaway SSH public keys for the smoke tests; the private half is never kept. */
 final class SmokeKeys {
 
     static final String KEY_TYPE = "ssh-ed25519";
@@ -21,13 +20,6 @@ final class SmokeKeys {
         throw new UnsupportedOperationException("Utility class");
     }
 
-    /**
-     * Generates a new Ed25519 key pair and returns its public half in OpenSSH format.
-     *
-     * @return the public key line
-     * @throws GeneralSecurityException if the JDK has no Ed25519 support
-     * @throws IOException if the key cannot be encoded
-     */
     static String openSshPublicKey() throws GeneralSecurityException, IOException {
         final KeyPair pair = KeyPairGenerator.getInstance("Ed25519").generateKeyPair();
         final byte[] encoded = pair.getPublic().getEncoded();

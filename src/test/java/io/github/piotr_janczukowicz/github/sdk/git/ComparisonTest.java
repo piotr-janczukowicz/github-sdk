@@ -13,11 +13,14 @@ import io.github.piotr_janczukowicz.github.api.commits.GitHubCommitApi;
 import io.github.piotr_janczukowicz.github.api.commits.GitHubCommitComparison;
 import io.github.piotr_janczukowicz.github.api.commits.GitHubCommitComparisonStatus;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubCommit;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubDiffEntry;
 import io.github.piotr_janczukowicz.github.sdk.GitHubSdk;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
+import io.github.piotr_janczukowicz.github.sdk.content.Commit;
 import io.github.piotr_janczukowicz.github.sdk.fixtures.GitFixtures;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
@@ -34,33 +37,75 @@ class ComparisonTest {
     private final Comparison sut = new Comparison(repository, BASE_HEAD, response);
 
     @Test
-    void accessors_shouldExposeTheResponse_whenComparisonIsLoaded() {
-        assertSoftly(softly -> {
-            softly.assertThat(sut.repository()).isSameAs(repository);
-            softly.assertThat(sut.status()).isEqualTo(GitHubCommitComparisonStatus.AHEAD);
-            softly.assertThat(sut.aheadBy()).isEqualTo(2);
-            softly.assertThat(sut.behindBy()).isZero();
-            softly.assertThat(sut.totalCommits()).isEqualTo(2);
-            softly.assertThat(sut.files()).hasSize(1);
-            softly.assertThat(sut.response()).isSameAs(response);
-        });
+    void repository_shouldReturnTheComparedRepository_whenComparisonIsLoaded() {
+        final Repository result = sut.repository();
+
+        assertThat(result).isSameAs(repository);
+    }
+
+    @Test
+    void status_shouldReturnTheStatus_whenComparisonIsLoaded() {
+        final GitHubCommitComparisonStatus status = sut.status();
+
+        assertThat(status).isEqualTo(GitHubCommitComparisonStatus.AHEAD);
+    }
+
+    @Test
+    void aheadBy_shouldReturnTheCount_whenComparisonIsLoaded() {
+        final int aheadBy = sut.aheadBy();
+
+        assertThat(aheadBy).isEqualTo(2);
+    }
+
+    @Test
+    void behindBy_shouldReturnTheCount_whenComparisonIsLoaded() {
+        final int behindBy = sut.behindBy();
+
+        assertThat(behindBy).isZero();
+    }
+
+    @Test
+    void totalCommits_shouldReturnTheCount_whenComparisonIsLoaded() {
+        final int totalCommits = sut.totalCommits();
+
+        assertThat(totalCommits).isEqualTo(2);
+    }
+
+    @Test
+    void files_shouldReturnTheFiles_whenComparisonIsLoaded() {
+        final List<GitHubDiffEntry> files = sut.files();
+
+        assertThat(files).hasSize(1);
+    }
+
+    @Test
+    void response_shouldReturnTheResponse_whenComparisonIsLoaded() {
+        final GitHubCommitComparison result = sut.response();
+
+        assertThat(result).isSameAs(response);
     }
 
     @Test
     void files_shouldBeEmpty_whenTheResponseHasNoFiles() {
         final GitHubCommitComparison bare = mock(GitHubCommitComparison.class);
         when(bare.files()).thenReturn(null);
+        final Comparison comparison = new Comparison(repository, BASE_HEAD, bare);
 
-        assertThat(new Comparison(repository, BASE_HEAD, bare).files()).isEmpty();
+        final List<GitHubDiffEntry> files = comparison.files();
+
+        assertThat(files).isEmpty();
     }
 
     @Test
     void commits_shouldWrapTheEmbeddedCommits_whenCalled() {
         final GitHubCommit embedded = response.commits().getFirst();
 
-        assertThat(sut.commits()).singleElement().satisfies(commit -> {
-            assertThat(commit.response()).isSameAs(embedded);
-            assertThat(commit.repository()).isSameAs(repository);
+        final List<Commit> commits = sut.commits();
+
+        assertSoftly(softly -> {
+            softly.assertThat(commits).hasSize(1);
+            softly.assertThat(commits.getFirst().response()).isSameAs(embedded);
+            softly.assertThat(commits.getFirst().repository()).isSameAs(repository);
         });
     }
 
@@ -75,6 +120,16 @@ class ComparisonTest {
     }
 
     @Test
+    void diff_shouldBeEmpty_whenGitHubDoesNotHaveIt() throws IOException {
+        final GitHubCommitApi api = github.commits().commit();
+        doReturn(Optional.empty()).when(api).compareCommitsDiff(OWNER, NAME, BASE_HEAD);
+
+        final Optional<String> diff = sut.diff();
+
+        assertThat(diff).isEmpty();
+    }
+
+    @Test
     void patch_shouldReturnThePatchText_whenGitHubHasIt() throws IOException {
         final GitHubCommitApi api = github.commits().commit();
         doReturn(Optional.of("From abc Mon Sep 17")).when(api).compareCommitsPatch(OWNER, NAME, BASE_HEAD);
@@ -82,6 +137,23 @@ class ComparisonTest {
         final Optional<String> patch = sut.patch();
 
         assertThat(patch).hasValue("From abc Mon Sep 17");
+    }
+
+    @Test
+    void patch_shouldBeEmpty_whenGitHubDoesNotHaveIt() throws IOException {
+        final GitHubCommitApi api = github.commits().commit();
+        doReturn(Optional.empty()).when(api).compareCommitsPatch(OWNER, NAME, BASE_HEAD);
+
+        final Optional<String> patch = sut.patch();
+
+        assertThat(patch).isEmpty();
+    }
+
+    @Test
+    void constructor_shouldThrowNullPointerException_whenRepositoryIsNull() {
+        final Throwable thrown = catchThrowable(() -> new Comparison(null, BASE_HEAD, response));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("repository");
     }
 
     @Test

@@ -70,20 +70,51 @@ class PullRequestReviewTest {
     }
 
     @Test
-    void stateChecks_shouldMatchTheState_whenCalled() {
-        final PullRequestReview approved = sut;
+    void isApproved_shouldBeTrue_whenTheStateIsApproved() {
+        final boolean result = sut.isApproved();
+
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    void isApproved_shouldBeFalse_whenTheStateIsDismissed() {
         final PullRequestReview dismissed = review("DISMISSED");
+
+        final boolean result = dismissed.isApproved();
+
+        assertThat(result).isFalse();
+    }
+
+    @Test
+    void isDismissed_shouldBeTrue_whenTheStateIsDismissed() {
+        final PullRequestReview dismissed = review("DISMISSED");
+
+        final boolean result = dismissed.isDismissed();
+
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    void isDismissed_shouldBeFalse_whenTheStateIsApproved() {
+        final boolean result = sut.isDismissed();
+
+        assertThat(result).isFalse();
+    }
+
+    @Test
+    void isPending_shouldBeTrue_whenTheStateIsPending() {
         final PullRequestReview pending = review("PENDING");
 
-        assertSoftly(softly -> {
-            softly.assertThat(approved.isApproved()).isTrue();
-            softly.assertThat(approved.isDismissed()).isFalse();
-            softly.assertThat(approved.isPending()).isFalse();
-            softly.assertThat(dismissed.isDismissed()).isTrue();
-            softly.assertThat(dismissed.isApproved()).isFalse();
-            softly.assertThat(pending.isPending()).isTrue();
-            softly.assertThat(pending.isApproved()).isFalse();
-        });
+        final boolean result = pending.isPending();
+
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    void isPending_shouldBeFalse_whenTheStateIsApproved() {
+        final boolean result = sut.isPending();
+
+        assertThat(result).isFalse();
     }
 
     @Test
@@ -197,10 +228,12 @@ class PullRequestReviewTest {
 
         final List<PullRequestReviewComment> result = sut.comments().toList();
 
-        assertThat(result).singleElement().satisfies(comment -> {
-            assertThat(comment.response()).isSameAs(loaded);
-            assertThat(comment.pullRequest()).isSameAs(pullRequest);
-        });
+        assertThat(result)
+                .singleElement()
+                .satisfies(comment -> assertSoftly(softly -> {
+                    softly.assertThat(comment.response()).isSameAs(loaded);
+                    softly.assertThat(comment.pullRequest()).isSameAs(pullRequest);
+                }));
     }
 
     @Test
@@ -211,9 +244,8 @@ class PullRequestReviewTest {
                 .thenReturn(Stream.of(listed));
         final GitHubPullsCommentsApi comments = github.pullRequests().comments();
         doReturn(Optional.empty()).when(comments).get(OWNER, NAME, ReviewsFixtures.COMMENT_ID);
-        final Stream<PullRequestReviewComment> stream = sut.comments();
 
-        final long count = stream.count();
+        final long count = sut.comments().count();
 
         assertThat(count).isZero();
     }

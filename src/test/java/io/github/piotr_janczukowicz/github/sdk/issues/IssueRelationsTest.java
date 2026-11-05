@@ -234,6 +234,7 @@ class IssueRelationsTest {
 
         final Issue result = sut.removeBlockedBy(other);
 
+        verify(github.issues().issueDependencies()).removeDependencyBlockedBy(OWNER, NAME, NUMBER, 2002L);
         assertThat(result.number()).isEqualTo(NUMBER);
     }
 
@@ -281,6 +282,20 @@ class IssueRelationsTest {
     @Test
     void moveSubIssueBefore_shouldThrowNullPointerException_whenTheOtherIssueIsNull() {
         final Throwable thrown = catchThrowable(() -> sut.moveSubIssueBefore(other, null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("issue");
+    }
+
+    @Test
+    void moveSubIssueAfter_shouldThrowNullPointerException_whenTheChildIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.moveSubIssueAfter(null, sut));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("issue");
+    }
+
+    @Test
+    void moveSubIssueBefore_shouldThrowNullPointerException_whenTheChildIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.moveSubIssueBefore(null, sut));
 
         assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("issue");
     }

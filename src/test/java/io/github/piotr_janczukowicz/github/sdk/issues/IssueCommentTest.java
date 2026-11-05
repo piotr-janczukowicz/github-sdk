@@ -36,13 +36,31 @@ class IssueCommentTest {
     private final IssueComment sut = new IssueComment(issue, response);
 
     @Test
-    void accessors_shouldExposeTheResponse_whenCommentIsLoaded() {
-        assertSoftly(softly -> {
-            softly.assertThat(sut.issue()).isSameAs(issue);
-            softly.assertThat(sut.id()).isEqualTo(ID);
-            softly.assertThat(sut.body()).contains("First comment");
-            softly.assertThat(sut.response()).isSameAs(response);
-        });
+    void issue_shouldReturnTheIssue_whenCommentIsLoaded() {
+        final Issue result = sut.issue();
+
+        assertThat(result).isSameAs(issue);
+    }
+
+    @Test
+    void id_shouldReturnTheId_whenCommentIsLoaded() {
+        final long result = sut.id();
+
+        assertThat(result).isEqualTo(ID);
+    }
+
+    @Test
+    void body_shouldReturnTheBody_whenTheResponseHasOne() {
+        final Optional<String> body = sut.body();
+
+        assertThat(body).hasValueSatisfying(text -> assertThat(text).contains("First comment"));
+    }
+
+    @Test
+    void response_shouldReturnTheResponse_whenCommentIsLoaded() {
+        final GitHubIssueComment result = sut.response();
+
+        assertThat(result).isSameAs(response);
     }
 
     @Test

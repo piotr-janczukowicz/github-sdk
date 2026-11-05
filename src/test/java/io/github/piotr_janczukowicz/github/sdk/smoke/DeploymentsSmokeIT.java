@@ -42,7 +42,6 @@ class DeploymentsSmokeIT {
             final List<GitHubDeploymentStatus> statuses = created.statuses().toList();
             final boolean isListed =
                     repository.deployments().limit(20).anyMatch(deployment -> deployment.id() == created.id());
-            created.createStatus(GitHubDeploymentStatusState.INACTIVE);
 
             assertSoftly(softly -> {
                 softly.assertThat(created.ref()).isEqualTo(base);
@@ -54,9 +53,11 @@ class DeploymentsSmokeIT {
                 softly.assertThat(isListed).isTrue();
             });
         } finally {
+            created.createStatus(GitHubDeploymentStatusState.INACTIVE);
             created.delete();
         }
-        assertThat(repository.deployment(created.id())).isEmpty();
+        final Optional<Deployment> afterDelete = repository.deployment(created.id());
+        assertThat(afterDelete).isEmpty();
     }
 
     private static Deployment deploy(final Repository repository, final String ref, final String environment)
@@ -86,7 +87,8 @@ class DeploymentsSmokeIT {
         } finally {
             saved.delete();
         }
-        assertThat(repository.environment(name)).isEmpty();
+        final Optional<Environment> afterDelete = repository.environment(name);
+        assertThat(afterDelete).isEmpty();
     }
 
     private static Environment save(final Repository repository, final String name) throws IOException {

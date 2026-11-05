@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.github.piotr_janczukowicz.github.api.GitHub;
@@ -13,6 +14,7 @@ import io.github.piotr_janczukowicz.github.api.licenses.GitHubLicense;
 import io.github.piotr_janczukowicz.github.api.licenses.GitHubLicenseSimple;
 import io.github.piotr_janczukowicz.github.api.licenses.GitHubLicensesApi;
 import io.github.piotr_janczukowicz.github.pagination.GitHubPageRequest;
+import io.github.piotr_janczukowicz.github.sdk.utilities.Utilities;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.io.IOException;
 import java.util.List;
@@ -59,6 +61,13 @@ class GitHubSdkLicensesTest {
     }
 
     @Test
+    void license_shouldThrowNullPointerException_whenKeyIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.license(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("key");
+    }
+
+    @Test
     void license_shouldThrowIllegalArgumentException_whenKeyIsBlank() {
         final Throwable thrown = catchThrowable(() -> sut.license(" "));
 
@@ -67,6 +76,9 @@ class GitHubSdkLicensesTest {
 
     @Test
     void utilities_shouldReturnTheUtilitiesWithoutRequest_whenCalled() {
-        assertThat(sut.utilities()).isNotNull();
+        final Utilities utilities = sut.utilities();
+
+        assertThat(utilities).isNotNull();
+        verifyNoInteractions(github);
     }
 }

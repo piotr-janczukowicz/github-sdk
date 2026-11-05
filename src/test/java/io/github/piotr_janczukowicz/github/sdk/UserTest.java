@@ -140,10 +140,12 @@ class UserTest {
 
         final List<Repository> repositories = sut.starredRepositories().toList();
 
-        assertThat(repositories).singleElement().satisfies(repository -> {
-            assertThat(repository.owner()).isEqualTo("hubot");
-            assertThat(repository.name()).isEqualTo("linguist");
-        });
+        assertThat(repositories)
+                .singleElement()
+                .satisfies(repository -> assertSoftly(softly -> {
+                    softly.assertThat(repository.owner()).isEqualTo("hubot");
+                    softly.assertThat(repository.name()).isEqualTo("linguist");
+                }));
     }
 
     @Test
@@ -161,10 +163,12 @@ class UserTest {
 
         final List<Repository> repositories = sut.watchedRepositories().toList();
 
-        assertThat(repositories).singleElement().satisfies(repository -> {
-            assertThat(repository.owner()).isEqualTo("hubot");
-            assertThat(repository.name()).isEqualTo("linguist");
-        });
+        assertThat(repositories)
+                .singleElement()
+                .satisfies(repository -> assertSoftly(softly -> {
+                    softly.assertThat(repository.owner()).isEqualTo("hubot");
+                    softly.assertThat(repository.name()).isEqualTo("linguist");
+                }));
     }
 
     private User userWithOrganizations(final GitHubOrganizationSimple... listed) throws IOException {
