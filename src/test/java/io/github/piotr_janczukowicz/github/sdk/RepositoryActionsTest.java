@@ -67,8 +67,10 @@ class RepositoryActionsTest {
 
         final Optional<Workflow> found = sut.workflow("build.yml");
 
-        assertThat(found).isPresent();
-        assertThat(found.orElseThrow().response()).isSameAs(loaded);
+        assertSoftly(softly -> {
+            softly.assertThat(found).isPresent();
+            softly.assertThat(found.orElseThrow().response()).isSameAs(loaded);
+        });
     }
 
     @Test
@@ -128,8 +130,10 @@ class RepositoryActionsTest {
 
         final Optional<WorkflowRun> found = sut.workflowRun(ActionsFixtures.RUN_ID);
 
-        assertThat(found).isPresent();
-        assertThat(found.orElseThrow().response()).isSameAs(loaded);
+        assertSoftly(softly -> {
+            softly.assertThat(found).isPresent();
+            softly.assertThat(found.orElseThrow().response()).isSameAs(loaded);
+        });
     }
 
     @Test

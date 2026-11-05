@@ -142,13 +142,15 @@ public final class Organization {
      * Lists the teams ({@code GET /orgs/{org}/teams}). GitHub's list holds only a summary of each team, so every listed
      * team is loaded with one more request as the stream reaches it; a {@code limit} on the stream bounds the cost. A
      * transport failure during iteration is an {@link java.io.UncheckedIOException}, and a listed team that is gone
-     * before it is loaded is an {@link IllegalStateException}.
+     * before it is loaded is skipped.
      *
      * @return the teams
      * @throws IOException if the first page cannot be loaded
      */
     public Stream<Team> teams() throws IOException {
-        return sdk.github().teams().team().list(login()).stream().map(this::loadTeam);
+        return sdk.github().teams().team().list(login()).stream()
+                .map(this::loadTeam)
+                .flatMap(Optional::stream);
     }
 
     /**
@@ -620,8 +622,8 @@ public final class Organization {
         return sdk;
     }
 
-    Team loadTeam(final GitHubTeam listed) {
-        return Lookups.require(() -> team(listed.slug()), () -> "Team " + listed.slug() + " is gone");
+    Optional<Team> loadTeam(final GitHubTeam listed) {
+        return Lookups.find(() -> team(listed.slug()));
     }
 
     private OrganizationInvitation invite(final GitHubCreateOrganizationInvitationPayload payload) throws IOException {

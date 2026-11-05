@@ -10,6 +10,7 @@ import io.github.piotr_janczukowicz.github.api.search.GitHubUserSearchResultItem
 import io.github.piotr_janczukowicz.github.sdk.internal.Lookups;
 import io.github.piotr_janczukowicz.github.sdk.issues.Issue;
 import java.io.IOException;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
@@ -30,7 +31,7 @@ public final class Search {
     /**
      * Searches issues and pull requests. GitHub's hits hold only a summary, so every hit is loaded with one more
      * request as the stream reaches it; a {@code limit} on the stream bounds the cost. A hit that is gone before it is
-     * loaded is an {@link IllegalStateException}.
+     * loaded is skipped.
      *
      * @param query the search query, in GitHub's search syntax
      * @return the issues
@@ -40,7 +41,8 @@ public final class Search {
      */
     public Stream<Issue> issues(final String query) throws IOException {
         return sdk.github().search().searchIssues(requireNotBlank(query, QUERY)).stream()
-                .map(this::loadIssue);
+                .map(this::loadIssue)
+                .flatMap(Optional::stream);
     }
 
     /**
@@ -68,7 +70,7 @@ public final class Search {
     /**
      * Searches users and organizations. GitHub's hits hold only a summary, so every hit is loaded with one more request
      * as the stream reaches it; a {@code limit} on the stream bounds the cost. A hit that is gone before it is loaded
-     * is an {@link IllegalStateException}.
+     * is skipped.
      *
      * @param query the search query, in GitHub's search syntax
      * @return the users
@@ -78,7 +80,8 @@ public final class Search {
      */
     public Stream<User> users(final String query) throws IOException {
         return sdk.github().search().searchUsers(requireNotBlank(query, QUERY)).stream()
-                .map(this::loadUser);
+                .map(this::loadUser)
+                .flatMap(Optional::stream);
     }
 
     /**
@@ -107,10 +110,8 @@ public final class Search {
         return sdk.github().search().searchCommits(requireNotBlank(query, QUERY)).stream();
     }
 
-    private Issue loadIssue(final GitHubIssueSearchResultItem hit) {
-        return Lookups.require(
-                () -> repositoryOf(hit.repositoryUrl()).issue(hit.number()),
-                () -> "Issue " + hit.number() + " is gone");
+    private Optional<Issue> loadIssue(final GitHubIssueSearchResultItem hit) {
+        return Lookups.find(() -> repositoryOf(hit.repositoryUrl()).issue(hit.number()));
     }
 
     private Repository repositoryOf(final String url) {
@@ -126,7 +127,7 @@ public final class Search {
         return sdk.repository(url.substring(ownerStart, nameStart - 1), url.substring(nameStart, end));
     }
 
-    private User loadUser(final GitHubUserSearchResultItem hit) {
-        return Lookups.require(() -> sdk.user(hit.login()), () -> "User " + hit.login() + " is gone");
+    private Optional<User> loadUser(final GitHubUserSearchResultItem hit) {
+        return Lookups.find(() -> sdk.user(hit.login()));
     }
 }

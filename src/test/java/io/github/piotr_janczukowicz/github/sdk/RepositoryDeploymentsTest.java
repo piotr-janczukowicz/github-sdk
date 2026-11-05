@@ -245,8 +245,10 @@ class RepositoryDeploymentsTest {
 
         final Optional<PagesSite> found = sut.pages();
 
-        assertThat(found).isPresent();
-        assertThat(found.orElseThrow().response()).isSameAs(site);
+        assertSoftly(softly -> {
+            softly.assertThat(found).isPresent();
+            softly.assertThat(found.orElseThrow().response()).isSameAs(site);
+        });
     }
 
     @Test

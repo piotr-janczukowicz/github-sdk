@@ -41,8 +41,8 @@ class RepositoryReleasesTest {
 
         final Optional<Release> release = sut.release("v1.0.0");
 
-        assertThat(release).isPresent();
         assertSoftly(softly -> {
+            softly.assertThat(release).isPresent();
             softly.assertThat(release.orElseThrow().response()).isSameAs(response);
             softly.assertThat(release.orElseThrow().repository()).isSameAs(sut);
         });

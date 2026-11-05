@@ -42,7 +42,10 @@ import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubCreatePullRequ
 import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubListPullRequestsFilter;
 import io.github.piotr_janczukowicz.github.api.releases.GitHubCreateReleasePayload;
 import io.github.piotr_janczukowicz.github.api.releases.GitHubCreateReleasePayloadBuilder;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubContentDirectory;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubContentFile;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubContentSubmodule;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubContentSymlink;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubContributor;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateAutolinkPayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateDispatchEventPayload;
@@ -136,6 +139,7 @@ public final class Repository {
 
     private static final String PAYLOAD = "payload";
     private static final String BRANCH = "branch";
+    private static final String NAME_ARGUMENT = "name";
     private static final String TITLE = "title";
     private static final String FILTER = "filter";
     private static final String LOGIN = "login";
@@ -156,9 +160,9 @@ public final class Repository {
 
     Repository(
             final GitHubSdk sdk, final String owner, final String name, final @Nullable GitHubFullRepository response) {
-        this.sdk = sdk;
-        this.owner = owner;
-        this.name = name;
+        this.sdk = requireNonNull(sdk, "sdk");
+        this.owner = requireNotBlank(owner, "owner");
+        this.name = requireNotBlank(name, NAME_ARGUMENT);
         this.response = response;
     }
 
@@ -306,7 +310,7 @@ public final class Repository {
      * Lists pull requests ({@code GET /repos/{owner}/{repo}/pulls}). GitHub's list holds only a summary of each pull
      * request, so every listed pull request is loaded with one more request as the stream reaches it; a {@code limit}
      * on the stream bounds the cost. A transport failure during iteration is an {@link java.io.UncheckedIOException},
-     * and a listed pull request that is gone before it is loaded is an {@link IllegalStateException}.
+     * and a listed pull request that is gone before it is loaded is skipped.
      *
      * @param filter the list filter
      * @return the pull requests
@@ -320,7 +324,8 @@ public final class Repository {
                 .pullRequest()
                 .list(owner, name, requireNonNull(filter, FILTER), GitHubPageRequest.byPage())
                 .stream()
-                .map(this::loadPullRequest);
+                .map(this::loadPullRequest)
+                .flatMap(Optional::stream);
     }
 
     /**
@@ -349,7 +354,7 @@ public final class Repository {
         return sdk.github()
                 .branches()
                 .branch()
-                .getBranch(owner, this.name, Arguments.requireSafePath(name, "name"))
+                .getBranch(owner, this.name, Arguments.requireSafePath(name, NAME_ARGUMENT))
                 .map(loaded -> new Branch(this, loaded));
     }
 
@@ -367,7 +372,7 @@ public final class Repository {
      * Lists branches ({@code GET /repos/{owner}/{repo}/branches}). GitHub's list holds only a summary of each branch,
      * so every listed branch is loaded with one more request as the stream reaches it; a {@code limit} on the stream
      * bounds the cost. A transport failure during iteration is an {@link java.io.UncheckedIOException}, and a listed
-     * branch that is gone before it is loaded is an {@link IllegalStateException}.
+     * branch that is gone before it is loaded is skipped.
      *
      * @param filter the list filter
      * @return the branches
@@ -381,7 +386,8 @@ public final class Repository {
                 .branch()
                 .listBranches(owner, name, requireNonNull(filter, FILTER), GitHubPageRequest.byPage())
                 .stream()
-                .map(this::loadBranch);
+                .map(this::loadBranch)
+                .flatMap(Optional::stream);
     }
 
     /**
@@ -776,7 +782,7 @@ public final class Repository {
         return sdk.github()
                 .issues()
                 .labels()
-                .getLabel(owner, name, requireNotBlank(labelName, "name"))
+                .getLabel(owner, name, requireNotBlank(labelName, NAME_ARGUMENT))
                 .map(loaded -> new Label(this, loaded));
     }
 
@@ -804,7 +810,7 @@ public final class Repository {
      */
     public Label createLabel(final String labelName, final String color) throws IOException {
         return createLabel(new GitHubCreateLabelPayload(
-                requireNotBlank(labelName, "name"), requireNotBlank(color, "color"), null));
+                requireNotBlank(labelName, NAME_ARGUMENT), requireNotBlank(color, "color"), null));
     }
 
     /**
@@ -1431,7 +1437,8 @@ public final class Repository {
      * @param prefix the start of the reference name without {@code refs/}, such as {@code heads/} or {@code tags/}
      * @return the references
      * @throws NullPointerException if {@code prefix} is {@code null}
-     * @throws IllegalArgumentException if {@code prefix} is blank
+     * @throws IllegalArgumentException if {@code prefix} is blank, has a control character, or has a {@code .} or
+     *     {@code ..} segment
      * @throws IOException if the first page cannot be loaded
      */
     public Stream<Ref> refs(final String prefix) throws IOException {
@@ -1439,7 +1446,7 @@ public final class Repository {
                 .github()
                 .gitDatabase()
                 .refs()
-                .listMatchingRefs(owner, name, requireNotBlank(prefix, "prefix"))
+                .listMatchingRefs(owner, name, Arguments.requireSafePath(prefix, "prefix"))
                 .stream()
                 .map(listed -> new Ref(this, listed));
     }
@@ -1944,7 +1951,8 @@ public final class Repository {
                 .alerts()
                 .listRepoAlerts(owner, name, requireNonNull(filter, FILTER))
                 .stream()
-                .map(this::loadSecretScanningAlert);
+                .map(this::loadSecretScanningAlert)
+                .flatMap(Optional::stream);
     }
 
     /**
@@ -1973,7 +1981,8 @@ public final class Repository {
      */
     public Stream<CodeScanningAlert> codeScanningAlerts() throws IOException {
         return sdk.github().codeScanning().codeScanning().listAlertsForRepo(owner, name).stream()
-                .map(this::loadCodeScanningAlert);
+                .map(this::loadCodeScanningAlert)
+                .flatMap(Optional::stream);
     }
 
     /**
@@ -2232,11 +2241,11 @@ public final class Repository {
      * @return the rulesets
      * @throws IOException if the transport fails
      * @throws java.io.UncheckedIOException while consuming the stream, if loading a ruleset fails
-     * @throws IllegalStateException while consuming the stream, if a listed ruleset was deleted meanwhile
      */
     public Stream<Ruleset> rulesets() throws IOException {
         return sdk.github().repositories().rules().getRepoRulesets(owner, name).stream()
-                .map(listed -> Lookups.require(() -> ruleset(listed.id()), () -> "Ruleset " + listed.id() + IS_GONE));
+                .map(listed -> Lookups.find(() -> ruleset(listed.id())))
+                .flatMap(Optional::stream);
     }
 
     /**
@@ -2362,23 +2371,23 @@ public final class Repository {
                         new GitHubCreateDispatchEventPayload(requireNotBlank(eventType, "eventType"), clientPayload));
     }
 
-    private PullRequest loadPullRequest(final GitHubPullRequestSimple listed) {
+    private Optional<PullRequest> loadPullRequest(final GitHubPullRequestSimple listed) {
         final int number = requireNonNull(listed.number(), "number");
-        return Lookups.require(() -> pullRequest(number), () -> "Pull request " + number + IS_GONE);
+        return Lookups.find(() -> pullRequest(number));
     }
 
-    private SecretScanningAlert loadSecretScanningAlert(final GitHubSecretScanningAlert listed) {
+    private Optional<SecretScanningAlert> loadSecretScanningAlert(final GitHubSecretScanningAlert listed) {
         final int number = requireNonNull(listed.number(), "number");
-        return Lookups.require(() -> secretScanningAlert(number), () -> "Secret scanning alert " + number + IS_GONE);
+        return Lookups.find(() -> secretScanningAlert(number));
     }
 
-    private CodeScanningAlert loadCodeScanningAlert(final GitHubCodeScanningAlertItems listed) {
+    private Optional<CodeScanningAlert> loadCodeScanningAlert(final GitHubCodeScanningAlertItems listed) {
         final int number = requireNonNull(listed.number(), "number");
-        return Lookups.require(() -> codeScanningAlert(number), () -> "Code scanning alert " + number + IS_GONE);
+        return Lookups.find(() -> codeScanningAlert(number));
     }
 
-    private Branch loadBranch(final GitHubShortBranch listed) {
-        return Lookups.require(() -> branch(listed.name()), () -> "Branch " + listed.name() + IS_GONE);
+    private Optional<Branch> loadBranch(final GitHubShortBranch listed) {
+        return Lookups.find(() -> branch(listed.name()));
     }
 
     private Repository createFork(final @Nullable GitHubCreateForkPayload payload) throws IOException {
@@ -2391,9 +2400,12 @@ public final class Repository {
                 .repositories()
                 .contents()
                 .getContent(owner, name, path, new GitHubGetContentFilter(ref))
-                .flatMap(result -> result instanceof final GitHubContentFile file
-                        ? Optional.of(new RepositoryFile(this, file, ref))
-                        : Optional.empty());
+                .flatMap(result -> switch (result) {
+                    case GitHubContentFile file -> Optional.of(new RepositoryFile(this, file, ref));
+                    case GitHubContentDirectory ignored -> Optional.empty();
+                    case GitHubContentSymlink ignored -> Optional.empty();
+                    case GitHubContentSubmodule ignored -> Optional.empty();
+                });
     }
 
     private RepositoryFile write(

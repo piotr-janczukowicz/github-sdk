@@ -2,6 +2,7 @@ package io.github.piotr_janczukowicz.github.sdk;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -114,8 +115,10 @@ class EventsAndAppsEntryPointsTest {
 
         final Optional<App> found = sdk.app(AppFixtures.SLUG);
 
-        assertThat(found).isPresent();
-        assertThat(found.orElseThrow().response()).isSameAs(integration);
+        assertSoftly(softly -> {
+            softly.assertThat(found).isPresent();
+            softly.assertThat(found.orElseThrow().response()).isSameAs(integration);
+        });
     }
 
     @Test

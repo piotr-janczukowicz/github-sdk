@@ -69,8 +69,8 @@ class TeamTest {
 
         final List<Repository> repositories = sut.repositories().toList();
 
-        assertThat(repositories).hasSize(1);
         assertSoftly(softly -> {
+            softly.assertThat(repositories).hasSize(1);
             softly.assertThat(repositories.getFirst().owner()).isEqualTo(ORG);
             softly.assertThat(repositories.getFirst().name()).isEqualTo("hello-world");
         });

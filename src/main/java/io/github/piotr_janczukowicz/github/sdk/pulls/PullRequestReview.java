@@ -219,7 +219,6 @@ public final class PullRequestReview {
      *
      * @return the comments, oldest first
      * @throws IOException if the first page cannot be loaded
-     * @throws IllegalStateException while streaming, if a listed comment is gone
      */
     public Stream<PullRequestReviewComment> comments() throws IOException {
         final Repository repository = pullRequest.repository();
@@ -229,7 +228,8 @@ public final class PullRequestReview {
                 .reviews()
                 .listComments(repository.owner(), repository.name(), pullRequest.number(), id())
                 .stream()
-                .map(this::loadComment);
+                .map(this::loadComment)
+                .flatMap(Optional::stream);
     }
 
     /**
@@ -259,14 +259,12 @@ public final class PullRequestReview {
         return response;
     }
 
-    private PullRequestReviewComment loadComment(final GitHubReviewComment listed) {
+    private Optional<PullRequestReviewComment> loadComment(final GitHubReviewComment listed) {
         final Repository repository = pullRequest.repository();
         final GitHub github = Internals.github(repository);
-        return Lookups.require(
-                () -> github.pullRequests()
-                        .comments()
-                        .get(repository.owner(), repository.name(), listed.id())
-                        .map(loaded -> new PullRequestReviewComment(pullRequest, loaded)),
-                () -> "Review comment " + listed.id() + " is gone");
+        return Lookups.find(() -> github.pullRequests()
+                .comments()
+                .get(repository.owner(), repository.name(), listed.id())
+                .map(loaded -> new PullRequestReviewComment(pullRequest, loaded)));
     }
 }

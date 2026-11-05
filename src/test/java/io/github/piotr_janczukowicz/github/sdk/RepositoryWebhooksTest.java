@@ -39,8 +39,8 @@ class RepositoryWebhooksTest {
 
         final Optional<Webhook> found = sut.webhook(7007L);
 
-        assertThat(found).isPresent();
         assertSoftly(softly -> {
+            softly.assertThat(found).isPresent();
             softly.assertThat(found.orElseThrow().response()).isSameAs(hook);
             softly.assertThat(found.orElseThrow().repository()).isSameAs(sut);
         });

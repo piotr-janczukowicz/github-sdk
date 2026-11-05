@@ -90,14 +90,15 @@ public final class Team {
      * Lists the child teams ({@code GET /orgs/{org}/teams/{team_slug}/teams}). GitHub's list holds only a summary of
      * each team, so every listed team is loaded with one more request as the stream reaches it; a {@code limit} on the
      * stream bounds the cost. A transport failure during iteration is an {@link java.io.UncheckedIOException}, and a
-     * listed team that is gone before it is loaded is an {@link IllegalStateException}.
+     * listed team that is gone before it is loaded is skipped.
      *
      * @return the child teams
      * @throws IOException if the first page cannot be loaded
      */
     public Stream<Team> childTeams() throws IOException {
         return github().teams().team().listChildTeams(organization.login(), slug()).stream()
-                .map(organization::loadTeam);
+                .map(organization::loadTeam)
+                .flatMap(Optional::stream);
     }
 
     /**

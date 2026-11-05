@@ -204,7 +204,7 @@ class PullRequestReviewTest {
     }
 
     @Test
-    void comments_shouldThrowIllegalStateException_whenAListedCommentIsGone() throws IOException {
+    void comments_shouldSkipTheItem_whenAListedCommentIsGone() throws IOException {
         final GitHubReviewComment listed = mock(GitHubReviewComment.class);
         when(listed.id()).thenReturn(ReviewsFixtures.COMMENT_ID);
         when(github.pullRequests().reviews().listComments(OWNER, NAME, NUMBER, ID).stream())
@@ -213,9 +213,9 @@ class PullRequestReviewTest {
         doReturn(Optional.empty()).when(comments).get(OWNER, NAME, ReviewsFixtures.COMMENT_ID);
         final Stream<PullRequestReviewComment> stream = sut.comments();
 
-        final Throwable thrown = catchThrowable(stream::toList);
+        final long count = stream.count();
 
-        assertThat(thrown).isInstanceOf(IllegalStateException.class).hasMessageContaining("is gone");
+        assertThat(count).isZero();
     }
 
     @Test

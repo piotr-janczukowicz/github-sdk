@@ -56,8 +56,8 @@ class RepositoryTest {
 
         final Optional<Repository> loaded = sut.fetch();
 
-        assertThat(loaded).isPresent();
         assertSoftly(softly -> {
+            softly.assertThat(loaded).isPresent();
             softly.assertThat(loaded.orElseThrow().owner()).isEqualTo("Octocat");
             softly.assertThat(loaded.orElseThrow().name()).isEqualTo("Hello-World");
             softly.assertThat(loaded.orElseThrow().response()).isSameAs(response);
@@ -87,8 +87,8 @@ class RepositoryTest {
 
         final Optional<Issue> issue = sut.issue(42);
 
-        assertThat(issue).isPresent();
         assertSoftly(softly -> {
+            softly.assertThat(issue).isPresent();
             softly.assertThat(issue.orElseThrow().response()).isSameAs(response);
             softly.assertThat(issue.orElseThrow().repository()).isSameAs(sut);
         });
@@ -116,8 +116,8 @@ class RepositoryTest {
 
         final List<Issue> issues = sut.issues(GitHubListForRepoFilter.empty()).toList();
 
-        assertThat(issues).hasSize(1);
         assertSoftly(softly -> {
+            softly.assertThat(issues).hasSize(1);
             softly.assertThat(issues.getFirst().response()).isSameAs(response);
             softly.assertThat(issues.getFirst().repository()).isSameAs(sut);
         });
@@ -197,8 +197,8 @@ class RepositoryTest {
 
         final Optional<PullRequest> pullRequest = sut.pullRequest(7);
 
-        assertThat(pullRequest).isPresent();
         assertSoftly(softly -> {
+            softly.assertThat(pullRequest).isPresent();
             softly.assertThat(pullRequest.orElseThrow().response()).isSameAs(response);
             softly.assertThat(pullRequest.orElseThrow().repository()).isSameAs(sut);
         });
@@ -255,7 +255,7 @@ class RepositoryTest {
     }
 
     @Test
-    void pullRequests_shouldThrowIllegalStateException_whenAListedPullRequestIsGone() throws IOException {
+    void pullRequests_shouldSkipTheItem_whenAListedPullRequestIsGone() throws IOException {
         final GitHubPullRequestSimple listed = mock(GitHubPullRequestSimple.class);
         when(listed.number()).thenReturn(7);
         when(github
@@ -271,9 +271,9 @@ class RepositoryTest {
         when(github.pullRequests().pullRequest().get(OWNER, NAME, 7)).thenReturn(Optional.empty());
         final Stream<PullRequest> pullRequests = sut.pullRequests();
 
-        final Throwable thrown = catchThrowable(pullRequests::toList);
+        final long count = pullRequests.count();
 
-        assertThat(thrown).isInstanceOf(IllegalStateException.class).hasMessageContaining("7");
+        assertThat(count).isZero();
     }
 
     @Test

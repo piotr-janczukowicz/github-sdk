@@ -50,8 +50,8 @@ class SearchTest {
 
         final List<Issue> issues = sut.issues("is:open bug").toList();
 
-        assertThat(issues).hasSize(1);
         assertSoftly(softly -> {
+            softly.assertThat(issues).hasSize(1);
             softly.assertThat(issues.getFirst().response()).isSameAs(response);
             softly.assertThat(issues.getFirst().repository().owner()).isEqualTo("octocat");
             softly.assertThat(issues.getFirst().repository().name()).isEqualTo("hello-world");
@@ -71,15 +71,15 @@ class SearchTest {
     }
 
     @Test
-    void issues_shouldThrowIllegalStateException_whenAFoundIssueIsGone() throws IOException {
+    void issues_shouldSkipTheItem_whenAFoundIssueIsGone() throws IOException {
         final GitHubIssueSearchResultItem item = foundIssue("https://api.github.com/repos/octocat/hello-world", 42);
         when(github.search().searchIssues("bug").stream()).thenReturn(Stream.of(item));
         when(github.issues().issue().get("octocat", "hello-world", 42)).thenReturn(Optional.empty());
         final Stream<Issue> issues = sut.issues("bug");
 
-        final Throwable thrown = catchThrowable(issues::toList);
+        final long count = issues.count();
 
-        assertThat(thrown).isInstanceOf(IllegalStateException.class).hasMessageContaining("42");
+        assertThat(count).isZero();
     }
 
     @Test
@@ -102,8 +102,8 @@ class SearchTest {
 
         final List<Repository> repositories = sut.repositories("hello").toList();
 
-        assertThat(repositories).hasSize(1);
         assertSoftly(softly -> {
+            softly.assertThat(repositories).hasSize(1);
             softly.assertThat(repositories.getFirst().owner()).isEqualTo("octocat");
             softly.assertThat(repositories.getFirst().name()).isEqualTo("hello-world");
         });
@@ -148,16 +148,16 @@ class SearchTest {
     }
 
     @Test
-    void users_shouldThrowIllegalStateException_whenAFoundUserIsGone() throws IOException {
+    void users_shouldSkipTheItem_whenAFoundUserIsGone() throws IOException {
         final GitHubUserSearchResultItem item = mock(GitHubUserSearchResultItem.class);
         when(item.login()).thenReturn("octocat");
         when(github.search().searchUsers("octo").stream()).thenReturn(Stream.of(item));
         when(github.users().user().getByLogin("octocat")).thenReturn(Optional.empty());
         final Stream<User> users = sut.users("octo");
 
-        final Throwable thrown = catchThrowable(users::toList);
+        final long count = users.count();
 
-        assertThat(thrown).isInstanceOf(IllegalStateException.class).hasMessageContaining("octocat");
+        assertThat(count).isZero();
     }
 
     @Test

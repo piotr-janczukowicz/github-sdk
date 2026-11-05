@@ -2,6 +2,7 @@ package io.github.piotr_janczukowicz.github.sdk.internal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.mockito.Mockito.mock;
 
 import io.github.piotr_janczukowicz.github.api.GitHub;
@@ -54,7 +55,9 @@ class InternalsTest {
         Internals.registerRepositoryAccess(ignored -> other);
         Internals.registerSdkAccess(ignored -> other);
 
-        assertThat(Internals.github(repository)).isSameAs(github);
-        assertThat(Internals.github(sdk)).isSameAs(github);
+        assertSoftly(softly -> {
+            softly.assertThat(Internals.github(repository)).isSameAs(github);
+            softly.assertThat(Internals.github(sdk)).isSameAs(github);
+        });
     }
 }

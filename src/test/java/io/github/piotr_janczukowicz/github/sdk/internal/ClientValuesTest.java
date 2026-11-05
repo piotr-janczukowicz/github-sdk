@@ -2,6 +2,7 @@ package io.github.piotr_janczukowicz.github.sdk.internal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 import io.github.piotr_janczukowicz.github.api.commits.GitHubCommitStatusState;
 import io.github.piotr_janczukowicz.github.api.organizations.GitHubOrganizationMembershipRole;
@@ -51,8 +52,10 @@ class ClientValuesTest {
                 .allMatch(
                         state -> ClientValues.statusStateToClient(state).name().equals(state.name()));
 
-        assertThat(isEveryNameKept).isTrue();
-        assertThat(CommitStatusState.values()).hasSameSizeAs(GitHubCommitStatusState.values());
+        assertSoftly(softly -> {
+            softly.assertThat(isEveryNameKept).isTrue();
+            softly.assertThat(CommitStatusState.values()).hasSameSizeAs(GitHubCommitStatusState.values());
+        });
     }
 
     @Test
@@ -70,8 +73,10 @@ class ClientValuesTest {
                 .allMatch(role ->
                         ClientValues.organizationRoleToClient(role).name().equals(role.name()));
 
-        assertThat(isEveryNameKept).isTrue();
-        assertThat(OrganizationRole.values()).hasSameSizeAs(GitHubOrganizationMembershipRole.values());
+        assertSoftly(softly -> {
+            softly.assertThat(isEveryNameKept).isTrue();
+            softly.assertThat(OrganizationRole.values()).hasSameSizeAs(GitHubOrganizationMembershipRole.values());
+        });
     }
 
     @Test
@@ -88,8 +93,10 @@ class ClientValuesTest {
         final boolean isEveryNameKept = Arrays.stream(TeamRole.values())
                 .allMatch(role -> ClientValues.teamRoleToClient(role).name().equals(role.name()));
 
-        assertThat(isEveryNameKept).isTrue();
-        assertThat(TeamRole.values()).hasSameSizeAs(GitHubTeamRole.values());
+        assertSoftly(softly -> {
+            softly.assertThat(isEveryNameKept).isTrue();
+            softly.assertThat(TeamRole.values()).hasSameSizeAs(GitHubTeamRole.values());
+        });
     }
 
     @Test

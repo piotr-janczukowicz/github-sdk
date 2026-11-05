@@ -118,8 +118,8 @@ class UserTest {
 
         final List<Repository> repositories = sut.repositories().toList();
 
-        assertThat(repositories).hasSize(1);
         assertSoftly(softly -> {
+            softly.assertThat(repositories).hasSize(1);
             softly.assertThat(repositories.getFirst().owner()).isEqualTo("octocat");
             softly.assertThat(repositories.getFirst().name()).isEqualTo("hello-world");
         });
@@ -193,14 +193,14 @@ class UserTest {
     }
 
     @Test
-    void organizations_shouldThrowIllegalStateException_whenAListedOrganizationIsGone() throws IOException {
+    void organizations_shouldSkipTheItem_whenAListedOrganizationIsGone() throws IOException {
         when(github.organizations().organization().get("octo-org")).thenReturn(Optional.empty());
         final User sut = userWithOrganizations(listedOrganization("octo-org"));
         final Stream<Organization> organizations = sut.organizations();
 
-        final Throwable thrown = catchThrowable(organizations::toList);
+        final long count = organizations.count();
 
-        assertThat(thrown).isInstanceOf(IllegalStateException.class).hasMessageContaining("octo-org");
+        assertThat(count).isZero();
     }
 
     @Test

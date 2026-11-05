@@ -86,8 +86,8 @@ class OrganizationTest {
 
         final List<Repository> repositories = sut.repositories().toList();
 
-        assertThat(repositories).hasSize(1);
         assertSoftly(softly -> {
+            softly.assertThat(repositories).hasSize(1);
             softly.assertThat(repositories.getFirst().owner()).isEqualTo(ORG);
             softly.assertThat(repositories.getFirst().name()).isEqualTo("hello-world");
         });
@@ -136,8 +136,8 @@ class OrganizationTest {
 
         final Optional<Team> team = sut.team("core");
 
-        assertThat(team).isPresent();
         assertSoftly(softly -> {
+            softly.assertThat(team).isPresent();
             softly.assertThat(team.orElseThrow().response()).isSameAs(teamResponse);
             softly.assertThat(team.orElseThrow().organization()).isSameAs(sut);
         });
@@ -174,16 +174,16 @@ class OrganizationTest {
     }
 
     @Test
-    void teams_shouldThrowIllegalStateException_whenAListedTeamIsGone() throws IOException {
+    void teams_shouldSkipTheItem_whenAListedTeamIsGone() throws IOException {
         when(response.login()).thenReturn(ORG);
         final GitHubTeam listed = listedTeam("core");
         when(github.teams().team().list(ORG).stream()).thenReturn(Stream.of(listed));
         when(github.teams().team().getByName(ORG, "core")).thenReturn(Optional.empty());
         final Stream<Team> teams = sut.teams();
 
-        final Throwable thrown = catchThrowable(teams::toList);
+        final long count = teams.count();
 
-        assertThat(thrown).isInstanceOf(IllegalStateException.class).hasMessageContaining("core");
+        assertThat(count).isZero();
     }
 
     @Test

@@ -6,7 +6,11 @@ import static org.assertj.core.api.Assertions.catchThrowable;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.lang.reflect.Constructor;
 import java.util.List;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 @UnitTest
 class ArgumentsTest {
@@ -51,13 +55,16 @@ class ArgumentsTest {
         assertThat(thrown).hasCauseInstanceOf(UnsupportedOperationException.class);
     }
 
-    @Test
-    void requireNotBlankElements_shouldReturnTheValues_whenTheListMayBeEmpty() {
-        final List<String> empty = Arguments.requireNotBlankElements(List.of(), "labels");
-        final List<String> some = Arguments.requireNotBlankElements(List.of("a", "b"), "labels");
+    @ParameterizedTest
+    @MethodSource("listsWithoutBlankValues")
+    void requireNotBlankElements_shouldReturnTheValues_whenTheListMayBeEmpty(final List<String> values) {
+        final List<String> result = Arguments.requireNotBlankElements(values, "labels");
 
-        assertThat(empty).isEmpty();
-        assertThat(some).containsExactly("a", "b");
+        assertThat(result).containsExactlyElementsOf(values);
+    }
+
+    private static Stream<List<String>> listsWithoutBlankValues() {
+        return Stream.of(List.of(), List.of("a", "b"));
     }
 
     @Test
@@ -88,31 +95,28 @@ class ArgumentsTest {
         assertThat(values).containsExactly("gpu");
     }
 
-    @Test
-    void requireSafePath_shouldReturnThePath_whenItIsAnOrdinaryPathOrRef() {
-        final String path = Arguments.requireSafePath("docs/readme.md", "path");
-        final String ref = Arguments.requireSafePath("release/v1.0", "ref");
+    @ParameterizedTest
+    @ValueSource(strings = {"docs/readme.md", "release/v1.0"})
+    void requireSafePath_shouldReturnThePath_whenItIsAnOrdinaryPathOrRef(final String value) {
+        final String result = Arguments.requireSafePath(value, "path");
 
-        assertThat(path).isEqualTo("docs/readme.md");
-        assertThat(ref).isEqualTo("release/v1.0");
+        assertThat(result).isEqualTo(value);
     }
 
-    @Test
-    void requireSafePath_shouldThrowIllegalArgumentException_whenTheValueHasADotSegment() {
-        final Throwable parent = catchThrowable(() -> Arguments.requireSafePath("a/../b", "path"));
-        final Throwable current = catchThrowable(() -> Arguments.requireSafePath("./b", "path"));
+    @ParameterizedTest
+    @ValueSource(strings = {"a/../b", "./b"})
+    void requireSafePath_shouldThrowIllegalArgumentException_whenTheValueHasADotSegment(final String value) {
+        final Throwable thrown = catchThrowable(() -> Arguments.requireSafePath(value, "path"));
 
-        assertThat(parent).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("path");
-        assertThat(current).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("path");
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("path");
     }
 
-    @Test
-    void requireSafePath_shouldThrowIllegalArgumentException_whenTheValueHasAControlCharacter() {
-        final Throwable newline = catchThrowable(() -> Arguments.requireSafePath("a" + (char) 10 + "b", "ref"));
-        final Throwable delete = catchThrowable(() -> Arguments.requireSafePath("a" + (char) 127 + "b", "ref"));
+    @ParameterizedTest
+    @ValueSource(strings = {"a\nb", "a\u007Fb"})
+    void requireSafePath_shouldThrowIllegalArgumentException_whenTheValueHasAControlCharacter(final String value) {
+        final Throwable thrown = catchThrowable(() -> Arguments.requireSafePath(value, "ref"));
 
-        assertThat(newline).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("control");
-        assertThat(delete).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("control");
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("control");
     }
 
     @Test

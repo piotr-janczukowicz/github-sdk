@@ -110,7 +110,7 @@ class RepositoryAlertsTest {
     }
 
     @Test
-    void secretScanningAlerts_shouldFail_whenAListedAlertIsGone() throws IOException {
+    void secretScanningAlerts_shouldSkipTheItem_whenAListedAlertIsGone() throws IOException {
         final GitHubSecretScanningAlert listed = mock(GitHubSecretScanningAlert.class);
         when(listed.number()).thenReturn(SecurityFixtures.SECRET_NUMBER);
         when(github
@@ -123,9 +123,9 @@ class RepositoryAlertsTest {
         doReturn(Optional.empty()).when(api).getAlert(OWNER, NAME, SecurityFixtures.SECRET_NUMBER);
         final Stream<SecretScanningAlert> alerts = sut.secretScanningAlerts();
 
-        final Throwable thrown = catchThrowable(alerts::toList);
+        final long count = alerts.count();
 
-        assertThat(thrown).isInstanceOf(IllegalStateException.class).hasMessageContaining("is gone");
+        assertThat(count).isZero();
     }
 
     @Test
@@ -175,7 +175,7 @@ class RepositoryAlertsTest {
     }
 
     @Test
-    void codeScanningAlerts_shouldFail_whenAListedAlertIsGone() throws IOException {
+    void codeScanningAlerts_shouldSkipTheItem_whenAListedAlertIsGone() throws IOException {
         final GitHubCodeScanningAlertItems listed = mock(GitHubCodeScanningAlertItems.class);
         when(listed.number()).thenReturn(SecurityFixtures.CODE_NUMBER);
         when(github.codeScanning().codeScanning().listAlertsForRepo(OWNER, NAME).stream())
@@ -184,9 +184,9 @@ class RepositoryAlertsTest {
         doReturn(Optional.empty()).when(api).getAlert(OWNER, NAME, SecurityFixtures.CODE_NUMBER);
         final Stream<CodeScanningAlert> alerts = sut.codeScanningAlerts();
 
-        final Throwable thrown = catchThrowable(alerts::toList);
+        final long count = alerts.count();
 
-        assertThat(thrown).isInstanceOf(IllegalStateException.class).hasMessageContaining("is gone");
+        assertThat(count).isZero();
     }
 
     @Test

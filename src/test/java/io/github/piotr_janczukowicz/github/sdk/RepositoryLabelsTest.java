@@ -43,8 +43,8 @@ class RepositoryLabelsTest {
 
         final Optional<Label> found = sut.label("bug");
 
-        assertThat(found).isPresent();
         assertSoftly(softly -> {
+            softly.assertThat(found).isPresent();
             softly.assertThat(found.orElseThrow().response()).isSameAs(label);
             softly.assertThat(found.orElseThrow().repository()).isSameAs(sut);
         });
@@ -122,8 +122,8 @@ class RepositoryLabelsTest {
 
         final Optional<Milestone> found = sut.milestone(3);
 
-        assertThat(found).isPresent();
         assertSoftly(softly -> {
+            softly.assertThat(found).isPresent();
             softly.assertThat(found.orElseThrow().response()).isSameAs(milestone);
             softly.assertThat(found.orElseThrow().repository()).isSameAs(sut);
         });

@@ -53,8 +53,8 @@ class RepositoryGitTest {
 
         final Optional<Comparison> found = sut.compare("main", "feature");
 
-        assertThat(found).isPresent();
         assertSoftly(softly -> {
+            softly.assertThat(found).isPresent();
             softly.assertThat(found.orElseThrow().response()).isSameAs(loaded);
             softly.assertThat(found.orElseThrow().repository()).isSameAs(sut);
         });
@@ -106,6 +106,13 @@ class RepositoryGitTest {
     }
 
     @Test
+    void refs_shouldThrowIllegalArgumentException_whenPrefixHasADotSegment() {
+        final Throwable thrown = catchThrowable(() -> sut.refs("heads/../tags"));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("prefix");
+    }
+
+    @Test
     void ref_shouldReturnTheRef_whenGitHubHasIt() throws IOException {
         final GitHubGitRef loaded = GitFixtures.ref();
         final GitHubGitRefsApi refs = github.gitDatabase().refs();
@@ -113,8 +120,10 @@ class RepositoryGitTest {
 
         final Optional<Ref> found = sut.ref("heads/main");
 
-        assertThat(found).isPresent();
-        assertThat(found.orElseThrow().response()).isSameAs(loaded);
+        assertSoftly(softly -> {
+            softly.assertThat(found).isPresent();
+            softly.assertThat(found.orElseThrow().response()).isSameAs(loaded);
+        });
     }
 
     @Test

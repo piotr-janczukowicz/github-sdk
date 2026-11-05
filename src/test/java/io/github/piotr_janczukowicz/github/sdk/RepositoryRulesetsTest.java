@@ -55,7 +55,7 @@ class RepositoryRulesetsTest {
     }
 
     @Test
-    void rulesets_shouldThrowIllegalStateException_whenAListedRulesetIsGone() throws IOException {
+    void rulesets_shouldSkipTheItem_whenAListedRulesetIsGone() throws IOException {
         final GitHubRepositoryRuleset listed = RulesetFixtures.ruleset();
         when(github.repositories().rules().getRepoRulesets(OWNER, NAME).stream())
                 .thenReturn(Stream.of(listed));
@@ -63,9 +63,9 @@ class RepositoryRulesetsTest {
         doReturn(Optional.empty()).when(api).getRepoRuleset(OWNER, NAME, ID);
         final Stream<Ruleset> stream = sut.rulesets();
 
-        final Throwable thrown = catchThrowable(stream::toList);
+        final long count = stream.count();
 
-        assertThat(thrown).isInstanceOf(IllegalStateException.class).hasMessageContaining("is gone");
+        assertThat(count).isZero();
     }
 
     @Test
@@ -90,8 +90,10 @@ class RepositoryRulesetsTest {
 
         final Optional<Ruleset> found = sut.ruleset(ID);
 
-        assertThat(found).isPresent();
-        assertThat(found.orElseThrow().response()).isSameAs(loaded);
+        assertSoftly(softly -> {
+            softly.assertThat(found).isPresent();
+            softly.assertThat(found.orElseThrow().response()).isSameAs(loaded);
+        });
     }
 
     @Test

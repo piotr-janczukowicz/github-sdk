@@ -43,8 +43,8 @@ class RepositoryContentTest {
 
         final Optional<Branch> branch = sut.branch("main");
 
-        assertThat(branch).isPresent();
         assertSoftly(softly -> {
+            softly.assertThat(branch).isPresent();
             softly.assertThat(branch.orElseThrow().response()).isSameAs(response);
             softly.assertThat(branch.orElseThrow().repository()).isSameAs(sut);
         });
@@ -102,7 +102,7 @@ class RepositoryContentTest {
     }
 
     @Test
-    void branches_shouldThrowIllegalStateException_whenAListedBranchIsGone() throws IOException {
+    void branches_shouldSkipTheItem_whenAListedBranchIsGone() throws IOException {
         final GitHubShortBranch listed = mock(GitHubShortBranch.class);
         when(listed.name()).thenReturn("main");
         when(github
@@ -115,9 +115,9 @@ class RepositoryContentTest {
         when(github.branches().branch().getBranch(OWNER, NAME, "main")).thenReturn(Optional.empty());
         final Stream<Branch> branches = sut.branches();
 
-        final Throwable thrown = catchThrowable(branches::toList);
+        final long count = branches.count();
 
-        assertThat(thrown).isInstanceOf(IllegalStateException.class).hasMessageContaining("main");
+        assertThat(count).isZero();
     }
 
     @Test
@@ -146,8 +146,8 @@ class RepositoryContentTest {
 
         final Optional<Commit> commit = sut.commit("abc123");
 
-        assertThat(commit).isPresent();
         assertSoftly(softly -> {
+            softly.assertThat(commit).isPresent();
             softly.assertThat(commit.orElseThrow().response()).isSameAs(response);
             softly.assertThat(commit.orElseThrow().repository()).isSameAs(sut);
         });

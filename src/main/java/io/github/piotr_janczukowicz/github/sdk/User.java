@@ -200,15 +200,15 @@ public final class User {
      * Lists the public organizations of the user ({@code GET /users/{username}/orgs}). GitHub's list holds only a
      * summary of each organization, so every listed organization is loaded with one more request as the stream reaches
      * it; a {@code limit} on the stream bounds the cost. A transport failure during iteration is an
-     * {@link java.io.UncheckedIOException}, and a listed organization that is gone before it is loaded is an
-     * {@link IllegalStateException}.
+     * {@link java.io.UncheckedIOException}, and a listed organization that is gone before it is loaded is skipped.
      *
      * @return the organizations
      * @throws IOException if the first page cannot be loaded
      */
     public Stream<Organization> organizations() throws IOException {
         return sdk.github().organizations().organization().listForUser(login()).stream()
-                .map(this::loadOrganization);
+                .map(this::loadOrganization)
+                .flatMap(Optional::stream);
     }
 
     /**
@@ -294,8 +294,7 @@ public final class User {
         return response;
     }
 
-    private Organization loadOrganization(final GitHubOrganizationSimple listed) {
-        return Lookups.require(
-                () -> sdk.organization(listed.login()), () -> "Organization " + listed.login() + " is gone");
+    private Optional<Organization> loadOrganization(final GitHubOrganizationSimple listed) {
+        return Lookups.find(() -> sdk.organization(listed.login()));
     }
 }

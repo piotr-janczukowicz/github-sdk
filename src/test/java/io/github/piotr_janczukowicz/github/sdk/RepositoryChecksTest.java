@@ -32,8 +32,8 @@ class RepositoryChecksTest {
 
         final Optional<CheckRun> found = sut.checkRun(ID);
 
-        assertThat(found).isPresent();
         assertSoftly(softly -> {
+            softly.assertThat(found).isPresent();
             softly.assertThat(found.orElseThrow().response()).isSameAs(loaded);
             softly.assertThat(found.orElseThrow().repository()).isSameAs(sut);
         });

@@ -186,8 +186,10 @@ class RepositoryExtrasTest {
 
         final Optional<CheckSuite> found = sut.checkSuite(ExtrasFixtures.SUITE_ID);
 
-        assertThat(found).isPresent();
-        assertThat(found.orElseThrow().response()).isSameAs(suite);
+        assertSoftly(softly -> {
+            softly.assertThat(found).isPresent();
+            softly.assertThat(found.orElseThrow().response()).isSameAs(suite);
+        });
     }
 
     @Test

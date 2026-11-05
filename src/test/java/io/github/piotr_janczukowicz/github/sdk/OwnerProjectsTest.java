@@ -1,6 +1,7 @@
 package io.github.piotr_janczukowicz.github.sdk;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -48,8 +49,10 @@ class OwnerProjectsTest {
 
         final Optional<Project> found = sut.project(NUMBER);
 
-        assertThat(found).isPresent();
-        assertThat(found.orElseThrow().response()).isSameAs(loaded);
+        assertSoftly(softly -> {
+            softly.assertThat(found).isPresent();
+            softly.assertThat(found.orElseThrow().response()).isSameAs(loaded);
+        });
     }
 
     @Test
@@ -73,8 +76,10 @@ class OwnerProjectsTest {
 
         final Optional<Project> found = sut.project(NUMBER);
 
-        assertThat(found).isPresent();
-        assertThat(found.orElseThrow().response()).isSameAs(loaded);
+        assertSoftly(softly -> {
+            softly.assertThat(found).isPresent();
+            softly.assertThat(found.orElseThrow().response()).isSameAs(loaded);
+        });
     }
 
     private Organization organization() {

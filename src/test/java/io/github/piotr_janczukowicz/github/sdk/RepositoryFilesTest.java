@@ -14,6 +14,8 @@ import static org.mockito.Mockito.when;
 import io.github.piotr_janczukowicz.github.api.GitHub;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubContentDirectory;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubContentFile;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubContentSubmodule;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubContentSymlink;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateOrUpdateFileContentsPayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubDeleteFilePayload;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubGetContentFilter;
@@ -48,8 +50,8 @@ class RepositoryFilesTest {
         final Optional<RepositoryFile> file = sut.file(PATH);
 
         verify(github.repositories().contents()).getContent(eq(OWNER), eq(NAME), eq(PATH), filter.capture());
-        assertThat(file).isPresent();
         assertSoftly(softly -> {
+            softly.assertThat(file).isPresent();
             softly.assertThat(file.orElseThrow().response()).isSameAs(response);
             softly.assertThat(file.orElseThrow().repository()).isSameAs(sut);
             softly.assertThat(filter.getValue().ref()).isNull();
@@ -104,6 +106,30 @@ class RepositoryFilesTest {
                 .thenReturn(Optional.of(mock(GitHubContentDirectory.class)));
 
         final Optional<RepositoryFile> file = sut.file("docs");
+
+        assertThat(file).isEmpty();
+    }
+
+    @Test
+    void file_shouldReturnEmpty_whenThePathIsASymlink() throws IOException {
+        when(github.repositories()
+                        .contents()
+                        .getContent(eq(OWNER), eq(NAME), eq("link"), any(GitHubGetContentFilter.class)))
+                .thenReturn(Optional.of(mock(GitHubContentSymlink.class)));
+
+        final Optional<RepositoryFile> file = sut.file("link");
+
+        assertThat(file).isEmpty();
+    }
+
+    @Test
+    void file_shouldReturnEmpty_whenThePathIsASubmodule() throws IOException {
+        when(github.repositories()
+                        .contents()
+                        .getContent(eq(OWNER), eq(NAME), eq("vendor"), any(GitHubGetContentFilter.class)))
+                .thenReturn(Optional.of(mock(GitHubContentSubmodule.class)));
+
+        final Optional<RepositoryFile> file = sut.file("vendor");
 
         assertThat(file).isEmpty();
     }
