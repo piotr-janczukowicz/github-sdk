@@ -2720,6 +2720,7 @@ public final class Repository {
         return Lookups.find(() -> pullRequest(number));
     }
 
+    @SuppressWarnings("java:S2259")
     private Optional<SecretScanningAlert> loadSecretScanningAlert(final GitHubSecretScanningAlert listed) {
         final int number = requireNonNull(listed.number(), NUMBER_ARGUMENT);
         return Lookups.find(() -> secretScanningAlert(number));
