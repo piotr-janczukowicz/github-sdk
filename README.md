@@ -35,7 +35,7 @@ operations. The differences are in the foundation. The hub4j column is taken fro
 | Objects | Immutable; an operation returns a new object built from GitHub's answer, and `response()` gives the full typed record | Its own model classes |
 | Escape hatch | The `github-rest-client` is underneath, so any operation without an object is one call away | Its own API |
 | Java | 21 | 11 |
-| Maturity | Prerelease, see the [Disclaimer](#disclaimer) | Long-established and widely used |
+| Maturity | New. Smoke-tested live, not yet proven in production; see the [Disclaimer](#disclaimer) | Long-established and widely used |
 
 Choose hub4j/github-api if you need Java 11 or a library with a long track record. Choose this SDK if you want
 immutable objects over a client that follows GitHub's own descriptions, with the full typed response always within reach.
@@ -55,7 +55,7 @@ class path. It depends on `github-rest-client`, which Maven brings in.
 
 Replace `LATEST_VERSION` with the newest entry on the
 [releases page](https://github.com/piotr-janczukowicz/github-sdk/releases). The versions follow the OpenAPI version of
-`github-rest-client` (`2026.3.10.N`). The library is in prerelease; see the [Disclaimer](#disclaimer).
+`github-rest-client` (`2026.3.10.N`). The library is new and not yet proven in production; see the [Disclaimer](#disclaimer).
 
 ## Quick start
 
@@ -217,5 +217,5 @@ The SDK is a thin layer over `github-rest-client`, which is built on the OpenAPI
 that project apply here too.
 
 **Only smoke tests have been run on the live GitHub environment, covering particular feature sets. Not every operation
-has been tested. This library is a prerelease. Verify the behavior of anything you depend on before using it in
+has been tested. This library is new and not yet proven in production. Verify the behavior of anything you depend on before using it in
 production.**
