@@ -33,7 +33,7 @@ public final class NotificationFixtures {
                 .subject(subject())
                 .reason("mention")
                 .unread(true)
-                .updatedAt("2026-11-05T10:00:00Z")
+                .updatedAt(Instant.parse("2026-11-05T10:00:00Z"))
                 .url(API)
                 .subscriptionUrl(API + "/subscription")
                 .build();
@@ -60,7 +60,7 @@ public final class NotificationFixtures {
                 .url("https://api.github.com/repos/octocat/hello-world/keys/6006")
                 .title("ci")
                 .verified(true)
-                .createdAt("2026-11-05T10:00:00Z")
+                .createdAt(Instant.parse("2026-11-05T10:00:00Z"))
                 .readOnly(true)
                 .build();
     }

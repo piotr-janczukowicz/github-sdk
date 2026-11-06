@@ -18,8 +18,8 @@
   <url>https://github.com/piotr-janczukowicz/github-sdk</url>
 
   <properties>
-    <github-rest-client.version>2026.3.10.4</github-rest-client.version>
-    <common-test-support.version>6</common-test-support.version>
+    <github-rest-client.version>2026.3.10.5</github-rest-client.version>
+    <common-core.version>3</common-core.version>
   </properties>
 
   <dependencies>
@@ -31,8 +31,9 @@
     </dependency>
     <dependency>
       <groupId>io.github.piotr-janczukowicz</groupId>
-      <artifactId>common-test-support</artifactId>
-      <version>${common-test-support.version}</version>
+      <artifactId>common-core</artifactId>
+      <version>${common-core.version}</version>
+      <type>test-jar</type>
       <scope>test</scope>
     </dependency>
   </dependencies>

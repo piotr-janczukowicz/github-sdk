@@ -14,6 +14,7 @@ import io.github.piotr_janczukowicz.github.api.commits.GitHubCommitStatusBuilder
 import io.github.piotr_janczukowicz.github.api.commits.GitHubSimpleCommitStatus;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubMinimalRepository;
 import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
+import java.time.Instant;
 import java.util.List;
 
 public final class ChecksFixtures {
@@ -59,8 +60,8 @@ public final class ChecksFixtures {
                 .description("Build passed")
                 .targetUrl("https://ci.example.com/build/1")
                 .context("ci/build")
-                .createdAt("2026-02-03T04:05:06Z")
-                .updatedAt("2026-02-03T04:05:06Z")
+                .createdAt(Instant.parse("2026-02-03T04:05:06Z"))
+                .updatedAt(Instant.parse("2026-02-03T04:05:06Z"))
                 .creator(mock(GitHubSimpleUser.class))
                 .build();
     }
