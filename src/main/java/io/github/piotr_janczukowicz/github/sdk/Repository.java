@@ -1602,7 +1602,8 @@ public final class Repository {
      * @param head the head, such as a branch name or a sha
      * @return the comparison, or empty when GitHub answers HTTP 404
      * @throws NullPointerException if {@code base} or {@code head} is {@code null}
-     * @throws IllegalArgumentException if {@code base} or {@code head} is blank
+     * @throws IllegalArgumentException if {@code base} or {@code head} is blank, or has a control character or a
+     *     {@code .} or {@code ..} segment
      * @throws IOException if the transport fails
      */
     public Optional<Comparison> compare(final String base, final String head) throws IOException {
@@ -1695,8 +1696,8 @@ public final class Repository {
      * @param commitSha the sha of the commit the tag points at
      * @return the new reference {@code tags/<tag>}
      * @throws NullPointerException if an argument is {@code null}
-     * @throws IllegalArgumentException if an argument is blank, or {@code tag} has a control character or a {@code .}
-     *     or {@code ..} segment
+     * @throws IllegalArgumentException if an argument is blank, or {@code tag} or {@code commitSha} has a control
+     *     character or a {@code .} or {@code ..} segment
      * @throws IOException if the transport fails
      */
     public Ref createAnnotatedTag(final String tag, final String message, final String commitSha) throws IOException {

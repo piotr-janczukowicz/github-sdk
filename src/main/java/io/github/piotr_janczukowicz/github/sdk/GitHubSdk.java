@@ -199,7 +199,7 @@ public final class GitHubSdk {
 
     /**
      * Lists the gists the authenticated user starred ({@code GET /gists/starred}). See {@link #gists()} for the cost
-     * per gist.
+     * per gist. A gist that is deleted after it was listed is skipped.
      *
      * @return the starred gists
      * @throws IOException if the first page cannot be loaded

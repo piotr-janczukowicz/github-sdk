@@ -63,7 +63,7 @@ public final class Reaction {
     }
 
     /**
-     * Deletes the reaction from the issue or comment it belongs to ({@code DELETE .../reactions/{reaction_id}}).
+     * Deletes the reaction from the object it belongs to ({@code DELETE .../reactions/{reaction_id}}).
      *
      * @throws IOException if the transport fails
      */

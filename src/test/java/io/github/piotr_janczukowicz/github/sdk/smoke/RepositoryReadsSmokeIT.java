@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubGitTag;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubCodeownersErrors;
 import io.github.piotr_janczukowicz.github.client.exception.GitHubApiException;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
 import io.github.piotr_janczukowicz.github.sdk.content.RepositoryFile;
@@ -40,11 +41,12 @@ class RepositoryReadsSmokeIT {
         final Repository repository = ENV.sdk().repository(ENV.owner(), ENV.repo());
 
         final List<?> activities = repository.activities().limit(5).toList();
-        final Optional<?> codeowners = repository.codeownersErrors();
+        final Optional<GitHubCodeownersErrors> codeowners = repository.codeownersErrors();
 
         assertSoftly(softly -> {
             softly.assertThat(activities).doesNotContainNull();
-            softly.assertThat(codeowners).isNotNull();
+            softly.assertThat(codeowners.map(GitHubCodeownersErrors::errors).orElse(List.of()))
+                    .doesNotContainNull();
         });
     }
 
