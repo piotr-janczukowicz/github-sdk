@@ -124,29 +124,28 @@ All objects behave the same way, so you learn them once:
 
 ## Good practices
 
+[Conventions](#conventions) says what the SDK does. This is what to do with it.
+
 - **One client per credential, one `GitHubSdk` on top.** The client owns the transport and the rate-limit state, so share
-  it, and close it when you are done (`try`-with-resources). The SDK never closes a client you passed in.
-- **Objects are snapshots.** An object keeps what GitHub answered when it was loaded, and an operation returns a new
-  object. Keep the returned object, or call `refresh()` when you need the current state.
-- **Handles are free, loads are not.** `sdk.repository(owner, name)` makes no request; call `fetch()` only when you need
-  data that the handle does not hold.
-- **Bound the lists.** A list is a lazy stream that fetches pages as you read it, and some lists load one more request per
-  item. Use `limit(...)`, and avoid `toList()` on a list that can be large.
-- **Change several fields in one request.** Use `update()`, `protect()`, `newRuleset(...)` or `commitTo(branch)` instead
-  of one call per field or per file.
-- **Treat a lookup as a question.** `repository.issue(42)` is empty when GitHub answers 404, so handle the `Optional`
-  instead of calling `orElseThrow()` by habit. `refresh()` and the operations that load an object after a change throw
-  `IllegalStateException` when it is gone.
-- **Handle errors where you can act.** `GitHubApiException` and its subclasses (not found, forbidden, rate limit) pass
-  through unchanged, and a failure while reading a stream is an `UncheckedIOException`.
-- **Configure the client, not the SDK.** Retry, backoff, the conditional cache and page size belong on the client
-  configuration; see [Configure the client](#configure-the-client).
+  it and close it when you are done (`try`-with-resources). The SDK never closes a client you passed in.
+- **Keep the object an operation returns.** The object you called it on is not updated; use the result, and call
+  `refresh()` only when something else may have changed the object.
+- **Use handles, load when you need data.** `sdk.repository(owner, name)` costs nothing; call `fetch()` only for fields the
+  handle does not hold.
+- **Always bound a list you read from a large repository.** Add `limit(...)` or stop the stream early, and avoid `toList()`
+  on a list that can grow, especially one that loads an item per request.
+- **Prefer one request over many.** `update()`, `protect()`, `newRuleset(...)` and `commitTo(branch)` collect changes and
+  send them together, instead of one call per field or per file.
+- **Decide what an empty lookup means.** Handle the `Optional` instead of calling `orElseThrow()` by habit, and catch
+  `GitHubApiException` (not found, forbidden, rate limit) at the place where you can act on it.
+- **Configure the client, not the SDK.** Retry, backoff, the cache and page size are client settings; see
+  [Configure the client](#configure-the-client).
 - **Give the token what the call needs.** Prefer a fine-grained token with the permissions of the areas you use. Some areas
   need more: notifications and packages need a classic token, and creating check runs, installations and Marketplace calls
   need a GitHub App.
 - **Keep secrets out of logs.** `response()` of a secret scanning alert, the payload URL of a webhook, runner tokens and the
   signed links of artifacts and logs can carry credentials; the Javadoc of each says so.
-- **Test the integration against a throwaway repository.** The [live smoke tests](docs/guide/smoke-tests.md) show how.
+- **Try an integration on a throwaway repository first.** The [live smoke tests](docs/guide/smoke-tests.md) show how.
 
 ## Configure the client
 
