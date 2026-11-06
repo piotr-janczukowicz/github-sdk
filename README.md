@@ -131,8 +131,7 @@ All objects behave the same way, so you learn them once:
 
 - **Create the client once and close it once.** One client per credential, with one `GitHubSdk` on top: the client owns the
   transport and the rate-limit state, so share it for the life of the application, and do not open a client per call. Close
-  it when the application stops; a Spring `@Bean` of a `GitHubClient` is closed with the application context. The SDK never
-  closes a client you passed in.
+  it when the application stops. The SDK never closes a client you passed in.
 - **Keep the object an operation returns.** The object you called it on is not updated; use the result, and call
   `refresh()` only when something else may have changed the object.
 - **Use handles, load when you need data.** `sdk.repository(owner, name)` costs nothing; call `fetch()` only for fields the
