@@ -78,6 +78,32 @@ Not covered: Copilot, codespaces, billing, Enterprise Server administration and 
 discussions. Use `github-rest-client` for the REST ones. Which areas ran against the real GitHub API is listed in
 [Live smoke tests](docs/guide/smoke-tests.md).
 
+## When the SDK does not cover a call
+
+The SDK covers the common work, not every endpoint. For the rest, use `github-rest-client` directly: the `GitHub` client
+behind the SDK is yours, so there is no second client, no second credential and no second configuration. Create the
+`GitHub` object yourself, hand it to `GitHubSdk.of(...)`, and keep it for the calls that have no SDK object. Both use the
+same authentication, retries, cache and rate-limit handling.
+
+```java
+try (GitHubClient client = GitHubClients.create(AuthenticationProviders.bearer(System.getenv("GITHUB_TOKEN")), "my-app/1.0")) {
+    GitHub github = new GitHub(GitHubCaller.of(client));
+    GitHubSdk sdk = GitHubSdk.of(github);
+
+    Repository repository = sdk.repository("octocat", "Hello-World");
+    repository.createIssue("Found a bug");                                  // an SDK object
+
+    // no SDK object for this call yet: use the client with the same coordinates
+    GitHubRepositoryHashAlgorithmResponse hash =
+            github.repositories().repository().getHashAlgorithm(repository.owner(), repository.name());
+}
+```
+
+The client names its resources as `github.<area>().<group>().<method>(...)`, and the Javadoc of each method names the HTTP
+request it sends; see the [`github-rest-client` documentation](https://github.com/piotr-janczukowicz/github-rest-client).
+What the SDK returns links back to it as well: every object has `response()`, the complete client record, which you can
+pass to the client again. [What the SDK covers](docs/guide/coverage.md) lists every object, so you can check first.
+
 ## Conventions
 
 All objects behave the same way, so you learn them once:
@@ -95,6 +121,32 @@ All objects behave the same way, so you learn them once:
   `limit(...)` bounds the cost. An item that is gone before it is loaded is skipped.
 - A field that GitHub may leave out is an `Optional` (`issue.milestone()`, `issue.author()`).
 - `IOException` and the client's `GitHubApiException` pass through unchanged.
+
+## Good practices
+
+- **One client per credential, one `GitHubSdk` on top.** The client owns the transport and the rate-limit state, so share
+  it, and close it when you are done (`try`-with-resources). The SDK never closes a client you passed in.
+- **Objects are snapshots.** An object keeps what GitHub answered when it was loaded, and an operation returns a new
+  object. Keep the returned object, or call `refresh()` when you need the current state.
+- **Handles are free, loads are not.** `sdk.repository(owner, name)` makes no request; call `fetch()` only when you need
+  data that the handle does not hold.
+- **Bound the lists.** A list is a lazy stream that fetches pages as you read it, and some lists load one more request per
+  item. Use `limit(...)`, and avoid `toList()` on a list that can be large.
+- **Change several fields in one request.** Use `update()`, `protect()`, `newRuleset(...)` or `commitTo(branch)` instead
+  of one call per field or per file.
+- **Treat a lookup as a question.** `repository.issue(42)` is empty when GitHub answers 404, so handle the `Optional`
+  instead of calling `orElseThrow()` by habit. `refresh()` and the operations that load an object after a change throw
+  `IllegalStateException` when it is gone.
+- **Handle errors where you can act.** `GitHubApiException` and its subclasses (not found, forbidden, rate limit) pass
+  through unchanged, and a failure while reading a stream is an `UncheckedIOException`.
+- **Configure the client, not the SDK.** Retry, backoff, the conditional cache and page size belong on the client
+  configuration; see [Configure the client](#configure-the-client).
+- **Give the token what the call needs.** Prefer a fine-grained token with the permissions of the areas you use. Some areas
+  need more: notifications and packages need a classic token, and creating check runs, installations and Marketplace calls
+  need a GitHub App.
+- **Keep secrets out of logs.** `response()` of a secret scanning alert, the payload URL of a webhook, runner tokens and the
+  signed links of artifacts and logs can carry credentials; the Javadoc of each says so.
+- **Test the integration against a throwaway repository.** The [live smoke tests](docs/guide/smoke-tests.md) show how.
 
 ## Configure the client
 
