@@ -58,6 +58,9 @@ try (GitHubClient client = GitHubClients.create(AuthenticationProviders.bearer(S
 }
 ```
 
+The `try` block only keeps the example short and closes the client at its end. In an application, create the client once
+and close it once, when the application stops (see [Good practices](#good-practices)).
+
 ## What you can do
 
 Each area below is an object you reach from `sdk`, a `Repository`, an `Organization` or a `User`. The
@@ -126,8 +129,10 @@ All objects behave the same way, so you learn them once:
 
 [Conventions](#conventions) says what the SDK does. This is what to do with it.
 
-- **One client per credential, one `GitHubSdk` on top.** The client owns the transport and the rate-limit state, so share
-  it and close it when you are done (`try`-with-resources). The SDK never closes a client you passed in.
+- **Create the client once and close it once.** One client per credential, with one `GitHubSdk` on top: the client owns the
+  transport and the rate-limit state, so share it for the life of the application, and do not open a client per call. Close
+  it when the application stops; a Spring `@Bean` of a `GitHubClient` is closed with the application context. The SDK never
+  closes a client you passed in.
 - **Keep the object an operation returns.** The object you called it on is not updated; use the result, and call
   `refresh()` only when something else may have changed the object.
 - **Use handles, load when you need data.** `sdk.repository(owner, name)` costs nothing; call `fetch()` only for fields the
