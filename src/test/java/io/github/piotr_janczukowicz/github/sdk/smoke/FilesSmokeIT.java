@@ -44,14 +44,15 @@ class FilesSmokeIT {
             final RepositoryFile read = repository.file(path, branch).orElseThrow();
             final boolean isDirectoryAFile = repository.file("smoke", branch).isPresent();
             read.delete("smoke delete", branch);
+            final boolean isStillThere = repository.file(path, branch).isPresent();
 
             assertSoftly(softly -> {
                 softly.assertThat(created.bytes()).isEqualTo(binary);
                 softly.assertThat(updated.sha()).isNotEqualTo(created.sha());
                 softly.assertThat(read.text()).isEqualTo("héllo");
                 softly.assertThat(isDirectoryAFile).isFalse();
+                softly.assertThat(isStillThere).isFalse();
             });
-            assertThat(repository.file(path, branch)).isEmpty();
         } finally {
             github.gitDatabase().refs().deleteRef(ENV.owner(), ENV.repo(), "heads/" + branch);
         }
