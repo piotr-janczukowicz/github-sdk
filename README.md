@@ -22,6 +22,24 @@ carry methods which call the GitHub REST API, such as `repo.createIssue(...)` an
   keep the `GitHub` client you passed in for everything the objects do not cover.
 - **Small on purpose.** Synchronous REST only: no GraphQL and no async API.
 
+## Comparison with hub4j/github-api
+
+[hub4j/github-api](https://github.com/hub4j/github-api) is the long-established Java library for GitHub and a fine
+choice. It has the same object-oriented style as this SDK, with classes such as `GHRepository` and `GHUser` that carry the
+operations. The differences are in the foundation. The hub4j column is taken from its
+[documentation](https://hub4j.github.io/github-api/) as of November 2026.
+
+| | github-sdk | hub4j/github-api |
+|---|---|---|
+| Style | Objects with methods, on top of a typed client generated from GitHub's OpenAPI descriptions | Objects with methods |
+| Objects | Immutable; an operation returns a new object built from GitHub's answer, and `response()` gives the full typed record | Its own model classes |
+| Escape hatch | The `github-rest-client` is underneath, so any operation without an object is one call away | Its own API |
+| Java | 21 | 11 |
+| Maturity | Prerelease, see the [Disclaimer](#disclaimer) | Long-established and widely used |
+
+Choose hub4j/github-api if you need Java 11 or a library with a long track record. Choose this SDK if you want
+immutable objects over a client that follows GitHub's own descriptions, with the full typed response always within reach.
+
 ## Install
 
 **Requirements:** Java 21. The library is a Java module, `io.github.piotr_janczukowicz.githubsdk`, and also works on the
@@ -183,31 +201,6 @@ The options are described in the `github-rest-client` documentation:
 - [Authentication](https://github.com/piotr-janczukowicz/github-rest-client#authentication) and
   [Flavors and GitHub Enterprise](https://github.com/piotr-janczukowicz/github-rest-client/blob/main/docs/guide/flavors.md)
 
-## Receive a webhook and act on it
-
-Receiving webhooks is the job of a separate library,
-[github-webhook](https://github.com/piotr-janczukowicz/github-webhook): a typed record for every event GitHub
-documents, and a receiver that checks the signature before it parses anything. It has no dependency on the REST client
-or on this SDK, so a service that only receives webhooks does not pull either in. The two fit together without a bridge,
-because an event carries the owner, the repository name and the number of the issue or pull request:
-
-```java
-GitHubWebhookReceiver receiver = GitHubWebhookReceiver.of(webhookSecret);
-GitHubSdk sdk = GitHubSdk.of(client);
-
-GitHubWebhookEvent event = receiver.receive(
-        request.header("X-GitHub-Event"), request.header("X-Hub-Signature-256"), request.readBody());
-
-if (event instanceof GitHubWebhookIssuesOpenedEvent opened) {
-    Repository repository = sdk.repository(opened.repository().owner().login(), opened.repository().name());
-    repository.issue(opened.issue().number()).orElseThrow().comment("Thanks, we will look at it");
-}
-```
-
-The event comes from `github-webhook` and the `Issue` from this SDK, so add both dependencies. This example is not built
-by the tests of this repository; the record and accessor names are those of `github-webhook` and change when that library
-is synced with GitHub's descriptions.
-
 ## Packages
 
 The entry points (`GitHubSdk`, `Repository`, `User`, `Organization`, `Team`, `Search`, `RateLimit`) are in
@@ -216,24 +209,6 @@ The entry points (`GitHubSdk`, `Repository`, `User`, `Organization`, `Team`, `Se
 
 The `internal` package is not exported by the module and is not part of the API. The module system hides it only on the
 module path; on the classpath it is a convention and not a security boundary.
-
-## Comparison with hub4j/github-api
-
-[hub4j/github-api](https://github.com/hub4j/github-api) is the long-established Java library for GitHub and a fine
-choice. It has the same object-oriented style as this SDK, with classes such as `GHRepository` and `GHUser` that carry the
-operations. The differences are in the foundation. The hub4j column is taken from its
-[documentation](https://hub4j.github.io/github-api/) as of November 2026.
-
-| | github-sdk | hub4j/github-api |
-|---|---|---|
-| Style | Objects with methods, on top of a typed client generated from GitHub's OpenAPI descriptions | Objects with methods |
-| Objects | Immutable; an operation returns a new object built from GitHub's answer, and `response()` gives the full typed record | Its own model classes |
-| Escape hatch | The `github-rest-client` is underneath, so any operation without an object is one call away | Its own API |
-| Java | 21 | 11 |
-| Maturity | Prerelease, see the [Disclaimer](#disclaimer) | Long-established and widely used |
-
-Choose hub4j/github-api if you need Java 11 or a library with a long track record. Choose this SDK if you want
-immutable objects over a client that follows GitHub's own descriptions, with the full typed response always within reach.
 
 ## Disclaimer
 
