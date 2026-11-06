@@ -157,6 +157,13 @@ class ComparisonTest {
     }
 
     @Test
+    void constructor_shouldThrowNullPointerException_whenResponseIsNull() {
+        final Throwable thrown = catchThrowable(() -> new Comparison(repository, BASE_HEAD, null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("response");
+    }
+
+    @Test
     void constructor_shouldThrowIllegalArgumentException_whenBaseHeadIsBlank() {
         final Throwable thrown = catchThrowable(() -> new Comparison(repository, " ", response));
 

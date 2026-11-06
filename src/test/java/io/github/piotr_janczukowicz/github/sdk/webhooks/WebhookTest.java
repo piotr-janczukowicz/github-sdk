@@ -84,14 +84,14 @@ class WebhookTest {
     void constructor_shouldThrowNullPointerException_whenRepositoryIsNull() {
         final Throwable thrown = catchThrowable(() -> new Webhook(null, response));
 
-        assertThat(thrown).isInstanceOf(NullPointerException.class);
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("repository");
     }
 
     @Test
     void constructor_shouldThrowNullPointerException_whenResponseIsNull() {
         final Throwable thrown = catchThrowable(() -> new Webhook(repository, null));
 
-        assertThat(thrown).isInstanceOf(NullPointerException.class);
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("response");
     }
 
     @Test

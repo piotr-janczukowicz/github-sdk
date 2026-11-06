@@ -195,7 +195,7 @@ class OidcSettingsTest {
 
         final Throwable thrown = catchThrowable(() -> organization.updateOidcSubjectTemplate(claimKeys, null));
 
-        assertThat(thrown).isInstanceOf(IllegalArgumentException.class);
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("includeClaimKeys");
     }
 
     @Test
@@ -204,6 +204,6 @@ class OidcSettingsTest {
 
         final Throwable thrown = catchThrowable(() -> repository.setOidcSubjectClaim(false, claimKeys, null));
 
-        assertThat(thrown).isInstanceOf(IllegalArgumentException.class);
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("includeClaimKeys");
     }
 }

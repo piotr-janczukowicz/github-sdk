@@ -133,7 +133,7 @@ class IssueUpdateTest {
 
         final Throwable thrown = catchThrowable(() -> update.labels(names));
 
-        assertThat(thrown).isInstanceOf(IllegalArgumentException.class);
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("names");
     }
 
     @Test
@@ -143,7 +143,7 @@ class IssueUpdateTest {
 
         final Throwable thrown = catchThrowable(() -> update.assignees(logins));
 
-        assertThat(thrown).isInstanceOf(IllegalArgumentException.class);
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("logins");
     }
 
     @Test

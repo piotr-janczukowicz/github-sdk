@@ -193,6 +193,13 @@ class ReleaseAssetTest {
     }
 
     @Test
+    void constructor_shouldThrowNullPointerException_whenRepositoryIsNull() {
+        final Throwable thrown = catchThrowable(() -> new ReleaseAsset(null, response));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("repository");
+    }
+
+    @Test
     void constructor_shouldThrowNullPointerException_whenResponseIsNull() {
         final Throwable thrown = catchThrowable(() -> new ReleaseAsset(repository, null));
 

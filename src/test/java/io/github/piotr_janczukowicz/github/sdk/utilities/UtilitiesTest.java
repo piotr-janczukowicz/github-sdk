@@ -158,7 +158,7 @@ class UtilitiesTest {
     void gitignoreTemplate_shouldThrowNullPointerException_whenNameIsNull() {
         final Throwable thrown = catchThrowable(() -> sut.gitignoreTemplate(null));
 
-        assertThat(thrown).isInstanceOf(NullPointerException.class);
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("name");
     }
 
     @Test
