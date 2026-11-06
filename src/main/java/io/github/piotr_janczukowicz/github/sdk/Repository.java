@@ -2522,11 +2522,11 @@ public final class Repository {
     }
 
     /**
-     * Lists the autolink references ({@code GET /repos/{owner}/{repo}/autolinks}). Pages are fetched only as the stream
-     * is consumed; transport failures during iteration are {@link java.io.UncheckedIOException}.
+     * Lists the autolink references ({@code GET /repos/{owner}/{repo}/autolinks}). GitHub answers with one response, so
+     * the whole list is loaded by this call and the stream reads it from memory.
      *
      * @return the autolinks
-     * @throws IOException if the first page cannot be loaded
+     * @throws IOException if the transport fails
      */
     public Stream<Autolink> autolinks() throws IOException {
         return sdk.github().repositories().autolinks().listAutolinks(owner, name).stream()
