@@ -1,0 +1,284 @@
+package io.github.piotr_janczukowicz.github.sdk;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.assertj.core.api.SoftAssertions.assertSoftly;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
+import io.github.piotr_janczukowicz.github.api.GitHub;
+import io.github.piotr_janczukowicz.github.api.organizations.GitHubOrganizationFull;
+import io.github.piotr_janczukowicz.github.api.ratelimit.GitHubRateLimitOverview;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubCreateForAuthenticatedUserPayload;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubFullRepository;
+import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
+import io.github.piotr_janczukowicz.github.api.users.GitHubUser;
+import io.github.piotr_janczukowicz.github.api.users.GitHubUserApi;
+import io.github.piotr_janczukowicz.github.api.users.GitHubUserView;
+import io.github.piotr_janczukowicz.github.client.GitHubCaller;
+import io.github.piotr_janczukowicz.github.client.GitHubClient;
+import io.github.piotr_janczukowicz.github.client.GitHubClients;
+import io.github.piotr_janczukowicz.http.client.authentication.AuthenticationProviders;
+import io.github.piotr_janczukowicz.testsupport.UnitTest;
+import java.io.IOException;
+import java.util.Optional;
+import org.junit.jupiter.api.Test;
+
+@UnitTest
+class GitHubSdkTest {
+
+    @Test
+    void of_shouldThrowNullPointerException_whenGithubIsNull() {
+        final Throwable thrown = catchThrowable(() -> GitHubSdk.of((GitHub) null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("github");
+    }
+
+    @Test
+    void of_shouldThrowNullPointerException_whenCallerIsNull() {
+        final Throwable thrown = catchThrowable(() -> GitHubSdk.of((GitHubCaller) null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("caller");
+    }
+
+    @Test
+    void of_shouldThrowNullPointerException_whenClientIsNull() {
+        final Throwable thrown = catchThrowable(() -> GitHubSdk.of((GitHubClient) null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("client");
+    }
+
+    @Test
+    void of_shouldReturnAnEntryPoint_whenCalledWithAClient() {
+        try (GitHubClient client =
+                GitHubClients.create(AuthenticationProviders.bearer("token-for-a-test"), "my-app/1.0")) {
+
+            final GitHubSdk sdk = GitHubSdk.of(client);
+
+            assertThat(sdk.repository("octocat", "Hello-World").owner()).isEqualTo("octocat");
+        }
+    }
+
+    @Test
+    void of_shouldReturnAnEntryPoint_whenCalledWithACaller() {
+        try (GitHubClient client =
+                GitHubClients.create(AuthenticationProviders.bearer("token-for-a-test"), "my-app/1.0")) {
+            final GitHubCaller caller = GitHubCaller.of(client);
+
+            final GitHubSdk sdk = GitHubSdk.of(caller);
+
+            assertThat(sdk.repository("octocat", "Hello-World").owner()).isEqualTo("octocat");
+        }
+    }
+
+    @Test
+    void repository_shouldReturnHandleWithoutRequest_whenCoordinatesAreValid() {
+        final GitHub github = mock(GitHub.class);
+        final GitHubSdk sut = GitHubSdk.of(github);
+
+        final Repository repository = sut.repository("octocat", "hello-world");
+
+        assertSoftly(softly -> {
+            softly.assertThat(repository.owner()).isEqualTo("octocat");
+            softly.assertThat(repository.name()).isEqualTo("hello-world");
+        });
+        verifyNoInteractions(github);
+    }
+
+    @Test
+    void repository_shouldThrowIllegalArgumentException_whenOwnerIsBlank() {
+        final GitHubSdk sut = GitHubSdk.of(mock(GitHub.class));
+
+        final Throwable thrown = catchThrowable(() -> sut.repository(" ", "hello-world"));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("owner");
+    }
+
+    @Test
+    void repository_shouldThrowIllegalArgumentException_whenNameIsBlank() {
+        final GitHubSdk sut = GitHubSdk.of(mock(GitHub.class));
+
+        final Throwable thrown = catchThrowable(() -> sut.repository("octocat", ""));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("name");
+    }
+
+    @Test
+    void repository_shouldThrowNullPointerException_whenOwnerIsNull() {
+        final GitHubSdk sut = GitHubSdk.of(mock(GitHub.class));
+
+        final Throwable thrown = catchThrowable(() -> sut.repository(null, "hello-world"));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("owner");
+    }
+
+    @Test
+    void repository_shouldThrowNullPointerException_whenNameIsNull() {
+        final GitHubSdk sut = GitHubSdk.of(mock(GitHub.class));
+
+        final Throwable thrown = catchThrowable(() -> sut.repository("octocat", null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("name");
+    }
+
+    @Test
+    void currentUser_shouldReturnTheAuthenticatedUser_whenCalled() throws IOException {
+        final GitHub github = mock(GitHub.class, RETURNS_DEEP_STUBS);
+        final GitHubUserView response = mock(GitHubUser.class);
+        final GitHubUserApi userApi = github.users().user();
+        doReturn(response).when(userApi).getAuthenticatedUser();
+        final GitHubSdk sut = GitHubSdk.of(github);
+
+        final User user = sut.currentUser();
+
+        assertThat(user.response()).isSameAs(response);
+    }
+
+    @Test
+    void user_shouldReturnTheUser_whenGitHubHasTheLogin() throws IOException {
+        final GitHub github = mock(GitHub.class, RETURNS_DEEP_STUBS);
+        final GitHubUserView response = mock(GitHubUser.class);
+        when(github.users().user().getByLogin("octocat")).thenReturn(Optional.of(response));
+        final GitHubSdk sut = GitHubSdk.of(github);
+
+        final Optional<User> user = sut.user("octocat");
+
+        assertThat(user).map(User::response).containsSame(response);
+    }
+
+    @Test
+    void user_shouldReturnEmpty_whenGitHubAnswersNotFound() throws IOException {
+        final GitHub github = mock(GitHub.class, RETURNS_DEEP_STUBS);
+        when(github.users().user().getByLogin("ghost")).thenReturn(Optional.empty());
+        final GitHubSdk sut = GitHubSdk.of(github);
+
+        final Optional<User> user = sut.user("ghost");
+
+        assertThat(user).isEmpty();
+    }
+
+    @Test
+    void user_shouldThrowIllegalArgumentException_whenLoginIsBlank() {
+        final GitHubSdk sut = GitHubSdk.of(mock(GitHub.class, RETURNS_DEEP_STUBS));
+
+        final Throwable thrown = catchThrowable(() -> sut.user(" "));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("login");
+    }
+
+    @Test
+    void user_shouldThrowNullPointerException_whenLoginIsNull() {
+        final GitHubSdk sut = GitHubSdk.of(mock(GitHub.class, RETURNS_DEEP_STUBS));
+
+        final Throwable thrown = catchThrowable(() -> sut.user(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("login");
+    }
+
+    @Test
+    void organization_shouldReturnTheOrganization_whenGitHubHasTheLogin() throws IOException {
+        final GitHub github = mock(GitHub.class, RETURNS_DEEP_STUBS);
+        final GitHubOrganizationFull response = mock(GitHubOrganizationFull.class);
+        when(github.organizations().organization().get("octo-org")).thenReturn(Optional.of(response));
+        final GitHubSdk sut = GitHubSdk.of(github);
+
+        final Optional<Organization> organization = sut.organization("octo-org");
+
+        assertThat(organization).map(Organization::response).containsSame(response);
+    }
+
+    @Test
+    void organization_shouldReturnEmpty_whenGitHubAnswersNotFound() throws IOException {
+        final GitHub github = mock(GitHub.class, RETURNS_DEEP_STUBS);
+        when(github.organizations().organization().get("ghost-org")).thenReturn(Optional.empty());
+        final GitHubSdk sut = GitHubSdk.of(github);
+
+        final Optional<Organization> organization = sut.organization("ghost-org");
+
+        assertThat(organization).isEmpty();
+    }
+
+    @Test
+    void organization_shouldThrowIllegalArgumentException_whenLoginIsBlank() {
+        final GitHubSdk sut = GitHubSdk.of(mock(GitHub.class, RETURNS_DEEP_STUBS));
+
+        final Throwable thrown = catchThrowable(() -> sut.organization(" "));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("login");
+    }
+
+    @Test
+    void organization_shouldThrowNullPointerException_whenLoginIsNull() {
+        final GitHubSdk sut = GitHubSdk.of(mock(GitHub.class, RETURNS_DEEP_STUBS));
+
+        final Throwable thrown = catchThrowable(() -> sut.organization(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("login");
+    }
+
+    @Test
+    void search_shouldReturnTheSearchOfTheSdk_whenCalled() {
+        final GitHubSdk sut = GitHubSdk.of(mock(GitHub.class));
+
+        final Search search = sut.search();
+
+        assertThat(search).isNotNull();
+    }
+
+    @Test
+    void rateLimit_shouldReturnTheRateLimit_whenGitHubReportsIt() throws IOException {
+        final GitHub github = mock(GitHub.class, RETURNS_DEEP_STUBS);
+        final GitHubRateLimitOverview response = mock(GitHubRateLimitOverview.class);
+        when(github.rateLimit().get()).thenReturn(Optional.of(response));
+        final GitHubSdk sut = GitHubSdk.of(github);
+
+        final Optional<RateLimit> rateLimit = sut.rateLimit();
+
+        assertThat(rateLimit).map(RateLimit::response).containsSame(response);
+    }
+
+    @Test
+    void rateLimit_shouldReturnEmpty_whenGitHubDoesNotReportIt() throws IOException {
+        final GitHub github = mock(GitHub.class, RETURNS_DEEP_STUBS);
+        when(github.rateLimit().get()).thenReturn(Optional.empty());
+        final GitHubSdk sut = GitHubSdk.of(github);
+
+        final Optional<RateLimit> rateLimit = sut.rateLimit();
+
+        assertThat(rateLimit).isEmpty();
+    }
+
+    @Test
+    void createRepository_shouldReturnTheLoadedRepository_whenGitHubCreatesIt() throws IOException {
+        final GitHub github = mock(GitHub.class, RETURNS_DEEP_STUBS);
+        final GitHubCreateForAuthenticatedUserPayload payload = mock(GitHubCreateForAuthenticatedUserPayload.class);
+        final GitHubSimpleUser owner = mock(GitHubSimpleUser.class);
+        when(owner.login()).thenReturn("octocat");
+        final GitHubFullRepository created = mock(GitHubFullRepository.class);
+        when(created.owner()).thenReturn(owner);
+        when(created.name()).thenReturn("new-repo");
+        when(github.repositories().repository().createForAuthenticatedUser(payload))
+                .thenReturn(created);
+        final GitHubSdk sut = GitHubSdk.of(github);
+
+        final Repository repository = sut.createRepository(payload);
+
+        assertSoftly(softly -> {
+            softly.assertThat(repository.owner()).isEqualTo("octocat");
+            softly.assertThat(repository.name()).isEqualTo("new-repo");
+            softly.assertThat(repository.response()).isSameAs(created);
+        });
+    }
+
+    @Test
+    void createRepository_shouldThrowNullPointerException_whenPayloadIsNull() {
+        final GitHubSdk sut = GitHubSdk.of(mock(GitHub.class));
+
+        final Throwable thrown = catchThrowable(() -> sut.createRepository(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("payload");
+    }
+}

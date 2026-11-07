@@ -1,0 +1,125 @@
+package io.github.piotr_janczukowicz.github.sdk.content;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.assertj.core.api.SoftAssertions.assertSoftly;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import io.github.piotr_janczukowicz.github.api.GitHub;
+import io.github.piotr_janczukowicz.github.api.branches.GitHubBranchProtection;
+import io.github.piotr_janczukowicz.github.api.branches.GitHubBranchWithProtection;
+import io.github.piotr_janczukowicz.github.api.branches.GitHubBranchWithProtectionBuilder;
+import io.github.piotr_janczukowicz.github.api.branches.GitHubBranchesBranchProtectionApi;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRuleCreationDetailed;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRuleCreationType;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRuleDetailed;
+import io.github.piotr_janczukowicz.github.sdk.GitHubSdk;
+import io.github.piotr_janczukowicz.github.sdk.Repository;
+import io.github.piotr_janczukowicz.github.sdk.fixtures.ProtectionFixtures;
+import io.github.piotr_janczukowicz.github.sdk.fixtures.RepositoryContentFixtures;
+import io.github.piotr_janczukowicz.testsupport.UnitTest;
+import java.io.IOException;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
+
+@UnitTest
+class BranchTest {
+
+    private final GitHub github = mock(GitHub.class, RETURNS_DEEP_STUBS);
+    private final Repository repository = GitHubSdk.of(github).repository("octocat", "hello-world");
+    private final GitHubBranchWithProtection response = RepositoryContentFixtures.branch();
+    private final Branch sut = new Branch(repository, response);
+
+    @Test
+    void accessors_shouldExposeTheResponse_whenBranchIsLoaded() {
+        assertSoftly(softly -> {
+            softly.assertThat(sut.repository()).isSameAs(repository);
+            softly.assertThat(sut.name()).isEqualTo("main");
+            softly.assertThat(sut.isProtected()).isFalse();
+            softly.assertThat(sut.commit().response()).isSameAs(response.commit());
+            softly.assertThat(sut.commit().repository()).isSameAs(repository);
+            softly.assertThat(sut.response()).isSameAs(response);
+        });
+    }
+
+    @Test
+    void refresh_shouldReturnTheReloadedBranch_whenGitHubHasIt() throws IOException {
+        final GitHubBranchWithProtection reloaded = GitHubBranchWithProtectionBuilder.builder(response)
+                .protectedBranch(true)
+                .build();
+        when(github.branches().branch().getBranch("octocat", "hello-world", "main"))
+                .thenReturn(Optional.of(reloaded));
+
+        final Branch refreshed = sut.refresh();
+
+        assertSoftly(softly -> {
+            softly.assertThat(refreshed.response()).isSameAs(reloaded);
+            softly.assertThat(sut.isProtected()).isFalse();
+        });
+    }
+
+    @Test
+    void refresh_shouldThrowIllegalStateException_whenTheBranchIsGone() throws IOException {
+        when(github.branches().branch().getBranch("octocat", "hello-world", "main"))
+                .thenReturn(Optional.empty());
+
+        final Throwable thrown = catchThrowable(sut::refresh);
+
+        assertThat(thrown).isInstanceOf(IllegalStateException.class).hasMessageContaining("main");
+    }
+
+    @Test
+    void isProtected_shouldBeTrue_whenTheResponseSaysProtected() {
+        final Branch protectedBranch = new Branch(
+                repository,
+                GitHubBranchWithProtectionBuilder.builder(response)
+                        .protectedBranch(true)
+                        .build());
+
+        final boolean isProtected = protectedBranch.isProtected();
+
+        assertThat(isProtected).isTrue();
+    }
+
+    @Test
+    void protection_shouldReturnTheRule_whenTheBranchHasOne() throws IOException {
+        final GitHubBranchProtection held = ProtectionFixtures.protection();
+        final GitHubBranchesBranchProtectionApi api = github.branches().branchProtection();
+        doReturn(Optional.of(held)).when(api).getBranchProtection("octocat", "hello-world", "main");
+
+        final Optional<BranchProtection> protection = sut.protection();
+
+        assertThat(protection)
+                .hasValueSatisfying(rule -> assertSoftly(softly -> {
+                    softly.assertThat(rule.response()).isSameAs(held);
+                    softly.assertThat(rule.branch()).isSameAs(sut);
+                }));
+    }
+
+    @Test
+    void protection_shouldBeEmpty_whenTheBranchHasNoRule() throws IOException {
+        final GitHubBranchesBranchProtectionApi api = github.branches().branchProtection();
+        doReturn(Optional.empty()).when(api).getBranchProtection("octocat", "hello-world", "main");
+
+        final Optional<BranchProtection> protection = sut.protection();
+
+        assertThat(protection).isEmpty();
+    }
+
+    @Test
+    void rules_shouldStreamTheRulesOfTheRulesets_whenTheyApply() throws IOException {
+        final GitHubRepositoryRuleDetailed rule =
+                new GitHubRepositoryRuleCreationDetailed(GitHubRepositoryRuleCreationType.CREATION, null, null, null);
+        when(github.repositories().rules().getBranchRules("octocat", "hello-world", "main").stream())
+                .thenReturn(Stream.of(rule));
+
+        final List<GitHubRepositoryRuleDetailed> rules = sut.rules().toList();
+
+        assertThat(rules).containsExactly(rule);
+    }
+}

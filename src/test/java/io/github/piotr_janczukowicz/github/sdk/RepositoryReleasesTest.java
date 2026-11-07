@@ -1,0 +1,216 @@
+package io.github.piotr_janczukowicz.github.sdk;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.assertj.core.api.SoftAssertions.assertSoftly;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import io.github.piotr_janczukowicz.github.api.GitHub;
+import io.github.piotr_janczukowicz.github.api.releases.GitHubCreateReleasePayload;
+import io.github.piotr_janczukowicz.github.api.releases.GitHubCreateReleasePayloadBuilder;
+import io.github.piotr_janczukowicz.github.api.releases.GitHubGenerateReleaseNotesPayload;
+import io.github.piotr_janczukowicz.github.api.releases.GitHubRelease;
+import io.github.piotr_janczukowicz.github.api.releases.GitHubReleaseAsset;
+import io.github.piotr_janczukowicz.github.api.releases.GitHubReleaseNotesContent;
+import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryTag;
+import io.github.piotr_janczukowicz.github.sdk.content.Release;
+import io.github.piotr_janczukowicz.github.sdk.content.ReleaseAsset;
+import io.github.piotr_janczukowicz.github.sdk.fixtures.RepositoryContentFixtures;
+import io.github.piotr_janczukowicz.testsupport.UnitTest;
+import java.io.IOException;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+
+@UnitTest
+class RepositoryReleasesTest {
+
+    private static final String OWNER = "octocat";
+    private static final String NAME = "hello-world";
+
+    private final GitHub github = mock(GitHub.class, RETURNS_DEEP_STUBS);
+    private final Repository sut = GitHubSdk.of(github).repository(OWNER, NAME);
+    private final GitHubRelease response = RepositoryContentFixtures.release();
+
+    @Test
+    void release_shouldReturnTheRelease_whenGitHubHasTheTag() throws IOException {
+        when(github.releases().release().getReleaseByTag(OWNER, NAME, "v1.0.0")).thenReturn(Optional.of(response));
+
+        final Optional<Release> release = sut.release("v1.0.0");
+
+        assertSoftly(softly -> {
+            softly.assertThat(release).isPresent();
+            softly.assertThat(release.orElseThrow().response()).isSameAs(response);
+            softly.assertThat(release.orElseThrow().repository()).isSameAs(sut);
+        });
+    }
+
+    @Test
+    void release_shouldReturnEmpty_whenGitHubAnswersNotFound() throws IOException {
+        when(github.releases().release().getReleaseByTag(OWNER, NAME, "v9")).thenReturn(Optional.empty());
+
+        final Optional<Release> release = sut.release("v9");
+
+        assertThat(release).isEmpty();
+    }
+
+    @Test
+    void release_shouldThrowIllegalArgumentException_whenTagIsBlank() {
+        final Throwable thrown = catchThrowable(() -> sut.release(" "));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("tag");
+    }
+
+    @Test
+    void latestRelease_shouldReturnTheRelease_whenThereIsOne() throws IOException {
+        when(github.releases().release().getLatestRelease(OWNER, NAME)).thenReturn(Optional.of(response));
+
+        final Optional<Release> release = sut.latestRelease();
+
+        assertThat(release).map(Release::response).containsSame(response);
+    }
+
+    @Test
+    void latestRelease_shouldReturnEmpty_whenThereIsNone() throws IOException {
+        when(github.releases().release().getLatestRelease(OWNER, NAME)).thenReturn(Optional.empty());
+
+        final Optional<Release> release = sut.latestRelease();
+
+        assertThat(release).isEmpty();
+    }
+
+    @Test
+    void releases_shouldWrapEachRelease_whenTheRepositoryHasReleases() throws IOException {
+        when(github.releases().release().listReleases(OWNER, NAME).stream()).thenReturn(Stream.of(response));
+
+        final List<Release> releases = sut.releases().toList();
+
+        assertThat(releases).extracting(Release::response).containsExactly(response);
+    }
+
+    @Test
+    void createRelease_shouldSendTheTagAndReturnTheRelease_whenCalledWithATag() throws IOException {
+        when(github.releases().release().createRelease(eq(OWNER), eq(NAME), any(GitHubCreateReleasePayload.class)))
+                .thenReturn(response);
+        final ArgumentCaptor<GitHubCreateReleasePayload> payload =
+                ArgumentCaptor.forClass(GitHubCreateReleasePayload.class);
+
+        final Release release = sut.createRelease("v1.0.0");
+
+        verify(github.releases().release()).createRelease(eq(OWNER), eq(NAME), payload.capture());
+        assertSoftly(softly -> {
+            softly.assertThat(payload.getValue().tagName()).isEqualTo("v1.0.0");
+            softly.assertThat(payload.getValue().draft()).isNull();
+            softly.assertThat(release.response()).isSameAs(response);
+        });
+    }
+
+    @Test
+    void createRelease_shouldSendThePayload_whenCalledWithAPayload() throws IOException {
+        final GitHubCreateReleasePayload payload = GitHubCreateReleasePayloadBuilder.builder()
+                .tagName("v1.0.0")
+                .draft(true)
+                .build();
+        when(github.releases().release().createRelease(OWNER, NAME, payload)).thenReturn(response);
+
+        final Release release = sut.createRelease(payload);
+
+        assertThat(release.response()).isSameAs(response);
+    }
+
+    @Test
+    void createRelease_shouldThrowIllegalArgumentException_whenTagIsBlank() {
+        final Throwable thrown = catchThrowable(() -> sut.createRelease(" "));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("tagName");
+    }
+
+    @Test
+    void createRelease_shouldThrowNullPointerException_whenPayloadIsNull() {
+        final Throwable thrown = catchThrowable(() -> sut.createRelease((GitHubCreateReleasePayload) null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("payload");
+    }
+
+    @Test
+    void tags_shouldStreamTheTags_whenTheRepositoryHasTags() throws IOException {
+        final GitHubRepositoryTag tag = mock(GitHubRepositoryTag.class);
+        when(github.repositories().repository().listTags(OWNER, NAME).stream()).thenReturn(Stream.of(tag));
+
+        final List<GitHubRepositoryTag> tags = sut.tags().toList();
+
+        assertThat(tags).containsExactly(tag);
+    }
+
+    @Test
+    void releaseAsset_shouldWrapTheAsset_whenGitHubHasIt() throws IOException {
+        final GitHubReleaseAsset loaded = RepositoryContentFixtures.releaseAsset();
+        when(github.releases().assets().getReleaseAsset(OWNER, NAME, 77L)).thenReturn(Optional.of(loaded));
+
+        final Optional<ReleaseAsset> asset = sut.releaseAsset(77L);
+
+        assertThat(asset)
+                .hasValueSatisfying(found -> assertThat(found.response()).isSameAs(loaded));
+    }
+
+    @Test
+    void releaseAsset_shouldReturnEmpty_whenGitHubHasNone() throws IOException {
+        when(github.releases().assets().getReleaseAsset(OWNER, NAME, 77L)).thenReturn(Optional.empty());
+
+        final Optional<ReleaseAsset> asset = sut.releaseAsset(77L);
+
+        assertThat(asset).isEmpty();
+    }
+
+    @Test
+    void generateReleaseNotes_shouldSendTheTag_whenCalledWithATagName() throws IOException {
+        final GitHubReleaseNotesContent notes = new GitHubReleaseNotesContent("v2.0.0", "What changed");
+        when(github.releases().release().generateReleaseNotes(eq(OWNER), eq(NAME), any()))
+                .thenReturn(notes);
+        final ArgumentCaptor<GitHubGenerateReleaseNotesPayload> payload =
+                ArgumentCaptor.forClass(GitHubGenerateReleaseNotesPayload.class);
+
+        final GitHubReleaseNotesContent result = sut.generateReleaseNotes("v2.0.0");
+
+        verify(github.releases().release()).generateReleaseNotes(eq(OWNER), eq(NAME), payload.capture());
+        assertSoftly(softly -> {
+            softly.assertThat(result).isSameAs(notes);
+            softly.assertThat(payload.getValue().tagName()).isEqualTo("v2.0.0");
+        });
+    }
+
+    @Test
+    void generateReleaseNotes_shouldSendThePayload_whenCalledWithOne() throws IOException {
+        final GitHubGenerateReleaseNotesPayload payload =
+                new GitHubGenerateReleaseNotesPayload("v2.0.0", null, "v1.0.0", null);
+        final GitHubReleaseNotesContent notes = new GitHubReleaseNotesContent("v2.0.0", "What changed");
+        when(github.releases().release().generateReleaseNotes(OWNER, NAME, payload))
+                .thenReturn(notes);
+
+        final GitHubReleaseNotesContent result = sut.generateReleaseNotes(payload);
+
+        assertThat(result).isSameAs(notes);
+    }
+
+    @Test
+    void generateReleaseNotes_shouldThrowIllegalArgumentException_whenTagNameIsBlank() {
+        final Throwable thrown = catchThrowable(() -> sut.generateReleaseNotes(" "));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("tagName");
+    }
+
+    @Test
+    void generateReleaseNotes_shouldThrowNullPointerException_whenPayloadIsNull() {
+        final Throwable thrown =
+                catchThrowable(() -> sut.generateReleaseNotes((GitHubGenerateReleaseNotesPayload) null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("payload");
+    }
+}

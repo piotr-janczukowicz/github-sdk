@@ -1,0 +1,101 @@
+package io.github.piotr_janczukowicz.github.sdk.pulls;
+
+import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
+import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
+
+import io.github.piotr_janczukowicz.github.api.pullrequests.GitHubUpdatePullRequestPayload;
+import io.github.piotr_janczukowicz.github.sdk.internal.UpdateState;
+import java.io.IOException;
+import org.jspecify.annotations.Nullable;
+
+/**
+ * Collects changes to a {@link PullRequest} and sends them in one request. Only the fields that were set are sent, and
+ * nothing is sent until {@link #send()}.
+ */
+public final class PullRequestUpdate {
+
+    private final PullRequest pullRequest;
+    private @Nullable String title;
+    private @Nullable String body;
+    private @Nullable String base;
+    private @Nullable Boolean maintainerCanModify;
+    private final UpdateState state = new UpdateState();
+
+    /**
+     * Starts a change of one object. Applications normally get it from the {@code update()} method of that object.
+     * Nothing is sent until {@code send()}.
+     *
+     * @param pullRequest the pull request the object belongs to
+     * @throws NullPointerException if {@code pullRequest} is {@code null}
+     */
+    public PullRequestUpdate(final PullRequest pullRequest) {
+        this.pullRequest = requireNonNull(pullRequest, "pullRequest");
+    }
+
+    /**
+     * Sets the title.
+     *
+     * @param title the new title
+     * @return this update
+     * @throws NullPointerException if {@code title} is {@code null}
+     * @throws IllegalArgumentException if {@code title} is blank
+     */
+    public PullRequestUpdate title(final String title) {
+        this.title = requireNotBlank(title, "title");
+        return changed();
+    }
+
+    /**
+     * Sets the body.
+     *
+     * @param body the new body in Markdown
+     * @return this update
+     * @throws NullPointerException if {@code body} is {@code null}
+     */
+    public PullRequestUpdate body(final String body) {
+        this.body = requireNonNull(body, "body");
+        return changed();
+    }
+
+    /**
+     * Sets the base branch.
+     *
+     * @param base the name of the branch to merge into
+     * @return this update
+     * @throws NullPointerException if {@code base} is {@code null}
+     * @throws IllegalArgumentException if {@code base} is blank
+     */
+    public PullRequestUpdate base(final String base) {
+        this.base = requireNotBlank(base, "base");
+        return changed();
+    }
+
+    /**
+     * Sets whether maintainers may modify the pull request.
+     *
+     * @param allowed {@code true} to allow it
+     * @return this update
+     */
+    public PullRequestUpdate maintainerCanModify(final boolean allowed) {
+        this.maintainerCanModify = allowed;
+        return changed();
+    }
+
+    /**
+     * Sends the changes ({@code PATCH /repos/{owner}/{repo}/pulls/{pull_number}}). The pull request this update was
+     * made from is not changed.
+     *
+     * @return the pull request as GitHub returned it after the update
+     * @throws IllegalStateException if nothing was set
+     * @throws IOException if the transport fails
+     */
+    public PullRequest send() throws IOException {
+        state.requireChange();
+        return pullRequest.apply(new GitHubUpdatePullRequestPayload(title, body, null, base, maintainerCanModify));
+    }
+
+    private PullRequestUpdate changed() {
+        state.mark();
+        return this;
+    }
+}
