@@ -20,7 +20,8 @@ carry methods which call the GitHub REST API, such as `repo.createIssue(...)` an
   request until you call `fetch()`. Every other object is loaded, and every network call is a visible method call.
 - **The client stays within reach.** Every object has `response()`, the complete `github-rest-client` response, and you
   keep the `GitHub` client you passed in for everything the objects do not cover.
-- **Small on purpose.** Synchronous REST only: no GraphQL and no async API.
+- **Small on purpose.** Synchronous REST only: no async API, and GraphQL is a separate library,
+  [github-graphql-client](https://github.com/piotr-janczukowicz/github-graphql-client).
 
 ## Comparison with hub4j/github-api
 
