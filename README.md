@@ -191,15 +191,15 @@ try (GitHubClient client = GitHubClients.create(
 }
 ```
 
-The options are described in the `github-rest-client` documentation:
+The options are described in the `github-client` and `github-rest-client` documentation:
 
-- [Configuration](https://github.com/piotr-janczukowicz/github-rest-client/blob/main/docs/guide/configuration.md): retry,
+- [Configuration](https://github.com/piotr-janczukowicz/github-client/blob/main/docs/guide/configuration.md): retry,
   backoff, conditional cache and timeouts
-- [Rate limiting](https://github.com/piotr-janczukowicz/github-rest-client/blob/main/docs/guide/rate-limiting.md): waits
+- [Rate limiting](https://github.com/piotr-janczukowicz/github-client/blob/main/docs/guide/rate-limiting.md): waits
   and the rate limit listener
 - [Pagination](https://github.com/piotr-janczukowicz/github-rest-client/blob/main/docs/guide/pagination.md): page size
   and the page limit; a list of the SDK is a lazy `Stream`, so `limit(...)` stops further page requests too
-- [Authentication](https://github.com/piotr-janczukowicz/github-rest-client#authentication) and
+- [Authentication](https://github.com/piotr-janczukowicz/github-client/blob/main/docs/guide/authentication.md) and
   [Flavors and GitHub Enterprise](https://github.com/piotr-janczukowicz/github-rest-client/blob/main/docs/guide/flavors.md)
 
 ## Packages
