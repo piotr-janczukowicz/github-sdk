@@ -19,7 +19,7 @@
 
   <properties>
     <github-rest-client.version>2026.3.10.5</github-rest-client.version>
-    <common-core.version>3</common-core.version>
+    <common-core.version>6</common-core.version>
   </properties>
 
   <dependencies>
