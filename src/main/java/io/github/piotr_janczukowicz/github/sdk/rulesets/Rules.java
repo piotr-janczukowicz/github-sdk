@@ -22,7 +22,7 @@ import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRule
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRuleRequiredStatusChecksType;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRuleUpdate;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRuleUpdateType;
-import io.github.piotr_janczukowicz.github.sdk.internal.Arguments;
+import io.github.piotr_janczukowicz.util.ValidationUtils;
 import java.util.List;
 
 /**
@@ -149,7 +149,7 @@ public final class Rules {
      */
     public static GitHubRepositoryRule requireStatusChecks(final boolean isStrict, final List<String> contexts) {
         final List<GitHubRepositoryRuleParamsStatusCheckConfiguration> checks =
-                Arguments.requireNotBlankElements(contexts, "contexts").stream()
+                ValidationUtils.requireNotBlankElements(contexts, "contexts").stream()
                         .map(context -> new GitHubRepositoryRuleParamsStatusCheckConfiguration(context, null))
                         .toList();
         return new GitHubRepositoryRuleRequiredStatusChecks(

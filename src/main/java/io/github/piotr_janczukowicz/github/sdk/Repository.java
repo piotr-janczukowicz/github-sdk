@@ -114,7 +114,6 @@ import io.github.piotr_janczukowicz.github.sdk.git.Comparison;
 import io.github.piotr_janczukowicz.github.sdk.git.FileChanges;
 import io.github.piotr_janczukowicz.github.sdk.git.Ref;
 import io.github.piotr_janczukowicz.github.sdk.interactions.RepositoryInteractions;
-import io.github.piotr_janczukowicz.github.sdk.internal.Arguments;
 import io.github.piotr_janczukowicz.github.sdk.internal.ClientValues;
 import io.github.piotr_janczukowicz.github.sdk.internal.Internals;
 import io.github.piotr_janczukowicz.github.sdk.internal.Lookups;
@@ -136,6 +135,7 @@ import io.github.piotr_janczukowicz.github.sdk.security.RepositoryCodeScanning;
 import io.github.piotr_janczukowicz.github.sdk.security.RepositorySecurity;
 import io.github.piotr_janczukowicz.github.sdk.security.SecretScanningAlert;
 import io.github.piotr_janczukowicz.github.sdk.webhooks.Webhook;
+import io.github.piotr_janczukowicz.util.ValidationUtils;
 import java.io.IOException;
 import java.util.Base64;
 import java.util.Collections;
@@ -417,7 +417,7 @@ public final class Repository {
         return sdk.github()
                 .branches()
                 .branch()
-                .getBranch(owner, this.name, Arguments.requireSafePath(name, NAME_ARGUMENT))
+                .getBranch(owner, this.name, ValidationUtils.requireSafePath(name, NAME_ARGUMENT))
                 .map(loaded -> new Branch(this, loaded));
     }
 
@@ -467,7 +467,7 @@ public final class Repository {
         return sdk.github()
                 .commits()
                 .commit()
-                .getCommit(owner, name, Arguments.requireSafePath(sha, SHA))
+                .getCommit(owner, name, ValidationUtils.requireSafePath(sha, SHA))
                 .map(loaded -> new Commit(this, loaded));
     }
 
@@ -775,7 +775,7 @@ public final class Repository {
      * @throws IOException if the transport fails
      */
     public Optional<RepositoryFile> file(final String path) throws IOException {
-        return read(Arguments.requireSafePath(path, "path"), null);
+        return read(ValidationUtils.requireSafePath(path, "path"), null);
     }
 
     /**
@@ -790,7 +790,7 @@ public final class Repository {
      * @throws IOException if the transport fails
      */
     public Optional<RepositoryFile> file(final String path, final String ref) throws IOException {
-        return read(Arguments.requireSafePath(path, "path"), Arguments.requireSafePath(ref, REF));
+        return read(ValidationUtils.requireSafePath(path, "path"), ValidationUtils.requireSafePath(ref, REF));
     }
 
     /**
@@ -828,7 +828,7 @@ public final class Repository {
      */
     public RepositoryFile writeFile(final String path, final String message, final byte[] content, final String branch)
             throws IOException {
-        return write(path, message, content, Arguments.requireSafePath(branch, BRANCH));
+        return write(path, message, content, ValidationUtils.requireSafePath(branch, BRANCH));
     }
 
     /**
@@ -1107,7 +1107,7 @@ public final class Repository {
         return createWebhook(new GitHubCreateWebhookPayload(
                 "web",
                 new GitHubWebhookConfig(requireNotBlank(payloadUrl, "payloadUrl"), "json", null, null),
-                Arguments.requireNotBlankElements(events, "events"),
+                ValidationUtils.requireNotBlankElements(events, "events"),
                 null));
     }
 
@@ -1486,7 +1486,7 @@ public final class Repository {
                 .replaceAllTopics(
                         owner,
                         name,
-                        new GitHubReplaceAllTopicsPayload(Arguments.requireNotBlankElements(topics, "topics")))
+                        new GitHubReplaceAllTopicsPayload(ValidationUtils.requireNotBlankElements(topics, "topics")))
                 .names();
     }
 
@@ -1608,7 +1608,7 @@ public final class Repository {
      */
     public Optional<Comparison> compare(final String base, final String head) throws IOException {
         final String baseHead =
-                Arguments.requireSafePath(base, "base") + "..." + Arguments.requireSafePath(head, "head");
+                ValidationUtils.requireSafePath(base, "base") + "..." + ValidationUtils.requireSafePath(head, "head");
         return sdk.github()
                 .commits()
                 .commit()
@@ -1633,7 +1633,7 @@ public final class Repository {
                 .github()
                 .gitDatabase()
                 .refs()
-                .listMatchingRefs(owner, name, Arguments.requireSafePath(prefix, "prefix"))
+                .listMatchingRefs(owner, name, ValidationUtils.requireSafePath(prefix, "prefix"))
                 .stream()
                 .map(listed -> new Ref(this, listed));
     }
@@ -1652,7 +1652,7 @@ public final class Repository {
         return sdk.github()
                 .gitDatabase()
                 .refs()
-                .getRef(owner, name, Arguments.requireSafePath(ref, REF))
+                .getRef(owner, name, ValidationUtils.requireSafePath(ref, REF))
                 .map(loaded -> new Ref(this, loaded));
     }
 
@@ -1681,7 +1681,7 @@ public final class Repository {
                         new GitHubCreateTagPayload(
                                 requireNotBlank(tag, "tag"),
                                 requireNotBlank(message, "message"),
-                                Arguments.requireSafePath(commitSha, SHA),
+                                ValidationUtils.requireSafePath(commitSha, SHA),
                                 GitHubCreateTagType.COMMIT,
                                 null));
     }
@@ -1701,7 +1701,7 @@ public final class Repository {
      * @throws IOException if the transport fails
      */
     public Ref createAnnotatedTag(final String tag, final String message, final String commitSha) throws IOException {
-        final String validTag = Arguments.requireSafePath(tag, "tag");
+        final String validTag = ValidationUtils.requireSafePath(tag, "tag");
         return createRef(
                 "refs/tags/" + validTag, createTag(validTag, message, commitSha).sha());
     }
@@ -1718,7 +1718,7 @@ public final class Repository {
      * @throws IOException if the transport fails
      */
     public Optional<GitHubGitTag> tagObject(final String sha) throws IOException {
-        return sdk.github().gitDatabase().tags().getTag(owner, name, Arguments.requireSafePath(sha, SHA));
+        return sdk.github().gitDatabase().tags().getTag(owner, name, ValidationUtils.requireSafePath(sha, SHA));
     }
 
     /**
@@ -1749,7 +1749,7 @@ public final class Repository {
         return sdk.github()
                 .repositories()
                 .contents()
-                .getReadmeInDirectory(owner, name, Arguments.requireSafePath(directory, "directory"))
+                .getReadmeInDirectory(owner, name, ValidationUtils.requireSafePath(directory, "directory"))
                 .map(loaded -> new RepositoryFile(this, loaded, null));
     }
 
@@ -1827,7 +1827,8 @@ public final class Repository {
                                 owner,
                                 name,
                                 new GitHubCreateRefPayload(
-                                        Arguments.requireSafePath(ref, REF), Arguments.requireSafePath(sha, SHA))));
+                                        ValidationUtils.requireSafePath(ref, REF),
+                                        ValidationUtils.requireSafePath(sha, SHA))));
     }
 
     /**
@@ -1843,7 +1844,7 @@ public final class Repository {
      * @throws IllegalStateException if GitHub does not have the branch it just created
      */
     public Branch createBranch(final String branch, final String sha) throws IOException {
-        final String validBranch = Arguments.requireSafePath(branch, BRANCH);
+        final String validBranch = ValidationUtils.requireSafePath(branch, BRANCH);
         createRef("refs/heads/" + validBranch, sha);
         return branch(validBranch).orElseThrow(() -> new IllegalStateException("Branch " + validBranch + IS_GONE));
     }
@@ -1882,7 +1883,7 @@ public final class Repository {
                 .getTree(
                         owner,
                         name,
-                        Arguments.requireSafePath(sha, SHA),
+                        ValidationUtils.requireSafePath(sha, SHA),
                         isRecursive ? GitHubGetTreeFilter.recursively() : GitHubGetTreeFilter.empty());
     }
 
@@ -1897,7 +1898,7 @@ public final class Repository {
      * @throws IOException if the transport fails
      */
     public Optional<GitHubBlob> blob(final String sha) throws IOException {
-        return sdk.github().gitDatabase().blobs().getBlob(owner, name, Arguments.requireSafePath(sha, SHA));
+        return sdk.github().gitDatabase().blobs().getBlob(owner, name, ValidationUtils.requireSafePath(sha, SHA));
     }
 
     /**
@@ -2066,7 +2067,7 @@ public final class Repository {
      */
     public Deployment deploy(final String ref, final String environment) throws IOException {
         return deploy(new GitHubCreateDeploymentPayload(
-                Arguments.requireSafePath(ref, REF),
+                ValidationUtils.requireSafePath(ref, REF),
                 null,
                 false,
                 null,
@@ -2201,7 +2202,7 @@ public final class Repository {
         return enablePages(new GitHubCreatePagesSitePayload(
                 null,
                 new GitHubCreatePagesSiteSource(
-                        Arguments.requireSafePath(branch, BRANCH), GitHubPagesSourcePath.ROOT)));
+                        ValidationUtils.requireSafePath(branch, BRANCH), GitHubPagesSourcePath.ROOT)));
     }
 
     /**
@@ -2445,7 +2446,7 @@ public final class Repository {
                         name,
                         new GitHubSetCustomOidcSubClaimForRepoPayload(
                                 isDefaultUsed,
-                                Arguments.requireNotBlankElements(includeClaimKeys, "includeClaimKeys"),
+                                ValidationUtils.requireNotBlankElements(includeClaimKeys, "includeClaimKeys"),
                                 isImmutableSubjectUsed));
     }
 
@@ -2757,7 +2758,7 @@ public final class Repository {
     private RepositoryFile write(
             final String path, final String message, final byte[] content, final @Nullable String branch)
             throws IOException {
-        Arguments.requireSafePath(path, "path");
+        ValidationUtils.requireSafePath(path, "path");
         requireNotBlank(message, "message");
         requireNonNull(content, "content");
         final String sha = read(path, branch).map(RepositoryFile::sha).orElse(null);

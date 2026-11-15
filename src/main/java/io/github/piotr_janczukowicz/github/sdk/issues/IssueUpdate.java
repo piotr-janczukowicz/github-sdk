@@ -7,9 +7,9 @@ import io.github.piotr_janczukowicz.github.api.issues.GitHubIssueMilestoneRefere
 import io.github.piotr_janczukowicz.github.api.issues.GitHubUpdateIssueAssignee;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubUpdateIssueLabel;
 import io.github.piotr_janczukowicz.github.api.issues.GitHubUpdatePayloadBuilder;
-import io.github.piotr_janczukowicz.github.sdk.internal.Arguments;
 import io.github.piotr_janczukowicz.github.sdk.internal.UpdateState;
 import io.github.piotr_janczukowicz.json.OptionalNull;
+import io.github.piotr_janczukowicz.util.ValidationUtils;
 import java.io.IOException;
 import java.util.List;
 
@@ -99,7 +99,7 @@ public final class IssueUpdate {
      * @throws IllegalArgumentException if a name is blank
      */
     public IssueUpdate labels(final List<String> names) {
-        payload.labels(Arguments.requireNotBlankElements(names, "names").stream()
+        payload.labels(ValidationUtils.requireNotBlankElements(names, "names").stream()
                 .map(GitHubUpdateIssueLabel::ofName)
                 .toList());
         return changed();
@@ -114,7 +114,7 @@ public final class IssueUpdate {
      * @throws IllegalArgumentException if a login is blank
      */
     public IssueUpdate assignees(final List<String> logins) {
-        payload.assignees(Arguments.requireNotBlankElements(logins, "logins").stream()
+        payload.assignees(ValidationUtils.requireNotBlankElements(logins, "logins").stream()
                 .map(GitHubUpdateIssueAssignee::ofLogin)
                 .toList());
         return changed();

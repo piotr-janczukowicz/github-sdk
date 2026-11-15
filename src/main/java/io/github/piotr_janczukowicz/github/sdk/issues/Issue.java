@@ -31,6 +31,7 @@ import io.github.piotr_janczukowicz.github.sdk.Repository;
 import io.github.piotr_janczukowicz.github.sdk.internal.Arguments;
 import io.github.piotr_janczukowicz.github.sdk.internal.Internals;
 import io.github.piotr_janczukowicz.github.sdk.reactions.Reaction;
+import io.github.piotr_janczukowicz.util.ValidationUtils;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -155,7 +156,7 @@ public final class Issue {
      * @throws IllegalStateException if the issue is gone after the change
      */
     public Issue setLabels(final List<String> names) throws IOException {
-        final List<GitHubSetLabelsLabel> labels = Arguments.requireNotBlankElements(names, "names").stream()
+        final List<GitHubSetLabelsLabel> labels = ValidationUtils.requireNotBlankElements(names, "names").stream()
                 .map(GitHubSetLabelsLabel::ofName)
                 .toList();
         github().issues()

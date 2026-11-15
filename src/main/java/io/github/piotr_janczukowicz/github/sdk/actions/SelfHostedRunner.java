@@ -7,6 +7,7 @@ import io.github.piotr_janczukowicz.github.api.actions.GitHubRunner;
 import io.github.piotr_janczukowicz.github.api.actions.GitHubRunnerLabel;
 import io.github.piotr_janczukowicz.github.api.actions.GitHubRunnerLabels;
 import io.github.piotr_janczukowicz.github.sdk.internal.Arguments;
+import io.github.piotr_janczukowicz.util.ValidationUtils;
 import java.io.IOException;
 import java.util.List;
 
@@ -112,7 +113,7 @@ public final class SelfHostedRunner {
      * @throws IOException if the transport fails
      */
     public GitHubRunnerLabels replaceLabels(final List<String> labels) throws IOException {
-        return runners.gateway().replaceLabels(id(), Arguments.requireNotBlankElements(labels, "labels"));
+        return runners.gateway().replaceLabels(id(), ValidationUtils.requireNotBlankElements(labels, "labels"));
     }
 
     /**

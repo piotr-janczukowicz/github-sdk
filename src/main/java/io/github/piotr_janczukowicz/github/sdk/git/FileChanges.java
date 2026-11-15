@@ -15,9 +15,9 @@ import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubGitTreeEntry;
 import io.github.piotr_janczukowicz.github.api.gitdatabase.GitHubUpdateRefPayload;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
 import io.github.piotr_janczukowicz.github.sdk.content.Commit;
-import io.github.piotr_janczukowicz.github.sdk.internal.Arguments;
 import io.github.piotr_janczukowicz.github.sdk.internal.Internals;
 import io.github.piotr_janczukowicz.json.OptionalNull;
+import io.github.piotr_janczukowicz.util.ValidationUtils;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
@@ -59,7 +59,7 @@ public final class FileChanges {
      */
     public FileChanges(final Repository repository, final String branch) {
         this.repository = requireNonNull(repository, "repository");
-        this.branch = Arguments.requireSafePath(branch, "branch");
+        this.branch = ValidationUtils.requireSafePath(branch, "branch");
     }
 
     /**
@@ -74,7 +74,7 @@ public final class FileChanges {
      */
     public FileChanges write(final String path, final byte[] content) {
         changes.put(
-                Arguments.requireFilePath(path, "path"),
+                ValidationUtils.requireFilePath(path, "path"),
                 requireNonNull(content, "content").clone());
         return this;
     }
@@ -103,7 +103,7 @@ public final class FileChanges {
      *     segment or has an empty segment
      */
     public FileChanges delete(final String path) {
-        changes.put(Arguments.requireFilePath(path, "path"), null);
+        changes.put(ValidationUtils.requireFilePath(path, "path"), null);
         return this;
     }
 
