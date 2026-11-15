@@ -27,6 +27,7 @@ import io.github.piotr_janczukowicz.github.sdk.Repository;
 import io.github.piotr_janczukowicz.github.sdk.internal.Arguments;
 import io.github.piotr_janczukowicz.github.sdk.internal.Internals;
 import io.github.piotr_janczukowicz.github.sdk.issues.Issue;
+import io.github.piotr_janczukowicz.util.ValidationUtils;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -454,7 +455,7 @@ public final class PullRequest {
      * @throws IOException if the transport fails
      */
     public GitHubPullRequestBranchUpdateResult updateBranch(final String expectedHeadSha) throws IOException {
-        return sendUpdateBranch(Arguments.requireSafePath(expectedHeadSha, "expectedHeadSha"));
+        return sendUpdateBranch(ValidationUtils.requireSafePath(expectedHeadSha, "expectedHeadSha"));
     }
 
     /**

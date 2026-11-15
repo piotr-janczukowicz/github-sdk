@@ -11,8 +11,8 @@ import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRule
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRulesetTarget;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubUpdateRepoRulesetPayload;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
-import io.github.piotr_janczukowicz.github.sdk.internal.Arguments;
 import io.github.piotr_janczukowicz.github.sdk.internal.Internals;
+import io.github.piotr_janczukowicz.util.ValidationUtils;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -73,8 +73,8 @@ public final class RulesetUpdate {
      * @throws IllegalArgumentException if a pattern is blank
      */
     public RulesetUpdate refs(final List<String> include, final List<String> exclude) {
-        this.includedRefs = Arguments.requireNotBlankElements(include, "include");
-        this.excludedRefs = Arguments.requireNotBlankElements(exclude, "exclude");
+        this.includedRefs = ValidationUtils.requireNotBlankElements(include, "include");
+        this.excludedRefs = ValidationUtils.requireNotBlankElements(exclude, "exclude");
         return this;
     }
 

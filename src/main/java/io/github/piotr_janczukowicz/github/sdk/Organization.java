@@ -27,7 +27,6 @@ import io.github.piotr_janczukowicz.github.api.teams.GitHubTeam;
 import io.github.piotr_janczukowicz.github.api.users.GitHubSimpleUser;
 import io.github.piotr_janczukowicz.github.pagination.GitHubPageRequest;
 import io.github.piotr_janczukowicz.github.sdk.actions.SelfHostedRunners;
-import io.github.piotr_janczukowicz.github.sdk.internal.Arguments;
 import io.github.piotr_janczukowicz.github.sdk.internal.ClientValues;
 import io.github.piotr_janczukowicz.github.sdk.internal.Lookups;
 import io.github.piotr_janczukowicz.github.sdk.organizations.InvitationRole;
@@ -39,6 +38,7 @@ import io.github.piotr_janczukowicz.github.sdk.packages.RegistryPackage;
 import io.github.piotr_janczukowicz.github.sdk.packages.RegistryPackages;
 import io.github.piotr_janczukowicz.github.sdk.projects.Project;
 import io.github.piotr_janczukowicz.github.sdk.projects.Projects;
+import io.github.piotr_janczukowicz.util.ValidationUtils;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -537,7 +537,7 @@ public final class Organization {
                 .updateOidcCustomSubTemplateForOrg(
                         login(),
                         new GitHubUpdateOidcCustomSubTemplateForOrgPayload(
-                                Arguments.requireNotBlankElements(includeClaimKeys, "includeClaimKeys"),
+                                ValidationUtils.requireNotBlankElements(includeClaimKeys, "includeClaimKeys"),
                                 isImmutableSubjectUsed));
     }
 

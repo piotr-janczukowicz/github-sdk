@@ -18,7 +18,7 @@
   <url>https://github.com/piotr-janczukowicz/github-sdk</url>
 
   <properties>
-    <github-rest-client.version>2026.3.10.5</github-rest-client.version>
+    <github-rest-client.version>2026.3.10.6</github-rest-client.version>
     <common-core.version>7</common-core.version>
   </properties>
 

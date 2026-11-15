@@ -8,9 +8,9 @@ import io.github.piotr_janczukowicz.github.api.branches.GitHubUpdateBranchProtec
 import io.github.piotr_janczukowicz.github.api.branches.GitHubUpdateBranchProtectionRequiredStatusChecks;
 import io.github.piotr_janczukowicz.github.api.branches.GitHubUpdateBranchProtectionRestrictions;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
-import io.github.piotr_janczukowicz.github.sdk.internal.Arguments;
 import io.github.piotr_janczukowicz.github.sdk.internal.Internals;
 import io.github.piotr_janczukowicz.json.OptionalNull;
+import io.github.piotr_janczukowicz.util.ValidationUtils;
 import java.io.IOException;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
@@ -53,7 +53,7 @@ public final class BranchProtectionUpdate {
      */
     public BranchProtectionUpdate requireStatusChecks(final boolean isStrict, final List<String> contexts) {
         this.statusChecks = new GitHubUpdateBranchProtectionRequiredStatusChecks(
-                isStrict, Arguments.requireNotBlankElements(contexts, "contexts"), null);
+                isStrict, ValidationUtils.requireNotBlankElements(contexts, "contexts"), null);
         return this;
     }
 
@@ -183,9 +183,9 @@ public final class BranchProtectionUpdate {
     public BranchProtectionUpdate restrictPushesTo(
             final List<String> users, final List<String> teams, final List<String> apps) {
         this.restrictions = new GitHubUpdateBranchProtectionRestrictions(
-                Arguments.requireNotBlankElements(users, "users"),
-                Arguments.requireNotBlankElements(teams, "teams"),
-                Arguments.requireNotBlankElements(apps, "apps"));
+                ValidationUtils.requireNotBlankElements(users, "users"),
+                ValidationUtils.requireNotBlankElements(teams, "teams"),
+                ValidationUtils.requireNotBlankElements(apps, "apps"));
         return this;
     }
 

@@ -12,8 +12,8 @@ import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRule
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRulesetConditionsRefName;
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubRepositoryRulesetPayloadTarget;
 import io.github.piotr_janczukowicz.github.sdk.Repository;
-import io.github.piotr_janczukowicz.github.sdk.internal.Arguments;
 import io.github.piotr_janczukowicz.github.sdk.internal.Internals;
+import io.github.piotr_janczukowicz.util.ValidationUtils;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -71,7 +71,7 @@ public final class RulesetDraft {
      */
     public RulesetDraft includeRefs(final String... patterns) {
         includedRefs.addAll(
-                Arguments.requireNotBlankElements(Arrays.asList(requireNonNull(patterns, PATTERNS)), PATTERNS));
+                ValidationUtils.requireNotBlankElements(Arrays.asList(requireNonNull(patterns, PATTERNS)), PATTERNS));
         return this;
     }
 
@@ -85,7 +85,7 @@ public final class RulesetDraft {
      */
     public RulesetDraft excludeRefs(final String... patterns) {
         excludedRefs.addAll(
-                Arguments.requireNotBlankElements(Arrays.asList(requireNonNull(patterns, PATTERNS)), PATTERNS));
+                ValidationUtils.requireNotBlankElements(Arrays.asList(requireNonNull(patterns, PATTERNS)), PATTERNS));
         return this;
     }
 

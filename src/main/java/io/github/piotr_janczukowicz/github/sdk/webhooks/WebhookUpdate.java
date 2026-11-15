@@ -3,8 +3,8 @@ package io.github.piotr_janczukowicz.github.sdk.webhooks;
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
 
 import io.github.piotr_janczukowicz.github.api.repositories.GitHubUpdateWebhookPayload;
-import io.github.piotr_janczukowicz.github.sdk.internal.Arguments;
 import io.github.piotr_janczukowicz.github.sdk.internal.UpdateState;
+import io.github.piotr_janczukowicz.util.ValidationUtils;
 import java.io.IOException;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
@@ -45,7 +45,7 @@ public final class WebhookUpdate {
      * @throws IllegalArgumentException if an event name is blank
      */
     public WebhookUpdate events(final List<String> events) {
-        this.events = Arguments.requireNotBlankElements(events, EVENTS_ARGUMENT);
+        this.events = ValidationUtils.requireNotBlankElements(events, EVENTS_ARGUMENT);
         return changed();
     }
 
@@ -58,7 +58,7 @@ public final class WebhookUpdate {
      * @throws IllegalArgumentException if an event name is blank
      */
     public WebhookUpdate addEvents(final List<String> events) {
-        this.addEvents = Arguments.requireNotBlankElements(events, EVENTS_ARGUMENT);
+        this.addEvents = ValidationUtils.requireNotBlankElements(events, EVENTS_ARGUMENT);
         return changed();
     }
 
@@ -71,7 +71,7 @@ public final class WebhookUpdate {
      * @throws IllegalArgumentException if an event name is blank
      */
     public WebhookUpdate removeEvents(final List<String> events) {
-        this.removeEvents = Arguments.requireNotBlankElements(events, EVENTS_ARGUMENT);
+        this.removeEvents = ValidationUtils.requireNotBlankElements(events, EVENTS_ARGUMENT);
         return changed();
     }
 
